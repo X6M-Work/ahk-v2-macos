@@ -96,6 +96,12 @@ internal static class CompileClient
 			psi.Environment.TryAdd("DOTNET_gcServer", "1");
 			psi.Environment.TryAdd("DOTNET_gcConcurrent", "0");
 
+			// Call counting waits while methods are still being called for the first time, as they are throughout a large
+			// compile, so Roslyn's optimized code would take some ten compiles to arrive. Counting at once brings it within
+			// two or three, but on one CPU the tier-1 compiles slow the first compile instead.
+			if (Environment.ProcessorCount > 1)
+				psi.Environment.TryAdd("DOTNET_TC_CallCountingDelayMs", "0");
+
 #if WINDOWS
 			if (CompileDaemonSecurity.IsElevated)
 				return CompileDaemonSecurity.TryStartUnelevated(psi);

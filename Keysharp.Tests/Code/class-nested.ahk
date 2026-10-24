@@ -129,4 +129,14 @@ AssertEq(c1.c2() is c1, 0, A_LineNumber)
 Throws(() => outer.empty() is "outer.empty", A_LineNumber, TypeError)
 Throws(() => [] is "Array", A_LineNumber, TypeError)
 
+; A global a nested class reads is not hidden by its enclosing class's method of the same C# name.
+_4 := "global _4"
+class outerwithshared {
+    _4() => "method _4"
+    class inner {
+        static Read() => _4
+    }
+}
+AssertEq(outerwithshared.inner.Read(), "global _4", A_LineNumber)
+
 FileAppend "pass", "*"

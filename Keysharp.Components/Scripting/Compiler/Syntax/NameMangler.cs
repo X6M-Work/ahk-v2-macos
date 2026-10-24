@@ -75,9 +75,10 @@ namespace Keysharp.Compilation.Syntax
 			return encoded.ToString();
 		}
 
-		// Framework namespace roots and generated structural identifiers referenced by bare name. Conflicting class
-		// names get a "_KS" suffix, which TitleCase cannot produce. Modules preserve source case, so conflicts use the
-		// collision-resistant encoding in ModuleClass instead. [UserDeclaredName] retains the original AHK name.
+		// Framework namespace roots and generated structural identifiers, which inline C# and parts of the generated code
+		// name bare. Conflicting class names get a "_KS" suffix, which TitleCase cannot produce. Modules preserve source
+		// case, so conflicts use the collision-resistant encoding in ModuleClass instead. [UserDeclaredName] retains the
+		// original AHK name.
 		private static readonly System.Collections.Generic.HashSet<string> ReservedTypeNames =
 			new(System.StringComparer.Ordinal)
 			{

@@ -967,7 +967,7 @@ namespace Keysharp.Compilation
 			{
 				var normalized = unit.NormalizeWhitespace("\t", Environment.NewLine).ToString();
 
-				if (PrettyPrinter.Print(unit, locations: true) != normalized)
+				if (PrettyPrinter.Print(unit, exact: true) != normalized)
 					throw new Exception("Code formatting mismatch");
 			}
 #endif

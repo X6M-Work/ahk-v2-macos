@@ -8,7 +8,7 @@ namespace Keysharp.Compilation
 	internal class PrettyPrinter : CSharpSyntaxWalker
 	{
 		readonly StringBuilder _sb;
-		bool _locations;
+		bool _exact;
 		int _indent;
 		string punctuation = "+-*/<>&|=?:.";
 		List<string> _indents = Enumerable.Range(0, 10).Select(i => new string('\t', i)).ToList();
@@ -20,16 +20,25 @@ namespace Keysharp.Compilation
 			_indent = initialIndent;
 		}
 
-		// The location stamps the lowering adds for Error.Stack are left out unless locations asks for them.
-		public static string Print(SyntaxNode node, int indent = 0, bool locations = false)
+		// Unless exact asks for the tree as compiled, the location stamps the lowering adds for Error.Stack and the
+		// global:: that roots framework names are left out.
+		public static string Print(SyntaxNode node, int indent = 0, bool exact = false)
 		{
-			var printer = new PrettyPrinter(indent) { _locations = locations };
+			var printer = new PrettyPrinter(indent) { _exact = exact };
 			printer.Visit(node);
 			printer.TrimTrailingNewLine();
 			return printer._sb.ToString();
 		}
 
-		bool Hidden(SyntaxNode node) => !_locations && node.HasAnnotation(Syntax.Lowerer.LocationAnnotation);
+		bool Hidden(SyntaxNode node) => !_exact && node.HasAnnotation(Syntax.Lowerer.LocationAnnotation);
+
+		public override void VisitAliasQualifiedName(AliasQualifiedNameSyntax node)
+		{
+			if (_exact)
+				base.VisitAliasQualifiedName(node);
+			else
+				Visit(node.Name);
+		}
 
 		public override void Visit(SyntaxNode node)
 		{
@@ -240,8 +249,15 @@ namespace Keysharp.Compilation
 			// A base list runs on into the constraints; without one they get their own indented line.
 			if (node.BaseList != null)
 			{
-				_sb.Append(" : ")
-					.Append(string.Join(", ", node.BaseList.Types.Select(t => t.ToString())));
+				_sb.Append(" : ");
+
+				for (var i = 0; i < node.BaseList.Types.Count; i++)
+				{
+					if (i > 0)
+						_sb.Append(", ");
+
+					Visit(node.BaseList.Types[i].Type);
+				}
 
 				foreach (var c in node.ConstraintClauses)
 					_sb.Append(" ").Append(c.ToString());

@@ -24,7 +24,7 @@ public class FunctionTests : TestRunner
 
 		var addressed = methods["FN_Addressed"];
 		var boxes = addressed.DescendantNodes().OfType<ObjectCreationExpressionSyntax>()
-			.Where(creation => creation.Type.ToString() == "Keysharp.Builtins.VarRef").ToArray();
+			.Where(creation => creation.Type.ToString() == "global::Keysharp.Builtins.VarRef").ToArray();
 		Assert.That(boxes.Length, Is.EqualTo(1));
 		var boxName = boxes[0].Ancestors().OfType<VariableDeclaratorSyntax>().Single().Identifier.ValueText;
 
@@ -64,12 +64,12 @@ public class FunctionTests : TestRunner
 
 		var required = methods["FN_Required"];
 		Assert.That(required.DescendantNodes().OfType<ObjectCreationExpressionSyntax>()
-			.Any(creation => creation.Type.ToString() == "Keysharp.Builtins.VarRef"), Is.False);
+			.Any(creation => creation.Type.ToString() == "global::Keysharp.Builtins.VarRef"), Is.False);
 		Assert.IsTrue(required.DescendantNodes().OfType<InvocationExpressionSyntax>()
-			.Any(call => call.Expression.ToString() == "Keysharp.Builtins.Refs.SetValue"));
+			.Any(call => call.Expression.ToString() == "global::Keysharp.Builtins.Refs.SetValue"));
 
 		var optionalRef = methods["FN_Optional"].DescendantNodes().OfType<ObjectCreationExpressionSyntax>()
-			.Single(creation => creation.Type.ToString() == "Keysharp.Builtins.VarRef");
+			.Single(creation => creation.Type.ToString() == "global::Keysharp.Builtins.VarRef");
 		Assert.That(optionalRef.ArgumentList.Arguments.Single().Expression.ToString(), Is.EqualTo("null"));
 	}
 

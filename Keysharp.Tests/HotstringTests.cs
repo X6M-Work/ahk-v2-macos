@@ -625,7 +625,7 @@ public partial class HotstringTests : TestRunner
 		Assert.IsEmpty(diags, "unexpected parse diagnostics: " + string.Join("; ", diags));
 		var call = new Keysharp.Compilation.Syntax.Lowerer().Build(prog, "Test").DescendantNodes()
 			.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.InvocationExpressionSyntax>()
-			.Single(i => i.Expression.ToString() == "Keysharp.Runtime.Keyboard.HotkeyDefinition.AddRemap");
+			.Single(i => i.Expression.ToString() == "global::Keysharp.Runtime.Keyboard.HotkeyDefinition.AddRemap");
 		object Argument(int index) => ((Microsoft.CodeAnalysis.CSharp.Syntax.LiteralExpressionSyntax)call.ArgumentList.Arguments[index].Expression).Token.Value;
 		return ((string)Argument(0), (string)Argument(1), (uint)Argument(2));
 	}

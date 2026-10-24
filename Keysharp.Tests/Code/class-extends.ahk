@@ -702,4 +702,32 @@ class ItemDerived extends ItemBase {
 ItemDerived()[1] := "Y"
 AssertEq(superLog.Pop(), "B set 1=Y", A_LineNumber)
 
+; A global a class reads is not hidden by a base's method of the same C# name, wherever the base is declared.
+_3 := "global _3"
+class sharedbase
+{
+	_3() => "method _3"
+}
+class readsthroughbase extends sharedbase
+{
+	static Read() => _3
+}
+class readsthroughlaterbase extends laterbase
+{
+	static Read() => _3
+}
+class laterbase
+{
+	_3() => "method _3"
+}
+AssertEq(readsthroughbase.Read() readsthroughlaterbase.Read(), "global _3global _3", A_LineNumber)
+
+; ... nor by a built-in base's member: Gui has a public field named form.
+form := "global form"
+class formreader extends Gui
+{
+	static Read() => form
+}
+AssertEq(formreader.Read(), "global form", A_LineNumber)
+
 FileAppend "pass", "*"

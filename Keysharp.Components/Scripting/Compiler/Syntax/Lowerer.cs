@@ -56,6 +56,11 @@ namespace Keysharp.Compilation.Syntax
 		// the type a static-local's field is declared in (see CurrentTypePath), as the field can repeat across classes.
 		private string _currentClassPath;
 		private string _currentClassUserPath;
+		// The member names of the class being lowered, its enclosing classes and their bases that could hide a module
+		// field's simple name (see ModuleFieldRef); null keeps every module field qualified. _classChainNames holds each
+		// lowered class's own and inherited ones for the classes that extend it.
+		private HashSet<string> _classMemberNames;
+		private readonly Dictionary<ClassDecl, HashSet<string>> _classChainNames = new(ReferenceEqualityComparer.Instance);
 		private string _structTypeName;     // C# type name of the struct being lowered (for typed-field DefineProp)
 		private bool _currentMethodStatic;   // the method being lowered is static (super -> Statics vs Prototypes)
 		private string _currentThisFuncName;
@@ -1824,16 +1829,20 @@ namespace Keysharp.Compilation.Syntax
 			}
 		}
 
-		// Inside a (nested) class method the module's static field isn't in scope unqualified — qualify it as
-		// `Program.<Module>.<field>` (e.g. a class property `Prop => ModuleFunc()`) — nor in a nested function, where an
-		// enclosing function's local of the same name hides it.
+		// A module field's simple name binds through the module class every class is nested in, unless an enclosing
+		// function's local or a member of an enclosing class or its bases has the same C# name: then it is qualified as
+		// `Program.<Module>.<field>`.
 		private ExpressionSyntax ModuleFieldRef(string lower)
 		{
 			if (ImportedTarget(lower) is { } target && (target.Inline || _boundModule?.OwnBindings.ContainsKey(lower) != true))
 				return MemberRead(target);
 			var gf = EnsureGlobalField(lower);
-			return _inMethod || _scope?.Parent?.DeclaresCsLocal(lower) == true ? Member(Member(Id("Program"), _currentModuleClass), gf) : Id(gf);
+			return _scope?.Parent?.DeclaresCsLocal(lower) == true || _currentClassPath != null && ClassMemberHides(gf)
+				? Access("Program." + _currentModuleClass + "." + gf) : Id(gf);
 		}
+
+		private bool ClassMemberHides(string field) =>
+			_classMemberNames == null || _classMemberNames.Contains(field[0] == '@' ? field[1..] : field);
 
 		// ---- statements ----
 
@@ -5473,7 +5482,7 @@ namespace Keysharp.Compilation.Syntax
 				cond = null;
 				foreach (var t in cb.Types)
 				{
-					var type = ResolveBaseClass(t, out _);
+					var type = ResolveBaseClass(t, out _)?.Type;
 					if (type == null) Diag($"{StmtAnchor(cb.Body)}Invalid catch class: {t}");
 					var test = Inv(Access("Keysharp.Runtime.Flow.MatchesCatch"), thrownValue,
 						SyntaxFactory.TypeOfExpression(Ty(type ?? "Keysharp.Builtins.Any")));
@@ -5502,11 +5511,11 @@ namespace Keysharp.Compilation.Syntax
 
 		// ---- classes ----
 
-		// The C# type of the class `extends` names, or null. The first part resolves as any name does at the declaration,
-		// so a global built-in class and the module's own classes need no import while any other class is reached through
-		// one; the rest are members (Gui.Control, Other.Outer.Inner). isStruct reports whether it is a struct class, which
-		// only a struct may extend.
-		private string ResolveBaseClass(string name, out bool isStruct)
+		// The class `extends` names, whose Type is its C# type, or null. The first part resolves as any name does at the
+		// declaration, so a global built-in class and the module's own classes need no import while any other class is
+		// reached through one; the rest are members (Gui.Control, Other.Outer.Inner). isStruct reports whether it is a
+		// struct class, which only a struct may extend.
+		private NameTarget ResolveBaseClass(string name, out bool isStruct)
 		{
 			var parts = name.Split('.');
 			var root = parts[0];
@@ -5518,7 +5527,7 @@ namespace Keysharp.Compilation.Syntax
 			isStruct = target is { Decl: ClassDecl { IsStruct: true } }
 				|| target?.InlineDeclaration is TypeDeclarationSyntax inline && InlineFacts(inline).StructClass
 				|| target is { Builtin: Type builtin } && typeof(Keysharp.Builtins.Struct).IsAssignableFrom(builtin);
-			return target?.Type;
+			return target?.Type == null ? null : target;
 		}
 
 		private void RegisterClass(ClassDecl c, string outerLower = null, string outerType = null)
@@ -5543,14 +5552,74 @@ namespace Keysharp.Compilation.Syntax
 			foreach (var nc in c.Nested) RegisterClass(nc, lower, typeName);
 		}
 
+		// The names a module field's simple name could bind to inside the class instead: its methods' and property
+		// accessors', and those its bases declare, a built-in's read by reflection. Null when C# the lowering cannot see,
+		// such as an inline block or a base not lowered yet, may declare one. The sets are shared and never changed.
+		private HashSet<string> ClassChainNames(ClassDecl c, NameTarget baseTarget)
+		{
+			if (HasInlineCSharp(c))
+				return null;
+
+			var inherited = c.Base == null ? HidingNames(c.IsStruct ? typeof(Keysharp.Builtins.Struct) : typeof(Keysharp.Builtins.KeysharpObject))
+				: baseTarget?.Builtin is Type builtin ? HidingNames(builtin)
+				: baseTarget?.Decl is ClassDecl based ? _classChainNames.GetValueOrDefault(based)
+				: null;
+
+			if (inherited == null)
+				return null;
+
+			HashSet<string> names = null;
+
+			foreach (var method in c.Methods.Where(method => !method.IsOperator))
+				Add(method.Static ? NameMangler.StaticMethod(method.Name) : NameMangler.Method(method.Name));
+
+			foreach (var property in c.Properties)
+			{
+				Add(property.Static ? NameMangler.StaticGetter(property.Name) : NameMangler.Getter(property.Name));
+				Add(property.Static ? NameMangler.StaticSetter(property.Name) : NameMangler.Setter(property.Name));
+			}
+
+			return names ?? inherited;
+
+			void Add(string name)
+			{
+				if (CanHideModuleField(name) && !inherited.Contains(name))
+					(names ??= new(inherited)).Add(name);
+			}
+		}
+
+		// Members of every accessibility: more than C# lets a derived script class see, never fewer.
+		private static readonly ConcurrentDictionary<Type, HashSet<string>> BuiltinHidingNames = new();
+
+		private static HashSet<string> HidingNames(Type type) => BuiltinHidingNames.GetOrAdd(type, static type =>
+		{
+			const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic
+				| System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly;
+			var names = new HashSet<string>();
+
+			for (var t = type; t != null; t = t.BaseType)
+				foreach (var member in t.GetMembers(flags))
+					if (CanHideModuleField(member.Name))
+						names.Add(member.Name);
+
+			return names;
+		});
+
+		// A module field's C# name has no ASCII capital (NameMangler.Global), so a name with one cannot hide it.
+		private static bool CanHideModuleField(string name) => !name.AsSpan().ContainsAnyInRange('A', 'Z');
+
 		private MemberDeclarationSyntax LowerClass(ClassDecl c)
 		{
 			var baseType = c.IsStruct ? "Keysharp.Builtins.Struct" : "Keysharp.Builtins.KeysharpObject";
+			NameTarget baseTarget = null;
 			if (c.Base != null)
 			{
 				// A struct extends only a struct class and a class only a class which is not one.
 				if (ResolveBaseClass(c.Base, out var baseIsStruct) is { } resolved && baseIsStruct == c.IsStruct)
-					baseType = resolved;
+				{
+					baseTarget = resolved;
+					baseType = resolved.Type;
+				}
 				else Diag($"{NodeAnchor(c)}Invalid base class: {c.Base}");
 			}
 
@@ -5567,6 +5636,10 @@ namespace Keysharp.Compilation.Syntax
 			_staticFieldSink = classStaticFields;
 			var savedPath = _currentClassPath;
 			var savedUserPath = _currentClassUserPath;
+			var savedMemberNames = _classMemberNames;
+			var chainNames = _classChainNames[c] = ClassChainNames(c, baseTarget);
+			_classMemberNames = chainNames == null || savedPath != null && savedMemberNames == null ? null
+				: savedPath == null ? chainNames : [.. savedMemberNames, .. chainNames];
 			_currentClassPath = _currentClassPath == null ? typeName : _currentClassPath + "." + typeName;
 			_currentClassUserPath = _currentClassUserPath == null ? c.Name : _currentClassUserPath + "." + c.Name;
 			// Class-body `#import` frame: visible to every member lowered below — methods, property accessors, field and
@@ -5631,6 +5704,7 @@ namespace Keysharp.Compilation.Syntax
 			_staticFieldSink = savedSink;
 			_currentClassPath = savedPath;
 			_currentClassUserPath = savedUserPath;
+			_classMemberNames = savedMemberNames;
 			if (classFrame != null) _importScopes.RemoveAt(_importScopes.Count - 1);
 
 			var decl = SyntaxFactory.ClassDeclaration(typeName)
@@ -6867,9 +6941,7 @@ namespace Keysharp.Compilation.Syntax
 				.AddAttributeLists(SourceFilesAttribute());
 			if (_inlineBlocks != null) programClass = programClass.AddModifiers(PartialTok);
 			var ns = SyntaxFactory.NamespaceDeclaration(SyntaxFactory.QualifiedName(Id("Keysharp"), Id("CompiledMain"))).AddMembers(programClass);
-			// No using directives: generated code uses clean, fully-qualified framework names (Keysharp.Runtime.Script.*,
-			// System.*). A user class/module that would shadow such a root is given a non-colliding C# type name by the
-			// mangler (NameMangler.ClassType / ModuleClass) + [UserDeclaredName], so no aliases/global:: are ever needed.
+			// No using directives: generated code qualifies framework names in full from global:: (see Access).
 			var unit = SyntaxFactory.CompilationUnit().AddMembers(ns);
 			// #App metadata keys -> `[assembly: System.Reflection.Assembly*Attribute("value")]` on the compiled unit
 			// (A_Assembly* read them back at runtime).
@@ -7015,19 +7087,19 @@ namespace Keysharp.Compilation.Syntax
 
 		private static IdentifierNameSyntax Id(string n) => SyntaxFactory.IdentifierName(n);
 
-		// Generated code uses clean, fully-qualified framework names. A user class/module that would shadow a framework
-		// namespace (System/Keysharp) or structural root (Program/…) is instead given a non-colliding C# type name by
-		// the mangler (NameMangler.ClassType / ModuleClass), so these helpers never need alias/global:: qualification.
+		// Framework paths and those through the program class or its script field start at global::, which binds them
+		// without walking every enclosing scope and keeps a script local or member of the same name from hiding their root.
 		private static ExpressionSyntax Access(string dotted) =>
 			IsRuntimePath(dotted) ? QualifiedSyntaxCache<ExpressionSyntax>.Get(dotted, BuildAccess) : BuildAccess(dotted);
 
 		private static ExpressionSyntax BuildAccess(string dotted)
 		{
 			ExpressionSyntax e = null;
+			dotted = Rooted(dotted);
 			foreach (var part in dotted.AsSpan().Split('.'))
 			{
 				var id = Id(dotted.AsSpan(part).ToString());
-				e = e == null ? id : SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, e, id);
+				e = e == null ? Root(id) : SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, e, id);
 			}
 			return e;
 		}
@@ -7038,13 +7110,24 @@ namespace Keysharp.Compilation.Syntax
 		private static NameSyntax BuildName(string dotted)
 		{
 			NameSyntax n = null;
+			dotted = Rooted(dotted);
 			foreach (var part in dotted.AsSpan().Split('.'))
 			{
 				var id = Id(dotted.AsSpan(part).ToString());
-				n = n == null ? id : SyntaxFactory.QualifiedName(n, id);
+				n = n == null ? Root(id) : SyntaxFactory.QualifiedName(n, id);
 			}
 			return n;
 		}
+
+		private static string Rooted(string dotted) =>
+			dotted.StartsWith("Program.", StringComparison.Ordinal) ? Keywords.MainNamespaceName + "." + dotted
+			: dotted.StartsWith("MainScript.", StringComparison.Ordinal) ? Keywords.MainNamespaceName + ".Program." + dotted
+			: dotted;
+
+		private static readonly IdentifierNameSyntax GlobalAlias = SyntaxFactory.IdentifierName(SyntaxFactory.Token(SyntaxKind.GlobalKeyword));
+
+		private static NameSyntax Root(IdentifierNameSyntax first) => first.Identifier.ValueText is "Keysharp" or "System"
+			? SyntaxFactory.AliasQualifiedName(GlobalAlias, first) : first;
 
 		private static bool IsRuntimePath(string dotted) =>
 			dotted.StartsWith("Keysharp.Runtime.", StringComparison.Ordinal) || dotted.StartsWith("Keysharp.Builtins.", StringComparison.Ordinal)
@@ -7154,7 +7237,7 @@ namespace Keysharp.Compilation.Syntax
 		// The runtime reads parameter metadata from the original method, preserving its defaults.
 		private TypeSyntax FuncType(List<Param> parameters) =>
 			parameters is { Count: <= 16 } && parameters.Exists(static p => !p.Variadic && (p.Optional || p.Default != null))
-				? _funcTypes[parameters.Count] ??= SyntaxFactory.QualifiedName(Id("System"),
+				? _funcTypes[parameters.Count] ??= SyntaxFactory.QualifiedName(Root(Id("System")),
 					SyntaxFactory.GenericName(SyntaxFactory.Identifier("Func"), SyntaxFactory.TypeArgumentList(
 						SyntaxFactory.SeparatedList(Enumerable.Repeat(ObjType, parameters.Count + 1))))) : Ty("System.Delegate");
 

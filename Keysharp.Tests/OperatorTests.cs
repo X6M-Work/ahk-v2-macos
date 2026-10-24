@@ -130,8 +130,8 @@ public partial class OperatorTests : TestRunner
 		Assert.IsTrue(generated.Contains("OperatorManifest"));
 		Assert.That(generated.Contains("KS_Operators"), Is.False);
 		Assert.That(generated.Contains("KS_StaticOperators"), Is.False);
-		Assert.That(generated.Contains("new Keysharp.Runtime.OperatorTable"), Is.False);
-		Assert.That(generated.Contains("=>Program."), Is.False);
+		Assert.That(generated.Contains("Keysharp.Runtime.OperatorTable"), Is.False);
+		Assert.That(generated.Contains("=>global::Keysharp.CompiledMain.Program.__Main."), Is.False);
 		Assert.IsTrue(generated.Contains("KS_operatorRight"));
 
 		(program, diagnostics) = Keysharp.Parsing.Syntax.Parser.ParseWithDiagnostics("class Plain { }");

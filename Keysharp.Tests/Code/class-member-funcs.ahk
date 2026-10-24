@@ -451,4 +451,61 @@ dc.callmydynclassreffunc()
 
 AssertEq(temp, 123, A_LineNumber)
 
+; A member can share its C# name with a global its class reads, and a method or local with a root of the generated code.
+_1 := "global _1"
+static_2 := "global static_2"
+ä := "global ä"
+get__5 := "global get__5"
+staticget__6 := "global staticget__6"
+outer := "global outer"
+
+class sharednames
+{
+	_1() => "method _1"
+	static _2() => "method _2"
+	ä() => "method ä"
+	_5 => "property _5"
+	static _6 => "property _6"
+	System() => "System"
+	Keysharp() => "Keysharp"
+	Program() => "Program"
+
+	static ReadGlobals() => _1 " " static_2 " " ä " " get__5 " " staticget__6
+
+	static ReadPastLocal()
+	{
+		outer := "local outer"
+		nested()
+		{
+			global outer
+			return outer
+		}
+		return nested()
+	}
+}
+
+AssertEq(sharednames.ReadGlobals(), "global _1 global static_2 global ä global get__5 global staticget__6", A_LineNumber)
+AssertEq(sharednames.ReadPastLocal(), "global outer", A_LineNumber)
+sn := sharednames()
+AssertEq(sn._1() sharednames._2() sn.ä() sn._5 sharednames._6, "method _1method _2method äproperty _5property _6", A_LineNumber)
+AssertEq(sn.System() sn.Keysharp() sn.Program(), "SystemKeysharpProgram", A_LineNumber)
+
+class sharedrootsbase
+{
+	Name() => "base"
+}
+
+class sharedroots extends sharedrootsbase
+{
+	_1() => "method _1"
+
+	Name()
+	{
+		Program := "Program", MainScript := "MainScript", System := "System", Keysharp := "Keysharp"
+		return Program MainScript System Keysharp " " _1 " " super.Name()
+	}
+}
+
+AssertEq(sharedroots().Name(), "ProgramMainScriptSystemKeysharp global _1 base", A_LineNumber)
+
 FileAppend "pass", "*"

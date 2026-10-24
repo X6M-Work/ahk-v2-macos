@@ -202,8 +202,8 @@ public class ScriptingComponentTests : TestRunner
 	}
 
 	// Keyview's full view shows the code as compiled, while the readable lowering, which --transpile prints, leaves the
-	// location stamps out and stays parseable as C#: names that are C# keywords end up inside generated identifiers (a
-	// nested function's FN_add_1, a label's KS_lbl_fixed), where '@' is not allowed.
+	// location stamps and global:: roots out and stays parseable as C#: names that are C# keywords end up inside
+	// generated identifiers (a nested function's FN_add_1, a label's KS_lbl_fixed), where '@' is not allowed.
 	[Test]
 	public void GeneratedCode()
 	{
@@ -218,6 +218,8 @@ public class ScriptingComponentTests : TestRunner
 		Assert.IsTrue(result.Success, result.ErrorText);
 		Assert.That(result.CompiledCode, Does.Contain("KS_frame.Location ="));
 		Assert.That(result.GeneratedCode, Does.Not.Contain("KS_frame"));
+		Assert.That(result.CompiledCode, Does.Contain(": global::Keysharp.Runtime.Module"));
+		Assert.That(result.GeneratedCode, Does.Not.Contain("global::"));
 		Assert.That(result.GeneratedCode, Does.Contain(".SwitchCase("));
 		var errors = Microsoft.CodeAnalysis.CSharp.CSharpSyntaxTree.ParseText(result.GeneratedCode).GetDiagnostics()
 			.Where(d => d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error).ToList();
