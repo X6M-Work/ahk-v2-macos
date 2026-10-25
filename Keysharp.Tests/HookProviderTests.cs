@@ -409,6 +409,8 @@ public class HookProviderTests : TestRunner
 	{
 		var provider = new Provider();
 		var hook = Install(provider);
+		// A finalizer can queue a wake before the test replaces the main-thread transport.
+		_ = s.MainEventScheduler.EnqueueCallback(() => { });
 		var events = ObserveKeys(out var drain);
 		if (change == 2) _ = Errors.OnError(new KeysharpFunc((Func<object, object, object>)((_, _) => 1L)));
 		provider.Key(0x100, 0x41);

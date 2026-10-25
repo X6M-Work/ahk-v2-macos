@@ -108,6 +108,8 @@ public abstract class TestRunner
 	{
 		var context = new QueuedSynchronizationContext();
 		s.UIThreadContext = context;
+		// Drain wakes posted through the previous transport before they can coalesce new work.
+		s.UIEventScheduler.PumpThreadQueuedEventsCore();
 		return context;
 	}
 
