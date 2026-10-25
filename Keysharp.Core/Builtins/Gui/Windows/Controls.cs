@@ -194,6 +194,7 @@ namespace Keysharp.Builtins
 			{
 				var cp = base.CreateParams;
 				cp.ClassName = className;
+				cp.Style &= ~WindowsAPI.WS_CLIPSIBLINGS;//AHK custom controls allow siblings to paint over them unless explicitly clipped.
 				cp.Style |= addStyle;
 				cp.Style &= ~removeStyle;
 				cp.ExStyle |= addExStyle;

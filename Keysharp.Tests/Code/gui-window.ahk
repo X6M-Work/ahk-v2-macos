@@ -32,6 +32,44 @@ optionsGui.Opt("-MINSIZE -maxsize +0x40000 +E0x8")
 Throws(() => optionsGui.Opt("UnknownWindowOption"), A_LineNumber, ValueError)
 optionsGui.Destroy()
 
+; A later Show keeps the dimensions it does not name. As AutoHotkey picks its show mode, a maximized window stays
+; maximized unless restored or given a new size or position, which unmaximizes it first, and a minimized one is
+; restored to its prior state unless an option keeps it minimized, when it takes no new size.
+ClientSizeOf(g) {
+	g.GetClientPos(,, &clientWidth, &clientHeight)
+	return clientWidth "x" clientHeight
+}
+sizeGui := Gui("+Resize")
+sizeGui.Add("Text",, "size")
+sizeGui.Show("NoActivate w400 h300")
+WinMove(,, 500, 350, sizeGui)
+resizedSize := ClientSizeOf(sizeGui)
+sizeGui.Show("NoActivate x50")
+AssertEq(ClientSizeOf(sizeGui), resizedSize, A_LineNumber)
+sizeGui.Show("NoActivate w300")
+AssertEq(ClientSizeOf(sizeGui), "300x" StrSplit(resizedSize, "x")[2], A_LineNumber)
+sizeGui.Show("NoActivate w320 h200")
+WinMaximize(sizeGui)
+sizeGui.Show("NA")
+AssertEq(WinGetMinMax(sizeGui), 1, A_LineNumber)
+sizeGui.Show()
+AssertEq(WinGetMinMax(sizeGui), 1, A_LineNumber)
+sizeGui.Show("NA h180")
+AssertEq(WinGetMinMax(sizeGui), 0, A_LineNumber)
+AssertEq(ClientSizeOf(sizeGui), "320x180", A_LineNumber)
+WinMaximize(sizeGui)
+sizeGui.Show("NoActivate")
+AssertEq(WinGetMinMax(sizeGui), 0, A_LineNumber)
+WinMaximize(sizeGui)
+WinMinimize(sizeGui)
+sizeGui.Show("NA w250")
+AssertEq(WinGetMinMax(sizeGui), -1, A_LineNumber)
+sizeGui.Show()
+AssertEq(WinGetMinMax(sizeGui), 1, A_LineNumber)
+WinRestore(sizeGui)
+AssertEq(ClientSizeOf(sizeGui), "320x180", A_LineNumber)
+sizeGui.Destroy()
+
 owner := Gui()
 owned := Gui()
 hwnd := owned.Hwnd

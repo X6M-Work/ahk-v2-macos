@@ -50,7 +50,6 @@ namespace Keysharp.Builtins
 #endif
 		internal MenuBar menuBar;
 		bool marginsInit = false;
-		internal Size requestedSize = new(int.MinValue, int.MinValue);
 		// "+MinSize"/"+MaxSize" with no dimensions pins the limit to the window's size; if the window has not
 		// been shown yet, the size is captured at the first Gui.Show (see ApplyDeferredSizeLimits).
 		private bool pinMinSizeToShowSize, pinMaxSizeToShowSize;
@@ -3131,8 +3130,10 @@ namespace Keysharp.Builtins
 			if (!options.CoerceString(out var s))
 				return DefaultObject;
 
-			bool /*center = false, cX = false, cY = false,*/ auto = false, min = false, max = false, restore = true, hide = false, cX = false, cY = false;
+			bool auto = false, min = false, max = false, restore = false, keepState = false, hide = false, cX = false, cY = false;
 			var dpiscale = DpiScale;
+			var firstShow = !showCalled && !form.BeenShown;
+			var requestedSize = new Size(int.MinValue, int.MinValue);
 			// Per call: a Show without X or Y leaves a shown window where it is, as in AHK.
 			var requestedLocation = new Point(int.MinValue, int.MinValue);
 
@@ -3180,20 +3181,24 @@ namespace Keysharp.Builtins
 							case var b when opt.Equals(Keyword_Restore, StringComparison.OrdinalIgnoreCase):
 								form.showWithoutActivation = false;
 								restore = true;
+								keepState = false;
 								break;
 
 							case var b when opt.Equals(Keyword_NoActivate, StringComparison.OrdinalIgnoreCase):
 								form.showWithoutActivation = true;
 								restore = true;
+								keepState = false;
 								break;
 							case var b2 when opt.Equals(Keyword_NA, StringComparison.OrdinalIgnoreCase):
 								form.showWithoutActivation = true;
 								restore = false;
+								keepState = true;
 								break;
 
 							case var b when opt.Equals(Keyword_Hide, StringComparison.OrdinalIgnoreCase):
 								hide = true;
 								restore = false;
+								keepState = true;
 								break;
 
 							case var b when opt.Equals(Keyword_Center, StringComparison.OrdinalIgnoreCase):
@@ -3226,6 +3231,20 @@ namespace Keysharp.Builtins
 				}
 			}
 
+			var explicitSize = !auto && (requestedSize.Width != int.MinValue || requestedSize.Height != int.MinValue);
+			var changesBounds = auto || explicitSize || cX || cY || requestedLocation.X != int.MinValue || requestedLocation.Y != int.MinValue;
+			var initialState = form.WindowState;
+
+			//The state changes first, as AHK picks its show mode: a minimized window is restored to its prior state unless
+			//an option sets or keeps its state, and a maximized one is unmaximized for Restore or a new size or position,
+			//which Maximize then maximizes again. A window left minimized takes no size or position.
+			if (initialState == FormWindowState.Minimized && (restore || !(min || max || keepState)))
+				_ = Platform.Window.TryRestore(form.Handle);
+
+			if (form.WindowState == FormWindowState.Maximized && (changesBounds || restore && initialState == FormWindowState.Maximized))
+				form.WindowState = FormWindowState.Normal;
+
+			var placeable = form.WindowState != FormWindowState.Minimized;
 			ResizeTabControls();
 			(int, int) FixStatusStrip(KeysharpStatusStrip ss)
 			{
@@ -3254,7 +3273,7 @@ namespace Keysharp.Builtins
 			}
 			int maxx = 0, maxy = 0, ssHeight = 0;
 
-			if (auto || requestedSize.Width == int.MinValue || requestedSize.Height == int.MinValue)
+			if (auto || firstShow && (requestedSize.Width == int.MinValue || requestedSize.Height == int.MinValue))
 			{
 				// Only the autosize path needs the status strip; computing it unconditionally allocated a status-strip
 				// array on every Show, including hot repeated repositions that pass an explicit size.
@@ -3270,44 +3289,37 @@ namespace Keysharp.Builtins
 				(maxx, maxy) = FixStatusStrip(ss);
 			}
 
-			Size size = Size.Empty;
-			if (auto || (!form.BeenShown && !showCalled && requestedSize.Width == int.MinValue && requestedSize.Height == int.MinValue))//The calculations in this block are not exact, but are as close as we can possibly get in a generic way.
+			//As in AHK, the first Show autosizes the dimensions it is not given and a later one keeps them.
+			if (placeable && (auto || firstShow || explicitSize))
 			{
-				//AHK always autosizes on first show when no dimensions are specified.
-				size = new Size(maxx + form.Margin.Left,
-										   maxy + ssHeight + form.Margin.Bottom);//Need to manually include the height of the status strip when it's docked.
-			}
-			else
-			{
-				size = (form.BeenShown || showCalled) ? form.GuiClientSize : new Size(800, 500);//Using this size because PreferredSize is so small it just shows the title bar.
+				//The autosize is not exact, but as close as a generic calculation gets. The status strip is docked, so its
+				//height has to be added.
+				var size = auto || firstShow ? new Size(maxx + form.Margin.Left, maxy + ssHeight + form.Margin.Bottom) : form.GuiClientSize;
 
-				if (requestedSize.Width != int.MinValue)
+				if (!auto && requestedSize.Width != int.MinValue)
 					size.Width = (int)Math.Ceiling(requestedSize.Width * dpiscale);
-				else
-					size.Width = maxx + form.Margin.Left;
 
-				if (requestedSize.Height != int.MinValue)
+				if (!auto && requestedSize.Height != int.MinValue)
 					size.Height = (int)Math.Ceiling(requestedSize.Height * dpiscale);
-				else
-					size.Height = maxy + ssHeight + form.Margin.Bottom;
 
-#if !WINDOWS
-				form.ClientSize = size;
+#if WINDOWS
+				form.GuiClientSize = size;
+#else
+				if (explicitSize)
+					form.ClientSize = size;
+
+				form.Content.ClientSize = size;
+				form.Properties["AssignedSize"] = size;
 #endif
 			}
 
 #if WINDOWS
-			// Single ClientSize assignment for both the autosize and explicit-size branches. The explicit branch used
-			// to set it again above, resizing the form twice (two SetWindowPos round-trips) on every Show.
-			form.GuiClientSize = size;
 			//Centered in the primary monitor's work area, as in AHK, and a child window in its parent's client area.
 			var screen = Forms.Screen.PrimaryScreen.WorkingArea;
 
 			if (!form.TopLevel && WindowsAPI.GetClientRect(WindowsAPI.GetParent(form.Handle), out var parentClient))
 				screen = new Rectangle(0, 0, parentClient.Right, parentClient.Bottom);
 #else
-			form.Content.ClientSize = size;
-			form.Properties["AssignedSize"] = size;
 			RectangleF screen;
 			try { screen = Forms.Screen.PrimaryScreen.Bounds; }
 			catch { screen = Forms.Screen.DisplayBounds; }
@@ -3319,8 +3331,6 @@ namespace Keysharp.Builtins
 			//Then called Show() again to actually show the window.
 			//So don't set the location if it wasn't specified and Show() has already been called once.
 			//Same above with size.
-			var firstShow = !showCalled && !form.BeenShown;
-
 			var formSize = form.GetSize();
 #if LINUX
 			// Public X11 coordinates are root pixels, while Eto/GTK positions its own forms in toolkit units. Convert
@@ -3350,17 +3360,10 @@ namespace Keysharp.Builtins
 			if (requestedLocation.Y != int.MinValue) location.Y = requestedLocation.Y;
 			else if (firstShow) location.Y = centerY;
 
-			if (!form.BeenShown && (requestedSize.Width == int.MinValue || requestedSize.Height == int.MinValue))
-			{
-				var currentSize = form.GuiClientSize;
-				if (requestedSize.Width == int.MinValue) requestedSize.Width = (int)Math.Ceiling(currentSize.Width / dpiscale);
-				if (requestedSize.Height == int.MinValue) requestedSize.Height = (int)Math.Ceiling(currentSize.Height / dpiscale);
-			}
-
 			showCalled = true;
 			form.StartPosition = FormStartPosition.Manual;
 
-			if (firstShow || requestedLocation.X != int.MinValue || requestedLocation.Y != int.MinValue)
+			if (placeable && (firstShow || requestedLocation.X != int.MinValue || requestedLocation.Y != int.MinValue))
 			{
 #if LINUX
 				if (!IsWaylandSession)
@@ -3417,8 +3420,6 @@ namespace Keysharp.Builtins
 				form.WindowState = FormWindowState.Minimized;
 			else if (max)
 				form.WindowState = FormWindowState.Maximized;
-			else if (restore)
-				form.WindowState = FormWindowState.Normal;
 
 			// ensure activation on default show/restore (not NA/NoActivate/Hide/Minimize)
 			if (!hide && !form.showWithoutActivation && form.WindowState != FormWindowState.Minimized)
