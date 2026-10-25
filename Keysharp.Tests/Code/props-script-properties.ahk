@@ -43,6 +43,38 @@ x := A_ScriptName
 
 AssertEq(x, "props-script-properties.ahk", A_LineNumber)
 
+originalScriptName := A_ScriptName
+originalScriptPath := A_ScriptFullPath
+originalScriptDir := A_ScriptDir
+
+A_ScriptName := "Custom script title"
+AssertEq(A_ScriptName, "Custom script title", A_LineNumber)
+AssertEq(A_IconTip, originalScriptName, A_LineNumber)
+AssertEq(A_ScriptFullPath, originalScriptPath, A_LineNumber)
+AssertEq(A_ScriptDir, originalScriptDir, A_LineNumber)
+
+A_ScriptName .= " suffix"
+AssertEq(A_ScriptName, "Custom script title suffix", A_LineNumber)
+
+scriptNameVariable := "A_ScriptName"
+%scriptNameVariable% := "Dynamic script title"
+AssertEq(A_ScriptName, "Dynamic script title", A_LineNumber)
+
+SetScriptName(123)
+AssertEq(A_ScriptName, "123", A_LineNumber)
+AssertEq(Type(A_ScriptName), "String", A_LineNumber)
+Throws(() => SetScriptName({}), A_LineNumber, TypeError)
+AssertEq(A_ScriptName, "123", A_LineNumber)
+
+A_ScriptName := ""
+AssertEq(A_ScriptName, "", A_LineNumber)
+A_ScriptName := originalScriptName
+
+SetScriptName(_name)
+{
+	A_ScriptName := _name
+}
+
 x := A_ScriptFullPath
 
 Assert(x != "", A_LineNumber)

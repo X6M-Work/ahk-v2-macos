@@ -7041,13 +7041,13 @@ namespace Keysharp.Compilation.Syntax
 			if (_manifest.SingleInstance != null)
 				tryStmts.Add(SyntaxFactory.IfStatement(
 					Inv(Access("Keysharp.Runtime.Script.HandleSingleInstance"),
-						Access("Keysharp.Builtins.Accessors.A_ScriptName"), Access("Keysharp.Runtime.eScriptInstance." + _manifest.SingleInstance)),
+						Member(Id("MainScript"), "ScriptName"), Access("Keysharp.Runtime.eScriptInstance." + _manifest.SingleInstance)),
 					SyntaxFactory.ReturnStatement(IntLit(0))));
 			tryStmts.Add(CallStmt("Keysharp.Builtins.Env.HandleCommandLineParams", Id("args")));
 			// Load after runtime identity/error options, but before JITting auto-exec can resolve package-backed fields.
 			if (EmitPackageLoad() is StatementSyntax loadPackages) tryStmts.Add(loadPackages);
 
-			tryStmts.Add(ExprStmt(Inv(Member(Id("MainScript"), "RunMainWindow"), Access("Keysharp.Builtins.Accessors.A_ScriptName"), Id(NameMangler.AutoExecMethod), False)));
+			tryStmts.Add(ExprStmt(Inv(Member(Id("MainScript"), "RunMainWindow"), Member(Id("MainScript"), "ScriptName"), Id(NameMangler.AutoExecMethod), False)));
 			var catchStmts = new List<StatementSyntax>
 			{
 				SyntaxFactory.IfStatement(Op("ReportUncaught", Id("mainex")), SyntaxFactory.ReturnStatement(Access("System.Environment.ExitCode"))),

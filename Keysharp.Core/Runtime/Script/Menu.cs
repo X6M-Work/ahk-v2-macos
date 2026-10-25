@@ -28,7 +28,7 @@ namespace Keysharp.Runtime
 		/// </summary>
 		internal string TrayTip
 		{
-			get => AccessorData.iconTip ??= FitTrayTip(A_ScriptName);
+			get => AccessorData.iconTip ??= FitTrayTip(ScriptName);
 
 			set
 			{

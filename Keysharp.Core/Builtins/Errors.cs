@@ -1458,7 +1458,7 @@ namespace Keysharp.Builtins
 			var scale = Keysharp.Internals.ScaleFactor.PrimaryScale;
 			this.AutoScaleMode = AutoScaleMode.Dpi;
 			this.AutoScaleDimensions = new SizeF(96F, 96F);
-			this.Text = A_ScriptName ?? "Keysharp";
+			this.Text = Script.TheScript?.ScriptName ?? "Keysharp";
 			this.StartPosition = FormStartPosition.CenterScreen;
 			this.Size = new Size((int)(550 * scale), (int)(300 * scale));
 			this.MinimumSize = new Size((int)(400 * scale), (int)(200 * scale));
@@ -1675,7 +1675,7 @@ namespace Keysharp.Builtins
 			if (!string.IsNullOrEmpty(footer))
 				errorText += $"{Environment.NewLine}{footer}";
 
-			Title = A_ScriptName ?? "Keysharp";
+			Title = Script.TheScript?.ScriptName ?? "Keysharp";
 			Resizable = true;
 			Topmost = true;
 

@@ -335,7 +335,6 @@ namespace Keysharp.Runtime
 		internal nint playbackHook = 0;
 		internal DateTime priorHotkeyStartTime = DateTime.UtcNow;
 		public string scriptPath = "";
-		public string scriptName = "";
 		internal string thisHotkeyName, priorHotkeyName;
 		internal DateTime thisHotkeyStartTime;
 		internal ThreadLocal<Threads> threads;
@@ -401,6 +400,11 @@ namespace Keysharp.Runtime
 		internal HotstringManager HotstringManager => hotstringManager ?? (hotstringManager = new (this));
 		public Threads Threads => threads.Value;
 		public Variables Vars { get; private set; }
+		public string ScriptName
+		{
+			get => AccessorData.scriptName;
+			internal set => AccessorData.scriptName = value;
+		}
 		internal AccessorData AccessorData => accessorData ?? (accessorData = new ());
 		internal Keysharp.Internals.IClipboard Clipboard
 		{
@@ -1540,13 +1544,13 @@ namespace Keysharp.Runtime
 			scriptPath = path ?? ScriptExecutionState.SourcePath ?? Accessors.A_AhkPath;
 
 			if (name != null)
-				scriptName = name;
+				ScriptName = name;
 			else
 			{
-				scriptName = Path.GetFileName(scriptPath);
+				ScriptName = Path.GetFileName(scriptPath);
 
-				if (string.IsNullOrEmpty(scriptName))
-					scriptName = scriptPath;
+				if (string.IsNullOrEmpty(ScriptName))
+					ScriptName = scriptPath;
 			}
 
 			//If we're running via passing in a script and are not in a unit test, then set the working directory to that of the script file.

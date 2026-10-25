@@ -748,7 +748,7 @@ namespace Keysharp.Builtins
 				{
 					Default = def,
 					Prompt = p,
-					Title = t?.Length == 0 ? A_ScriptName : t
+					Title = t?.Length == 0 ? Script.TheScript.ScriptName : t
 				};
 
 				if (passwordChar != null)
@@ -772,7 +772,7 @@ namespace Keysharp.Builtins
 
 			return RunInterruptibleUIDialog(() =>
 			{
-				using var input = new InputDialog(t?.Length == 0 ? A_ScriptName : t, p, def, passwordChar, w, h, x, y);
+				using var input = new InputDialog(t?.Length == 0 ? Script.TheScript.ScriptName : t, p, def, passwordChar, w, h, x, y);
 				var result = ShowEtoDialog(token => input.ShowModalAsync(token), timeout, "Timeout");
 				var obj = new KeysharpObject();
 				obj.DefinePropInternal("Value", new OwnPropsDesc(input.Value));
@@ -817,7 +817,7 @@ namespace Keysharp.Builtins
 				return "";
 
 			if (title == null)
-				caption = A_ScriptName;
+				caption = Script.TheScript.ScriptName;
 
 			txt = txt.Truncate(8192); // 8192 is AHK MSGBOX_TEXT_SIZE
 			caption = caption.Truncate(1024); // 1024 is AHK DIALOG_TITLE_SIZE

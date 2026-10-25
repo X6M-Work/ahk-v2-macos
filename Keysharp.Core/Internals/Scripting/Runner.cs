@@ -511,7 +511,7 @@ namespace Keysharp.Internals.Scripting
 		internal static void SetScriptIdentity(Script script, string scriptPath)
 		{
 			script.scriptPath = scriptPath == null ? "*" : Path.GetFullPath(scriptPath);
-			script.scriptName = Path.GetFileName(script.scriptPath);
+			script.ScriptName = Path.GetFileName(script.scriptPath);
 		}
 
 		private static int ExecuteOnce(CliCommand command)

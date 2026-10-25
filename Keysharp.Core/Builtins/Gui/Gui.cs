@@ -423,7 +423,7 @@ namespace Keysharp.Builtins
 						MaximizeBox = false,
 						SizeGripStyle = SizeGripStyle.Hide,
 						Tag = new WeakReference<Gui>(this, false),
-						Text = caption ?? A_ScriptName
+						Text = caption ?? script.ScriptName
 					};
 					//Note that we don't do any Suspend/Resume layout calls when creating controls on the form as would normally
 					//be done in designer-generated code. It appears to cause layout problems.

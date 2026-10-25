@@ -256,7 +256,7 @@ Status legend:
 | A_ScriptDir | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The full path of the script being compiled and ran, without a trailing backslash. Evaluates to a constant string in the C# code output. |
 | A_ScriptFullPath | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The full path of the script being compiled and ran. Evaluates to a constant string in the C# code output. |
 | A_ScriptHwnd | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The handle to the main window, as an int64, if it exists, else 0. |
-| A_ScriptName | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The name with extension, but without the path, of the script being compiled and ran. Evaluates to a constant string in the C# code output. |
+| A_ScriptName | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Gets or sets the default title for dialogs and newly created Gui windows; initially the script file name including extension, without its path. Assigning it does not change A_ScriptDir, A_ScriptFullPath or the default tray tooltip. |
 | A_Sec | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The current 2 digit second 00 - 23. |
 | A_SendLevel | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Controls which artificial keyboard and mouse events are ignored by hotkeys and hotstrings. Assigning a value outside 0 through 100 raises ValueError. |
 | A_SendMode | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Gets or sets the default send mode. |

@@ -19,8 +19,7 @@ namespace Keysharp.Builtins
 			else if (!filename.CoerceString(out fileName))
 				return DefaultObject;
 
-			//Raise the window an editor already has it open in. Only searchable by A_ScriptName, so it can
-			//only answer for the script itself; any other file skips it and gets opened.
+			// Find the editor by the source file name, independently of the default dialog title.
 			if (filename == null)
 			{
 				var script = Script.TheScript;
@@ -28,7 +27,7 @@ namespace Keysharp.Builtins
 				var tv = script.Threads.CurrentThread.configData;
 				var mm = tv.titleMatchMode;
 				tv.titleMatchMode = 2L;//Match anywhere.
-				var hwnd = WindowX.WinExist(A_ScriptName, "", title, "");
+				var hwnd = WindowX.WinExist(Path.GetFileName(fileName), "", title, "");
 				tv.titleMatchMode = mm;
 				var wi = WindowQuery.CreateWindow((nint)hwnd);
 				var classname = wi.ClassName;//Logic taken from AHK.

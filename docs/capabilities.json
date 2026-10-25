@@ -2736,12 +2736,12 @@
                  {
                      "category":  "Environment/System",
                      "feature":  "A_ScriptName",
-                     "syntax":  "",
+                     "syntax":  "A_ScriptName := Title",
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The name with extension, but without the path, of the script being compiled and ran. Evaluates to a constant string in the C# code output.",
+                     "notes":  "Gets or sets the default title for dialogs and newly created Gui windows; initially the script file name including extension, without its path. Assigning it does not change A_ScriptDir, A_ScriptFullPath or the default tray tooltip.",
                      "tested-by":  "props-script-properties.ahk"
                  },
                  {

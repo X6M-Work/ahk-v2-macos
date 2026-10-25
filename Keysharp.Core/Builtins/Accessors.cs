@@ -16,6 +16,7 @@ namespace Keysharp.Builtins
 		internal string iconFile = "";
 		internal object iconNumber = 1L;
 		internal string iconTip;
+		internal string scriptName = "";
 		internal long inputLevel;
 		internal string menuMaskKey = "";
 		internal long clipboardTimeout = 1000L;
@@ -1188,9 +1189,22 @@ namespace Keysharp.Builtins
 		public static long A_ScriptHwnd => Script.TheScript.MainWindowHandle.ToInt64();
 
 		/// <summary>
-		/// The file name of the script.
+		/// The script name, used as the default dialog and window title.
 		/// </summary>
-		public static string A_ScriptName => Script.TheScript?.scriptName;
+		public static object A_ScriptName
+		{
+			get => Script.TheScript?.ScriptName;
+			set
+			{
+				if (!value.CoerceString(out var name))
+					return;
+
+				var script = Script.TheScript;
+				// Keep the default tooltip when the tray has not been created yet.
+				_ = script.TrayTip;
+				script.ScriptName = name;
+			}
+		}
 
 		/// <summary>
 		/// Current 2-digit second (00-59).
