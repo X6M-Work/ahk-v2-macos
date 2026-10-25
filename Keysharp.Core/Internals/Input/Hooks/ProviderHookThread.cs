@@ -89,6 +89,10 @@ namespace Keysharp.Internals.Input.Hooks
 						if (kinds == previous && Volatile.Read(ref lost) == 0) return null;
 						var wasLost = Volatile.Read(ref lost);
 						var previousGeneration = generation;
+#if LINUX
+						// Opening the desktop keymap subscription can wait for a snapshot, outside an event's deadline.
+						if ((kinds & HookType.Keyboard) != 0) _ = script.LinuxServices.KeyboardState.Get();
+#endif
 						AddRemoveNativeHooks(kinds, false);
 #if WINDOWS
 						if (GetNativeHooks() != kinds)
