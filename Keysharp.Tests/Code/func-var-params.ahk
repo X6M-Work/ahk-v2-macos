@@ -54,7 +54,7 @@ varfo1("firstparam", ,"thirdparam")
 
 AssertEq(x, true, A_LineNumber)
 
-varfuncimplicit(*)
+varfuncimplicit(args*)
 {
 	temp := 0
 
@@ -117,7 +117,7 @@ val := varfunc3(1, 2, 3)
 
 AssertEq(val, 6, A_LineNumber)
 
-varfunc4(*)
+varfunc4(args*)
 {
 	return args[1] + args[2] + args[3]
 }
@@ -236,5 +236,19 @@ VariadicCapture(rest*) {
 	return read
 }
 AssertEq(VariadicCapture(1)(), "reference", A_LineNumber)
+
+; A bare * keeps the surplus in no variable, so args is an ordinary name there, as in AutoHotkey.
+args := "global"
+SurplusOnly(*) => args
+AssertEq(SurplusOnly(1, 2), "global", A_LineNumber)
+
+SurplusLocal(*) {
+	local args := "local"
+	return args
+}
+AssertEq(SurplusLocal(1, 2), "local", A_LineNumber)
+
+SurplusNamed(args, *) => args
+AssertEq(SurplusNamed("first", 2), "first", A_LineNumber)
 
 FileAppend "pass", "*"

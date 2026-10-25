@@ -257,6 +257,60 @@ public class FunctionTests : TestRunner
 	[Test, Category("Function"), NonParallelizable]
 	public void NamedArgs() => Assert.IsTrue(TestScript("func-named-params", false));
 
+	// A declaration may not name a parameter, a method's `this` and a setter's `value` included, nor give a variable a
+	// second scope, as AutoHotkey reports at load; an exact duplicate stands, and a bare `*` names no parameter.
+	[Test, Category("Function")]
+	public void DeclarationConflicts()
+	{
+		foreach (var (source, line, declared, existing, name) in new[]
+		{
+			("F(x) {\n\tglobal x\n}\n", 2, "global", "parameter", "x"),
+			("F(x) {\n\tlocal x\n}\n", 2, "local", "parameter", "x"),
+			("F(x) {\n\tstatic x\n}\n", 2, "static", "parameter", "x"),
+			("F(a, &X) {\n\tglobal x\n}\n", 2, "global", "parameter", "x"),
+			("class C {\n\tM() {\n\t\tglobal this\n\t}\n}\n", 3, "global", "parameter", "this"),
+			("class C {\n\tstatic M() {\n\t\tlocal This\n\t}\n}\n", 3, "local", "parameter", "This"),
+			("class C {\n\tP {\n\t\tset {\n\t\t\tglobal value\n\t\t}\n\t}\n}\n", 4, "global", "parameter", "value"),
+			("class C {\n\tP[i] {\n\t\tget {\n\t\t\tstatic i\n\t\t}\n\t}\n}\n", 4, "static", "parameter", "i"),
+			("F() {\n\tinner(x) {\n\t\tglobal x\n\t}\n}\n", 3, "global", "parameter", "x"),
+			("x::\n{\n\tglobal ThisHotkey\n}\n", 3, "global", "parameter", "ThisHotkey"),
+			("::btw::\n{\n\tlocal ThisHotkey\n}\n", 3, "local", "parameter", "ThisHotkey"),
+			("f := (x) {\n\tglobal x\n}\n", 2, "global", "parameter", "x"),
+			("F() {\n\tlocal x\n\tglobal x\n}\n", 3, "global", "local variable", "x"),
+			("F() {\n\tglobal x\n\tstatic x := 1\n}\n", 3, "static", "global variable", "x"),
+			("F() {\n\tstatic x\n\tif true\n\t\tlocal x\n}\n", 4, "local", "static variable", "x"),
+			("F(v) {\n\tswitch v {\n\tdefault:\n\t\tglobal x\n\tcase 1:\n\t\tlocal x\n\t}\n}\n", 6, "local", "global variable", "x"),
+		})
+		{
+			var diagnostics = LoweringDiagnostics.Diagnostics(source);
+			Assert.IsTrue(System.Array.Exists(diagnostics, d => d.StartsWith($"{line}:")
+				&& d.EndsWith($"This {declared} variable declaration conflicts with an existing {existing}: {name}")),
+				source.Replace("\n", "\\n") + ": " + string.Join("; ", diagnostics));
+		}
+
+		foreach (var source in new[]
+		{
+			"F() {\n\tglobal x\n\tglobal x\n}\n",
+			"F() {\n\tstatic x\n\tstatic x\n}\n",
+			"F(x) {\n\tinner() {\n\t\tglobal x\n\t\treturn x\n\t}\n\treturn inner()\n}\n",
+			"class C {\n\tM() {\n\t\tinner() {\n\t\t\tglobal this\n\t\t}\n\t}\n}\n",
+			"F(*) {\n\tstatic args := 0\n}\n",
+			"class C {\n\tM(a, *) {\n\t\tlocal args\n\t}\n}\n",
+			"f := (*) {\n\tglobal args\n}\n",
+			"F(args, *) => args\n",
+			"F(*) {\n\targs() => 1\n\treturn args()\n}\n",
+		})
+			Assert.IsEmpty(LoweringDiagnostics.Diagnostics(source), source.Replace("\n", "\\n"));
+	}
+
+	// As in AutoHotkey, a variadic parameter, named or bare, ends the parameter list.
+	[Test, Category("Function")]
+	public void VariadicEndsParameterList()
+	{
+		foreach (var source in new[] { "F(*, *) {\n}\n", "F(*, x) {\n}\n", "F(a*, b) {\n}\n", "class C {\n\tP[*, i] => 1\n}\n" })
+			Assert.IsNotEmpty(Keysharp.Parsing.Syntax.Parser.ParseWithDiagnostics(source).diagnostics, source.Replace("\n", "\\n"));
+	}
+
 	// A nested function is a variable of the function declaring it, so any declaration of the same name conflicts with it.
 	[Test, Category("Function")]
 	public void NestedFunctionConflictsWithDeclaration()

@@ -1937,14 +1937,12 @@ namespace Keysharp.Parsing.Syntax
 			while (!At(close) && !At(TokenKind.EOF))
 			{
 				var byRef = Match(TokenKind.BitAnd);
-				if (!byRef && At(TokenKind.Star))   // anonymous variadic `*` — AHK binds it to the implicit local `args`
+				if (!byRef && At(TokenKind.Star))   // anonymous variadic `*`; its C# parameter gets an internal name
 				{
 					Advance();
-					ps.Add(new Param("args", null, false, true, false));
+					ps.Add(new Param(Keywords.InternalPrefix + "args", null, false, true, false, anonymous: true));
 					SkipNewlines();
-					if (!Match(TokenKind.Comma)) break;
-					SkipNewlines();
-					continue;
+					break;
 				}
 				var nameTok = Current;
 				var name = ExpectIdentifier("parameter");
@@ -1955,7 +1953,8 @@ namespace Keysharp.Parsing.Syntax
 				else if (Match(TokenKind.Assign)) def = ParseExpression(1);
 				ps.Add(new Param(name, def, byRef, variadic, optional));
 				SkipNewlines();
-				if (!Match(TokenKind.Comma)) break;
+				// As in AutoHotkey, a variadic parameter ends the list.
+				if (variadic || !Match(TokenKind.Comma)) break;
 				SkipNewlines();
 			}
 			Expect(close, "parameter list");

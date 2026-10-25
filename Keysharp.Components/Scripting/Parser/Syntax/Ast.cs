@@ -190,8 +190,10 @@ namespace Keysharp.Parsing.Syntax
 		public readonly bool ByRef;
 		public readonly bool Variadic;
 		public readonly bool Optional;
-		public Param(string name, Expr def, bool byRef, bool variadic, bool optional)
-		{ Name = name; Default = def; ByRef = byRef; Variadic = variadic; Optional = optional; }
+		// A bare `*`, which accepts surplus arguments without keeping them in any variable.
+		public readonly bool Anonymous;
+		public Param(string name, Expr def, bool byRef, bool variadic, bool optional, bool anonymous = false)
+		{ Name = name; Default = def; ByRef = byRef; Variadic = variadic; Optional = optional; Anonymous = anonymous; }
 	}
 
 	internal sealed class FatArrowExpr : Expr

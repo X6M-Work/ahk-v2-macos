@@ -6103,7 +6103,7 @@ namespace Keysharp.Compilation.Syntax
 		{
 			// AutoHotkey builds every hotkey, hotstring and #HotIf body from one `<Hotkey>(ThisHotkey)` template
 			// (Script::CreateHotFunc), so that is the name A_ThisFunc reports inside all three.
-			var lowered = LowerCallableBody(new HashSet<string> { "thishotkey" }, body, null, name, "<Hotkey>", out var scope);
+			var lowered = LowerCallableBody(new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "thishotkey" }, body, null, name, "<Hotkey>", out var scope);
 			_hotMembers.Add(ObjMethod(name, ParamDecls(HotCallbackParams, includeThis: false), lowered, scope.Labels));
 			return name;
 		}
@@ -6300,6 +6300,7 @@ namespace Keysharp.Compilation.Syntax
 			string thisFuncName, out FunctionScope callableScope, HashSet<string> byRefParams = null, List<Param> paramDefaults = null,
 			bool capturing = false, bool staticNested = false)
 		{
+			CheckDeclarations(paramLowers, _inMethod && !capturing, bodyBlock?.Body);
 			var savedStamped = _stamped; _stamped = false;
 			var savedThisFuncName = _currentThisFuncName;
 			var savedLoweringParamDefault = _loweringParamDefault;
@@ -6667,6 +6668,50 @@ namespace Keysharp.Compilation.Syntax
 			while (e is GroupExpr g)
 				e = g.Inner;
 			return e;
+		}
+
+		// As AutoHotkey's ParseAndAddLine does, a declaration may not name a parameter, nor give a variable a second scope;
+		// an exact duplicate stands, as for two code paths. receiver says the callable's `this` is a parameter.
+		private void CheckDeclarations(HashSet<string> paramLowers, bool receiver, List<Stmt> body)
+		{
+			if (body == null)
+				return;
+
+			List<DeclStmt> declarations = null;
+
+			foreach (var st in body)
+				VisitScope(st, statement =>
+				{
+					if (statement is DeclStmt d)
+						(declarations ??= []).Add(d);
+				});
+
+			if (declarations == null)
+				return;
+
+			// AutoHotkey checks each line as it reads it, while a switch keeps its default section after its cases.
+			declarations.Sort((left, right) => left.SourceOrder.CompareTo(right.SourceOrder));
+			Dictionary<string, VarKind> kinds = null;
+
+			foreach (var d in declarations)
+			{
+				var kind = d.Keyword switch { "local" => VarKind.Local, "static" => VarKind.Static, _ => VarKind.Global };
+
+				foreach (var item in d.Items)
+				{
+					if (DeclItemName(item) is not { } name)
+						continue;
+
+					VarKind? existing = paramLowers.Contains(name)
+						|| receiver && StringComparer.OrdinalIgnoreCase.Equals(name, "this") ? VarKind.Parameter
+						: kinds != null && kinds.TryGetValue(name, out var declared) ? declared : null;
+
+					if (existing == null)
+						(kinds ??= new(StringComparer.OrdinalIgnoreCase))[name] = kind;
+					else if (existing != kind)
+						Diag($"{NodeAnchor(d)}This {Keysharp.Builtins.Errors.DeclarationKind(kind)} declaration conflicts with an existing {Keysharp.Builtins.Errors.DeclarationKind(existing.Value)}: {name}");
+				}
+			}
 		}
 
 		// A callable's variables, as the lowering and the #Warn pass both classify them. A name it assigns which nothing holds
@@ -7509,6 +7554,10 @@ namespace Keysharp.Compilation.Syntax
 
 			foreach (var p in ps)
 			{
+				// A bare `*` gives the callable no variable, as in AutoHotkey.
+				if (p.Anonymous)
+					continue;
+
 				var lower = p.Name;
 				if (hasReceiver && StringComparer.OrdinalIgnoreCase.Equals(lower, "this"))
 					Diag($"This parameter declaration conflicts with the method's receiver: {p.Name}");
