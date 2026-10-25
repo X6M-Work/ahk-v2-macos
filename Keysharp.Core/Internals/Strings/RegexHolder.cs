@@ -4,32 +4,22 @@ namespace Keysharp.Internals.Strings
 	internal class RegexHolder
 	{
 		internal PcreRegex regex;
-		internal string tag = "";
+		internal (string Pattern, bool V20) CacheKey { get; }
 		internal string[] groupNames;
 		internal bool hasCallout;//Whether the pattern uses callouts; if not, matching can skip the callback path.
 
-		internal RegexHolder(string n)
+		internal RegexHolder((string Pattern, bool V20) key)
 		{
+			CacheKey = key;
+			var n = key.Pattern;
 			var optionsLength = Conversions.RegexOptionsLength(n);
 			// The A option is PCRE's anchored option and nothing more: it anchors the match at the starting
 			// position, where a \A in the pattern would anchor it at the start of the haystack.
 			var settings = Conversions.ToRegexOptions(n.AsSpan(0, optionsLength > 0 ? optionsLength - 1 : 0));
 			settings.Options |= PcreOptions.Compiled;
 			var pattern = n.Substring(optionsLength);
-
-			//Compile as-is first. AutoHotkey's unquoted callout names — (?CName), (?Cn:Name) — are invalid in
-			//PCRE2 and make compilation throw; only then do we rewrite them to the PCRE2 string form and retry.
-			//This keeps the rewriter off every normal pattern (it only ever sees patterns PCRE2 already rejected)
-			//and avoids scanning callout-free patterns entirely.
-			try
-			{
-				regex = new PcreRegex(pattern, settings);
-			}
-			catch (PcrePatternException) when (pattern.IndexOf("(?C", StringComparison.Ordinal) >= 0)
-			{
-				pattern = TranslateCallouts(pattern);
-				regex = new PcreRegex(pattern, settings);
-			}
+			regex = CompilePattern(pattern, settings, key.V20,
+				n.AsSpan(0, optionsLength > 0 ? optionsLength - 1 : 0).Contains('X'));
 
 			var info = regex.PatternInfo;
 			//Whether matching needs the (slower) callout callback path. Taken from the compiled pattern's callout
@@ -49,6 +39,102 @@ namespace Keysharp.Internals.Strings
 
 		// PCRE2 starting delimiters for a string callout, e.g. (?C'name'), (?C"name"), (?C{name}).
 		private const string Pcre2CalloutDelimiters = "`'\"^%#${";
+
+		private static PcreRegex CompilePattern(string pattern, PcreRegexSettings settings, bool v20, bool strict)
+		{
+			while (true)
+			{
+				PcreRegex compiled;
+				try
+				{
+					compiled = new PcreRegex(pattern, settings);
+				}
+				catch (PcrePatternException error)
+				{
+					if (v20 && (TranslateUnknownEscape(ref pattern, error, strict)
+						|| TranslateSpecialEscape(ref pattern, settings, strict)))
+						continue;
+
+					if (pattern.Contains("(?C", StringComparison.Ordinal))
+					{
+						var translated = TranslateCallouts(pattern);
+						if (!string.Equals(pattern, translated, StringComparison.Ordinal))
+						{
+							pattern = translated;
+							continue;
+						}
+					}
+					throw;
+				}
+
+				if (v20 && TranslateSpecialEscape(ref pattern, settings, strict))
+					continue;
+				return compiled;
+			}
+		}
+
+		private static bool TranslateUnknownEscape(ref string pattern, PcrePatternException error, bool strict)
+		{
+			if (strict || error.ErrorCode is not (PcreErrorCode.UnknownEscape or PcreErrorCode.UnsupportedEscapeSequence))
+				return false;
+
+			var offset = ErrorOffset(error);
+			if (offset < 2 || offset > pattern.Length || pattern[offset - 2] != '\\'
+				|| !"ijmoqyFIJMOTY".Contains(pattern[offset - 1]))
+				return false;
+
+			pattern = pattern.Remove(offset - 2, 1);
+			return true;
+		}
+
+		private static bool TranslateSpecialEscape(ref string pattern, PcreRegexSettings settings, bool strict)
+		{
+			for (var i = 0; i + 1 < pattern.Length; i++)
+			{
+				if (pattern[i] != '\\')
+					continue;
+				var escaped = pattern[i + 1];
+				if (escaped != 'o' && (escaped != 'x' || i + 2 < pattern.Length && char.IsAsciiHexDigit(pattern[i + 2])
+					|| HasHexCodePoint(pattern.AsSpan(i + 2))))
+					continue;
+
+				var probe = string.Concat(pattern.AsSpan(0, i + 1), "j", pattern.AsSpan(i + 2));
+				try
+				{
+					_ = new PcreRegex(probe, settings);
+				}
+				catch (PcrePatternException error)
+				{
+					if (error.ErrorCode != PcreErrorCode.UnknownEscape || ErrorOffset(error) != i + 2)
+						continue;
+					if (escaped == 'o' && strict)
+						throw new PcrePatternException(PcreErrorCode.UnknownEscape, $"Unrecognized PCRE1 escape \\o at offset {i + 2}.");
+					pattern = escaped == 'o' ? pattern.Remove(i, 1) : pattern.Insert(i + 2, "00");
+					return true;
+				}
+			}
+			return false;
+		}
+
+		private static int ErrorOffset(PcrePatternException error)
+		{
+			// PCRE.NET 1.6.1 exposes the compile offset only in this invariant message suffix.
+			const string marker = " at offset ";
+			var message = error.Message.AsSpan();
+			var index = message.LastIndexOf(marker, StringComparison.Ordinal);
+			return index >= 0 && message.EndsWith(".", StringComparison.Ordinal)
+				&& int.TryParse(message.Slice(index + marker.Length, message.Length - index - marker.Length - 1),
+					NumberStyles.None, CultureInfo.InvariantCulture, out var offset) ? offset : -1;
+		}
+
+		private static bool HasHexCodePoint(ReadOnlySpan<char> text)
+		{
+			if (text.Length < 3 || text[0] != '{' || !char.IsAsciiHexDigit(text[1]))
+				return false;
+			var i = 2;
+			while (i < text.Length && char.IsAsciiHexDigit(text[i])) i++;
+			return i < text.Length && text[i] == '}';
+		}
 
 		/// <summary>
 		/// AutoHotkey (patched PCRE1) accepts an unquoted callout name — (?CName), (?C123Func) or (?Cn:Name) —

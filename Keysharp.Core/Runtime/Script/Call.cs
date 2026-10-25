@@ -34,7 +34,7 @@ namespace Keysharp.Runtime
 				if (type == OwnPropsMapType.None || opm.Type == OwnPropsMapType.None || (opm.Type & type) != 0)
 					return true;
 			}
-			if (StringComparer.OrdinalIgnoreCase.Equals(key, "base"))
+			if (AhkIdentifierComparer.Instance.Equals(key, "base"))
 			{
 				opm = new OwnPropsDesc((object)baseObj.Base ?? DefaultObject);
 				return true;
@@ -87,7 +87,7 @@ namespace Keysharp.Runtime
 
 				// `base` is the object's own, so it is answered before the chain is walked — and regardless of what
 				// the descriptors along it hold.
-				if (cur == baseObj && StringComparer.OrdinalIgnoreCase.Equals(key, "base"))
+				if (cur == baseObj && AhkIdentifierComparer.Instance.Equals(key, "base"))
 				{
 					opm = new OwnPropsDesc((object)baseObj.Base ?? DefaultObject);
 					return true;
@@ -103,7 +103,7 @@ namespace Keysharp.Runtime
 
 		public static bool TryGetProps(Any baseObj, out Dictionary<string, OwnPropsDesc> props, bool searchBase = true, OwnPropsMapType type = 0)
 		{
-			props = new(StringComparer.OrdinalIgnoreCase);
+			props = new(AhkIdentifierComparer.Instance);
 
 			for (Any cur = baseObj; cur != null; cur = searchBase ? cur.Base : null)
 			{
@@ -275,7 +275,7 @@ namespace Keysharp.Runtime
 			// declare its own __Value, so it resolves through ordinary dispatch below, which is the point of it
 			// being a property. Refs holds the same shortcut for the same reason; this one covers a ref reached
 			// as an ordinary property access rather than through Refs.
-			if (item is VarRef vr && vr.IsPlain && namestr.Equals("__Value", StringComparison.OrdinalIgnoreCase))
+			if (item is VarRef vr && vr.IsPlain && AhkIdentifierComparer.Instance.Equals(namestr, "__Value"))
 			{
 				return args.Length > 0 ? GetPropertyResultIndex(item, namestr, vr.__Value, args) : vr.__Value;
 			}
@@ -714,7 +714,7 @@ namespace Keysharp.Runtime
 
 			// VarRef fast-path: same guard as GetPropertyValue's (VarRef.IsPlain); anything else dispatches so an
 			// override is honored.
-			if (item is VarRef vr && vr.IsPlain && namestr.Equals("__Value", StringComparison.OrdinalIgnoreCase))
+			if (item is VarRef vr && vr.IsPlain && AhkIdentifierComparer.Instance.Equals(namestr, "__Value"))
 				return argCount > 1 ? SetPropertyResultIndex(vr.__Value) : vr.__Value = value;
 
 			if (item is Any a2)
@@ -764,7 +764,7 @@ namespace Keysharp.Runtime
 					}
 				}
 
-				if (field == null && namestr.Equals("base", StringComparison.OrdinalIgnoreCase))
+				if (field == null && AhkIdentifierComparer.Instance.Equals(namestr, "base"))
 				{
 					if (argCount > 1) return SetPropertyResultIndex(kso.Base);
 					_ = Objects.ObjSetBase(kso, value);

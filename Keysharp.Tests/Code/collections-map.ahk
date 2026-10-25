@@ -1,6 +1,7 @@
 #NoTrayIcon
 #ErrorStdOut
 #Warn All, StdOut
+#Requires AutoHotkey v2.1-alpha.1
 #Include <assert>
 
 x := "one"
@@ -483,7 +484,7 @@ for k, v in m {
 }
 
 ; Assigning unset to a map item REMOVES it, exactly as Delete does, so Has() and [] can never disagree.
-; Every expectation here was measured against AutoHotkey v2.1-alpha.30.
+; Missing keys raise only in v2.0 mode.
 
 ; Existing key: removed.
 
@@ -494,28 +495,26 @@ Assert(um.Count == 0 && !um.Has("b"), A_LineNumber)
 
 ; A key that is not there raises UnsetItemError, and nothing else in the map is disturbed.
 
-um2 := Map("x", 1)
-threw := 0
+CheckMissingUnset20() {
+	#Requires AutoHotkey v2.0
+	missingUnset := Map("x", 1)
+	missingUnsetRaised := 0
+	try
+		missingUnset["y"] := unset
+	catch UnsetItemError
+		missingUnsetRaised := 1
+	Assert(missingUnsetRaised && missingUnset.Count == 1 && missingUnset["x"] == 1, A_LineNumber)
 
-try
-	um2["y"] := unset
-catch UnsetItemError
-	threw := 1
-
-Assert(threw && um2.Count == 1 && um2["x"] == 1, A_LineNumber)
-
-; A Default does not suppress that raise.
-
-um3 := Map("p", 1)
-um3.Default := "D"
-threw := 0
-
-try
-	um3["q"] := unset
-catch UnsetItemError
-	threw := 1
-
-Assert(threw, A_LineNumber)
+	missingUnsetDefault := Map("p", 1)
+	missingUnsetDefault.Default := "D"
+	missingUnsetRaised := 0
+	try
+		missingUnsetDefault["q"] := unset
+	catch UnsetItemError
+		missingUnsetRaised := 1
+	Assert(missingUnsetRaised, A_LineNumber)
+}
+CheckMissingUnset20()
 
 ; And a removed key can be set again.
 
@@ -573,7 +572,11 @@ CheckFloatKeys(legacyKeys) {
 	AssertEq(legacyKeys.Delete(1.0), "legacy", A_LineNumber)
 	legacyKeys[1.0] := "legacy"
 }
-legacyMap := Map(1.0, "legacy")
+CreateLegacyMap20() {
+	#Requires AutoHotkey v2.0
+	return Map(1.0, "legacy")
+}
+legacyMap := CreateLegacyMap20()
 CheckFloatKeys(legacyMap)
 AssertEq(legacyMap[1.0], "legacy", A_LineNumber)
 

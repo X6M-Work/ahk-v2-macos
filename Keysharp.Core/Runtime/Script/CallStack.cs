@@ -358,7 +358,7 @@ namespace Keysharp.Runtime
 				{
 					var name = frames[i].Function == null ? frames[i].Description : Name(frames[i].Function);
 
-					if (++offset == 0 || resolvedWhat.Length != 0 && StringComparer.OrdinalIgnoreCase.Equals(name, resolvedWhat))
+					if (++offset == 0 || resolvedWhat.Length != 0 && AhkIdentifierComparer.Instance.Equals(name, resolvedWhat))
 					{
 						(resolvedWhat, start, matched) = (name, i, true);
 						break;

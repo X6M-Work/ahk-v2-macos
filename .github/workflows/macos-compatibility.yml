@@ -1,0 +1,172 @@
+name: macOS compatibility
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-compatibility-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  CURATED_TEST_FILTER: (Category=Assign|Category=BuiltInVars|Category=Class|Category=Collections|Category=Curated|Category=Directives|Category=Flow|Category=Function|Category=Hotstring|Category=Json|Category=Math|Category=Misc|Category=Module|Category=Operator|Category=Parser|Category=String|Category=Types|Category=FileAndDir|Category=Network|FullyQualifiedName~ClipboardTests.CfHtml|FullyQualifiedName~ClipboardTests.UriListParsing|FullyQualifiedName~ClipboardTests.OnChangeHook|FullyQualifiedName~ExternalTests.DllCall_|FullyQualifiedName~ExternalTests.NumPutNumGet|FullyQualifiedName~ExternalTests.CallbackCreate) & Category!=RequiresHook
+
+jobs:
+  tooling:
+    name: Python report tooling
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - run: python -m unittest discover -s compat/tests -v
+      - name: Check shell syntax
+        shell: bash
+        run: |
+          for script in scripts/macos/*.sh scripts/macos/ahk; do
+            bash -n "$script"
+          done
+
+  official-reference:
+    name: Official AutoHotkey Windows reference
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - name: Download and verify pinned AutoHotkey
+        shell: pwsh
+        run: |
+          $reference = (Get-Content UPSTREAM.lock.json -Raw | ConvertFrom-Json).autohotkeyReference
+          New-Item -ItemType Directory -Force .deps/AutoHotkey | Out-Null
+          $archive = Join-Path $env:RUNNER_TEMP 'AutoHotkey-reference.zip'
+          Invoke-WebRequest -Uri $reference.url -OutFile $archive
+          $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $archive).Hash
+          if ($actual -ne $reference.sha256) { throw "AutoHotkey archive SHA-256 mismatch: $actual" }
+          Expand-Archive -LiteralPath $archive -DestinationPath .deps/AutoHotkey -Force
+          if (-not (Test-Path .deps/AutoHotkey/AutoHotkey64.exe)) { throw 'AutoHotkey64.exe missing from archive' }
+      - name: Run official reference corpus
+        shell: pwsh
+        run: python compat/run.py --engine ahk --engine-version 2.0.31 --timeout 60 --executable .deps/AutoHotkey/AutoHotkey64.exe --output compat/reports/ahk-windows.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: ahk-windows-reference
+          path: compat/reports/ahk-windows.json
+          if-no-files-found: warn
+
+  windows:
+    name: Keysharp Windows
+    needs: official-reference
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: ahk-windows-reference
+          path: compat/reports/reference
+      - name: Build Windows solution
+        id: build_runtime
+        run: dotnet build Keysharp.sln -c Release --nologo -p:PublishReadyToRun=false
+      - name: Run selected upstream tests
+        shell: pwsh
+        run: dotnet test Keysharp.Tests/Keysharp.Tests.csproj -c Release --no-build --nologo --filter "$env:CURATED_TEST_FILTER" --logger "trx;LogFileName=curated-windows.trx" --results-directory compat/reports/upstream --blame-hang --blame-hang-timeout 3m -- NUnit.NumberOfTestWorkers=1
+      - name: Compare Keysharp with official reference
+        if: ${{ !cancelled() && steps.build_runtime.outcome == 'success' }}
+        shell: pwsh
+        run: python compat/run.py --engine keysharp --timeout 120 --executable bin/Release/net10.0-windows/Keysharp.exe --output compat/reports/keysharp-windows.json --baseline compat/reports/reference/ahk-windows.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: keysharp-windows-results
+          path: compat/reports
+          if-no-files-found: warn
+
+  macos:
+    name: Keysharp macOS (${{ matrix.rid }})
+    needs: official-reference
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            rid: osx-arm64
+            architecture: arm64
+          - runner: macos-15-intel
+            rid: osx-x64
+            architecture: x86_64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: ahk-windows-reference
+          path: compat/reports/reference
+      - name: Verify native runner
+        shell: bash
+        env:
+          EXPECTED_ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          test "$(uname -m)" = "$EXPECTED_ARCHITECTURE"
+          sw_vers
+      - name: Restore pinned Eto dependency
+        run: bash scripts/macos/bootstrap.sh
+      - name: Build native runtime
+        id: build_runtime
+        run: bash scripts/macos/build.sh --configuration Release --rid ${{ matrix.rid }}
+      - name: Run selected upstream and native event-construction tests
+        shell: pwsh
+        env:
+          TARGET_RID: ${{ matrix.rid }}
+        run: |
+          $filter = "($env:CURATED_TEST_FILTER)|FullyQualifiedName~MacInputTests"
+          $eto = Join-Path $PWD '.deps/Eto'
+          dotnet test Keysharp.Tests/Keysharp.Tests.csproj -c Release -r $env:TARGET_RID "-p:EtoRoot=$eto" -p:PublishReadyToRun=false --nologo --filter "$filter" --logger "trx;LogFileName=curated-macos.trx" --results-directory compat/reports/upstream --blame-hang --blame-hang-timeout 3m -- NUnit.NumberOfTestWorkers=1
+      - name: Compare Keysharp with official reference
+        if: ${{ !cancelled() && steps.build_runtime.outcome == 'success' }}
+        env:
+          TARGET_RID: ${{ matrix.rid }}
+        shell: bash
+        run: |
+          engine="$PWD/bin/Release/net10.0/$TARGET_RID/Keysharp.app/Contents/MacOS/Keysharp"
+          if [[ ! -x "$engine" ]]; then engine="$PWD/bin/Release/net10.0/$TARGET_RID/Keysharp"; fi
+          test -x "$engine"
+          python compat/run.py --engine keysharp --timeout 120 --executable "$engine" --output compat/reports/keysharp-macos.json --baseline compat/reports/reference/ahk-windows.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: keysharp-${{ matrix.rid }}-results
+          path: compat/reports
+          if-no-files-found: warn

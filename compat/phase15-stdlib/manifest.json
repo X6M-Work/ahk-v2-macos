@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "numeric-memory-types",
+      "category": "stdlib",
+      "script": "numeric-memory-types.ahk",
+      "expected_stdout": "golden/numeric-memory-types.txt"
+    },
+    {
+      "id": "regex-escape-options",
+      "category": "stdlib",
+      "script": "regex-escape-options.ahk",
+      "expected_stdout": "golden/regex-escape-options.txt"
+    },
+    {
+      "id": "string-native-encodings",
+      "category": "stdlib",
+      "script": "string-native-encodings.ahk",
+      "expected_stdout": "golden/string-native-encodings.txt"
+    },
+    {
+      "id": "file-loop-encoding",
+      "category": "stdlib",
+      "script": "file-loop-encoding.ahk",
+      "expected_stdout": "golden/file-loop-encoding.txt"
+    },
+    {
+      "id": "string-pointer-contracts",
+      "category": "memory",
+      "script": "string-pointer-contracts.ahk",
+      "expected_stdout": "golden/string-pointer-contracts.txt"
+    },
+    {
+      "id": "time-validation",
+      "category": "types",
+      "script": "time-validation.ahk",
+      "expected_stdout": "golden/time-validation.txt"
+    }
+  ]
+}

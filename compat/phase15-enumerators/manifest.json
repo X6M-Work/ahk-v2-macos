@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "enumerator-metadata",
+      "category": "enumerators",
+      "script": "enumerator-metadata.ahk",
+      "expected_stdout": "golden/enumerator-metadata.txt"
+    },
+    {
+      "id": "enumerator-calls",
+      "category": "enumerators",
+      "script": "enumerator-calls.ahk",
+      "expected_stdout": "golden/enumerator-calls.txt"
+    },
+    {
+      "id": "enumerator-invalid-refs",
+      "category": "enumerators",
+      "script": "enumerator-invalid-refs.ahk",
+      "expected_stdout": "golden/enumerator-invalid-refs.txt"
+    },
+    {
+      "id": "enumerator-bound-metadata",
+      "category": "enumerators",
+      "script": "enumerator-bound-metadata.ahk",
+      "expected_stdout": "golden/enumerator-bound-metadata.txt"
+    },
+    {
+      "id": "enumerator-bound-calls",
+      "category": "enumerators",
+      "script": "enumerator-bound-calls.ahk",
+      "expected_stdout": "golden/enumerator-bound-calls.txt"
+    },
+    {
+      "id": "enumerator-param-info",
+      "category": "enumerators",
+      "script": "enumerator-param-info.ahk",
+      "expected_stdout": "golden/enumerator-param-info.txt"
+    },
+    {
+      "id": "enumerator-object-refs",
+      "category": "enumerators",
+      "script": "enumerator-object-refs.ahk",
+      "expected_stdout": "golden/enumerator-object-refs.txt"
+    },
+    {
+      "id": "enumerator-bound-param-info",
+      "category": "enumerators",
+      "script": "enumerator-bound-param-info.ahk",
+      "expected_stdout": "golden/enumerator-bound-param-info.txt"
+    },
+    {
+      "id": "enumerator-ownprops-getters",
+      "category": "enumerators",
+      "script": "enumerator-ownprops-getters.ahk",
+      "expected_stdout": "golden/enumerator-ownprops-getters.txt"
+    }
+  ]
+}

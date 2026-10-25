@@ -6,7 +6,8 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="${CONFIG:-Release}"
 DIST_DIR="${ROOT}/dist"
-ETO_DIR="$(cd "${ROOT}/../Eto" 2>/dev/null && pwd || true)"
+ETO_DIR="${ETO_DIR:-${ROOT}/../Eto}"
+ETO_DIR="$(cd "${ETO_DIR}" 2>/dev/null && pwd || true)"
 PATH_MAP="${ROOT}=/_/keysharp"
 if [[ -n "${ETO_DIR}" ]]; then
   PATH_MAP="${PATH_MAP}%2c${ETO_DIR}=/_/Eto"
@@ -116,6 +117,9 @@ validate_inputs() {
   require_tool rsync
   require_tool file
   require_tool hdiutil
+  if ! is_true "${SKIP_PUBLISH}"; then
+    [[ -n "${ETO_DIR}" && -f "${ETO_DIR}/src/Eto.Mac/Eto.Mac64.csproj" ]] || die "Eto fork missing. Set ETO_DIR or run scripts/macos/bootstrap.sh."
+  fi
   if ! is_true "${SKIP_SIGN}" || [[ -n "${INSTALLER_CERT}" ]]; then
     require_tool codesign
   fi
@@ -155,6 +159,8 @@ publish_projects() {
     dotnet publish "${ROOT}/${proj}/${proj}.csproj" -c "${CONFIG}" -r "${RID}" \
       -o "${PUBLISH_DIR}/${proj}" \
       -p:KeysharpVersion="${VERSION}" \
+      -p:EtoRoot="${ETO_DIR}" \
+      -p:PublishReadyToRun=false \
       -p:Deterministic=true \
       -p:ContinuousIntegrationBuild=true \
       '-p:AppHostDotNetSearch="AppRelative;EnvironmentVariable;Global"' \

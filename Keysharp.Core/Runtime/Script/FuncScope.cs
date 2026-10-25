@@ -59,8 +59,8 @@ namespace Keysharp.Runtime
 			internal static readonly Table Empty = new([]);
 			internal readonly Declaration[] Rows = rows;
 			internal readonly System.Collections.Generic.Dictionary<string, Declaration> ByName = rows
-				.DistinctBy(row => row.Name, StringComparer.OrdinalIgnoreCase)
-				.ToDictionary(row => row.Name, StringComparer.OrdinalIgnoreCase);
+				.DistinctBy(row => row.Name, AhkIdentifierComparer.Instance)
+				.ToDictionary(row => row.Name, AhkIdentifierComparer.Instance);
 		}
 
 		public FuncScope(string name, Reader read, Writer write, System.Func<Declaration[]> declarations, bool assumeGlobal)

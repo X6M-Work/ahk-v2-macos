@@ -1,0 +1,11 @@
+3|integer|string|float|float|1
+Integer:1=integer
+String:1=string
+String:1.0=float
+fraction|fraction|0
+boolean|3
+String:0.0|0.0|1
+String:-0.0|-0.0|1
+String:1.2345678901234567|1.2345678901234567|1
+String:1e+20|1e+20|1
+String:9.9999999999999995e-08|9.9999999999999995e-08|1

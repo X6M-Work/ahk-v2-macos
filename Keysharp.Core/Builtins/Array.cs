@@ -842,7 +842,8 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 
 	private Enumerator CreateEnumerator(int count)
 	{
-		count = count > 1 ? 2 : count == 0 ? 0 : 1;
+		if (!Script.CompatV20)
+			count = count > 1 ? 2 : count == 0 ? 0 : 1;
 		var arr = array;
 		var position = -1;
 
@@ -850,7 +851,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 				   this,
 				   count,
 				   () => ++position < arr.Count,
-				   () => count == 2 ? position + 1L : arr[position],
+				   () => count > 1 ? position + 1L : arr[position],
 				   () => (position + 1L, arr[position]),
 				   () => position = -1);
 	}

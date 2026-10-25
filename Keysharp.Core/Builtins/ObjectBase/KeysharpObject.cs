@@ -28,7 +28,7 @@ namespace Keysharp.Builtins
 
 		internal override void OnPropertyChanged(string name)
 		{
-			if (!name.Equals("__Delete", StringComparison.OrdinalIgnoreCase) && !name.Equals("base", StringComparison.OrdinalIgnoreCase))
+			if (!AhkIdentifierComparer.Instance.Equals(name, "__Delete") && !AhkIdentifierComparer.Instance.Equals(name, "base"))
 				return;
 
 			hasDeleteInChain = HasOwnPropInternal("__Delete") || _base is KeysharpObject { hasDeleteInChain: true };
@@ -96,7 +96,7 @@ namespace Keysharp.Builtins
 			var kso = new KeysharpObject(null);
 
 			if (pairs.Length != 0)
-				kso.op = new(pairs.Length / 2, StringComparer.OrdinalIgnoreCase);
+				kso.op = new(pairs.Length / 2, AhkIdentifierComparer.Instance);
 
 			for (var i = 0; i < pairs.Length; i += 2)
 			{
@@ -111,7 +111,7 @@ namespace Keysharp.Builtins
 
 		private static void DefineOne(KeysharpObject kso, string name, object value)
 		{
-			if (name.Equals("base", StringComparison.OrdinalIgnoreCase))
+			if (AhkIdentifierComparer.Instance.Equals(name, "base"))
 				_ = Objects.ObjSetBase(kso, value);
 			else
 				kso.DefinePropInternal(name, new OwnPropsDesc(value));

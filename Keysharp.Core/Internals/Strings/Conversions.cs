@@ -751,7 +751,7 @@ namespace Keysharp.Internals.Strings
 			return (FileAttributes)(((uint)attribs & attrMask.and_mask) ^ attrMask.xor_mask);
 		}
 
-		// S (study) is implied by compiling every pattern, and X (PCRE_EXTRA's strict escapes) is always in effect in PCRE2.
+		// S is implied by compiling every pattern; RegexHolder translates PCRE1's default and X escape rules.
 		internal static PcreRegexSettings ToRegexOptions(ReadOnlySpan<char> sequence)
 		{
 			// AutoHotkey builds PCRE to take CR, LF and CRLF as newlines, for \R as well, unless an option says otherwise.

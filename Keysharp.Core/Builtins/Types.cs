@@ -26,11 +26,9 @@ namespace Keysharp.Builtins
 			return 0L;
         }
 
-		// An object is a TypeError, even one with a ToString method, as in AutoHotkey, while a StringBuffer is its text, as
-		// elsewhere. A number is checked as its text, where AutoHotkey raises.
 		private static bool CharTestText(object value, out string text)
 		{
-			if (value is Any and not Ks.StringBuffer)
+			if (Script.CompatV20 ? value is not string : value is Any and not Ks.StringBuffer)
 			{
 				text = "";
 				_ = Errors.TypeErrorOccurred(value, typeof(string));
@@ -84,7 +82,7 @@ namespace Keysharp.Builtins
 			if (!CharTestText(value, out var s))
 				return 0L;
 
-			return s?.Length == 0 || s.All(char.IsDigit) ? 1L : 0L;
+			return s?.Length == 0 || s.All(Script.CompatV20 ? char.IsAsciiDigit : char.IsDigit) ? 1L : 0L;
 		}
 
 		/// <summary>
@@ -103,7 +101,7 @@ namespace Keysharp.Builtins
 			double? val;
 
 			if (value is string s)
-				val = s.Trim().ParseDouble(true);
+				val = s.ParseDouble(true);
 			else
 				val = o.ParseDouble(true);
 
@@ -130,7 +128,7 @@ namespace Keysharp.Builtins
 			long? val;
 
 			if (value is string s)
-				val = s.Trim().ParseLong(false);
+				val = s.ParseLong(false);
 			else
 				val = o.ParseLong(false);
 
@@ -150,7 +148,7 @@ namespace Keysharp.Builtins
 
 			var stack = CallStack.Current;
 			var labels = stack.ScriptFrame(stack.Depth - 1)?.Function?.mi?.GetCustomAttribute<LabelsAttribute>()?.Names;
-			return labels?.Contains(name, StringComparer.OrdinalIgnoreCase) == true ? 1L : 0L;
+			return labels?.Contains(name, AhkIdentifierComparer.Instance) == true ? 1L : 0L;
 		}
 
 		/// <summary>
@@ -241,6 +239,26 @@ namespace Keysharp.Builtins
 			if (!CharTestText(value, out var s))
 				return 0L;
 
+			if (Script.CompatV20)
+			{
+				if (s.Length is < 4 or > 14 || (s.Length & 1) != 0)
+					return 0L;
+
+				foreach (var digit in s)
+					if (!char.IsAsciiDigit(digit))
+						return 0L;
+
+				var year = Pair(s, 0) * 100 + Pair(s, 2);
+				var month = s.Length >= 6 ? Pair(s, 4) : 1;
+				var day = s.Length >= 8 ? Pair(s, 6) : 1;
+				var hour = s.Length >= 10 ? Pair(s, 8) : 0;
+				var minute = s.Length >= 12 ? Pair(s, 10) : 0;
+				var second = s.Length >= 14 ? Pair(s, 12) : 0;
+				return year >= 1601 && month is >= 1 and <= 12
+					&& day >= 1 && day <= DateTime.DaysInMonth(year, month)
+					&& hour < 24 && minute < 60 && second < 60 ? 1L : 0L;
+			}
+
 			DateTime dt;
 
 			try
@@ -259,6 +277,8 @@ namespace Keysharp.Builtins
 			int[] t = [y / 100, y % 100, 1, 1, 0, 0, 0, 0];
 			var tempdt = new DateTime(t[1], t[2], t[3], t[4], t[5], t[6], CultureInfo.CurrentCulture.Calendar);//Will be wrong if parsing totally failed.
 			return dt != tempdt ? 1L : 0L;
+
+			static int Pair(string text, int offset) => (text[offset] - '0') * 10 + text[offset + 1] - '0';
 		}
 
 		/// <summary>

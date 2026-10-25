@@ -119,7 +119,7 @@ namespace Keysharp.Internals.Invoke
 		/// index outside the argument array.
 		/// </summary>
 		private static bool IsExplicitThis(ParameterInfo p) =>
-			p.Name.AsSpan().TrimStart('@').Equals("this", StringComparison.OrdinalIgnoreCase);
+			AhkIdentifierComparer.Instance.Equals(p.Name.AsSpan().TrimStart('@'), "this".AsSpan());
 
 		// Our own accessor convention for a hand-written Core member, which has no property to pair with:
 		// `Clipboard.staticget_Text`, `Structs.get_Size`. NameMangler.StaticGetter emits the same shape.
@@ -355,7 +355,7 @@ namespace Keysharp.Internals.Invoke
 
 		/// <summary>
 		/// Parameter name -> index into <see cref="parameters"/>, for binding named arguments (<c>f(Name: value)</c>).
-		/// Names ignore Unicode case for named-argument binding. Built once, lazily: most methods are
+		/// Names fold ASCII case for named-argument binding. Built once, lazily: most methods are
 		/// never called with named arguments, so the cost stays with the scripts that use them.
 		/// <para>
 		/// Excluded from the map, and so not bindable by name: the receiver, and the variadic parameter (a
@@ -366,7 +366,7 @@ namespace Keysharp.Internals.Invoke
 
 		private Dictionary<string, int> BuildParamIndexMap()
 		{
-			var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+			var map = new Dictionary<string, int>(AhkIdentifierComparer.Instance);
 
 			if (parameters == null)   // the "fake" MPH used by ObjBindMethod: no signature to bind against
 				return map;

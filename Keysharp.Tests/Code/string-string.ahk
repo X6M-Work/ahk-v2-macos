@@ -43,69 +43,71 @@ Assert(y = "stringified", A_LineNumber)
 ; String calls ToString explicitly, so an object without one is a MethodError, as in AutoHotkey.
 Throws(() => String({}), A_LineNumber, MethodError)
 
-; Unlike AutoHotkey, a value converted to a string for a builtin or an operator goes through its ToString method, and
-; an object without one, or whose ToString returns an object, is a TypeError.
-AssertEq(StrLen(stringResult), 11, A_LineNumber)
-AssertEq("<" stringResult ">", "<stringified>", A_LineNumber)
-Throws(() => StrLen({}), A_LineNumber, TypeError)
-objectResult := {}
-objectResult.DefineProp("ToString", {call: (this) => []})
-Throws(() => StrLen(objectResult), A_LineNumber, TypeError)
-; So does an object whose __Call answers ToString, as a call of it would be answered.
-callsToString := {}
-callsToString.DefineProp("__Call", {call: (this, name, args) => name = "ToString" ? "called" : ""})
-AssertEq("<" callsToString ">", "<called>", A_LineNumber)
-Throws(() => Format("{}", {}), A_LineNumber, TypeError)
-AssertEq(Format("{}|{}", 1.0, stringResult), "1.0|stringified", A_LineNumber)
-AssertEq([1.0, 2].Join(), "1.0,2", A_LineNumber)
+CheckStringExtensions21(TextResult) {
+	#Requires AutoHotkey v2.1-alpha.1
+	AssertEq(StrLen(TextResult), 11, A_LineNumber)
+	AssertEq("<" TextResult ">", "<stringified>", A_LineNumber)
+	Throws(() => StrLen({}), A_LineNumber, TypeError)
+	objectResult := {}
+	objectResult.DefineProp("ToString", {call: (this) => []})
+	Throws(() => StrLen(objectResult), A_LineNumber, TypeError)
+	; So does an object whose __Call answers ToString, as a call of it would be answered.
+	callsToString := {}
+	callsToString.DefineProp("__Call", {call: (this, name, args) => name = "ToString" ? "called" : ""})
+	AssertEq("<" callsToString ">", "<called>", A_LineNumber)
+	Throws(() => Format("{}", {}), A_LineNumber, TypeError)
+	AssertEq(Format("{}|{}", 1.0, TextResult), "1.0|stringified", A_LineNumber)
+	AssertEq([1.0, 2].Join(), "1.0,2", A_LineNumber)
 
-; A dynamic object key or member name converts the same way.
-dynamicKey := {%stringResult%: 1}
-AssertEq(dynamicKey.stringified, 1, A_LineNumber)
-noKey := {}
-Throws(() => ({%noKey%: 1}), A_LineNumber, TypeError)
-numberNamed := {}
-numberNamed.DefineProp("__Call", {call: (this, name, args) => name})
-numberName := 1
-AssertEq(numberNamed.%numberName%(), "1", A_LineNumber)
+	; A dynamic object key or member name converts the same way.
+	dynamicKey := {%TextResult%: 1}
+	AssertEq(dynamicKey.stringified, 1, A_LineNumber)
+	noKey := {}
+	Throws(() => ({%noKey%: 1}), A_LineNumber, TypeError)
+	numberNamed := {}
+	numberNamed.DefineProp("__Call", {call: (this, name, args) => name})
+	numberName := 1
+	AssertEq(numberNamed.%numberName%(), "1", A_LineNumber)
 
-; An Array prints as [a, b] and a Map as [key: value], with strings quoted; a collection that contains itself shows [...].
-AssertEq(String([1, 1.0, "s", [unset]]), '[1, 1.0, "s", [unset]]', A_LineNumber)
-AssertEq(String(Map("k", [2])), '["k": [2]]', A_LineNumber)
-selfContaining := [1]
-selfContaining.Push(selfContaining)
-AssertEq(String(selfContaining), "[1, [...]]", A_LineNumber)
+	; An Array prints as [a, b] and a Map as [key: value], with strings quoted; a collection that contains itself shows [...].
+	AssertEq(String([1, 1.0, "s", [unset]]), '[1, 1.0, "s", [unset]]', A_LineNumber)
+	AssertEq(String(Map("k", [2])), '["k": [2]]', A_LineNumber)
+	selfContaining := [1]
+	selfContaining.Push(selfContaining)
+	AssertEq(String(selfContaining), "[1, [...]]", A_LineNumber)
 
-; A collection's ToString shows an element's ToString result, a nested collection's included, and the type of an element
-; without one.
-shownArray := [1]
-shownArray.DefineProp("ToString", {call: (this) => "shown"})
-AssertEq(String([stringResult, {}, Map("k", shownArray)]), '[stringified, Object, ["k": shown]]', A_LineNumber)
+	; A collection's ToString shows an element's ToString result, a nested collection's included, and the type of an element
+	; without one.
+	shownArray := [1]
+	shownArray.DefineProp("ToString", {call: (this) => "shown"})
+	AssertEq(String([TextResult, {}, Map("k", shownArray)]), '[stringified, Object, ["k": shown]]', A_LineNumber)
 
-; An element whose ToString gives no text still takes its place, and one whose ToString raises shows <ERROR>, with the error
-; contained as a try would contain it: it neither propagates nor reaches OnError.
-emptyText := {}
-emptyText.DefineProp("ToString", {call: (this) => ""})
-AssertEq(String([emptyText, 2]), "[, 2]", A_LineNumber)
-ThrowingToString(this) {
-	throw ValueError("from ToString")
+	; An element whose ToString gives no text still takes its place, and one whose ToString raises shows <ERROR>, with the error
+	; contained as a try would contain it: it neither propagates nor reaches OnError.
+	emptyText := {}
+	emptyText.DefineProp("ToString", {call: (this) => ""})
+	AssertEq(String([emptyText, 2]), "[, 2]", A_LineNumber)
+	ThrowingToString(this) {
+		throw ValueError("from ToString")
+	}
+	throwing := {}
+	throwing.DefineProp("ToString", {call: ThrowingToString})
+	errorsSeen := [0]
+	countError := (*) => (errorsSeen[1] += 1, 0)
+	OnError(countError)
+	AssertEq(String([throwing, 1]), "[<ERROR>, 1]", A_LineNumber)
+	OnError(countError, 0)
+	AssertEq(errorsSeen[1], 0, A_LineNumber)
+
+	; Builtin arguments and concatenation preserve the original conversion error.
+	Throws(() => StrLen(throwing), A_LineNumber, ValueError)
+	Throws(() => StrUpper(throwing), A_LineNumber, ValueError)
+	Throws(() => StrPut(throwing), A_LineNumber, ValueError)
+	Throws(() => [throwing].Join(), A_LineNumber, ValueError)
+	Throws(() => "<" throwing ">", A_LineNumber, ValueError)
+	Throws(() => StrReplace("abc", "a", {}), A_LineNumber, TypeError)
 }
-throwing := {}
-throwing.DefineProp("ToString", {call: ThrowingToString})
-errorsSeen := [0]
-countError := (*) => (errorsSeen[1] += 1, 0)
-OnError(countError)
-AssertEq(String([throwing, 1]), "[<ERROR>, 1]", A_LineNumber)
-OnError(countError, 0)
-AssertEq(errorsSeen[1], 0, A_LineNumber)
-
-; Builtin arguments and concatenation preserve the original conversion error.
-Throws(() => StrLen(throwing), A_LineNumber, ValueError)
-Throws(() => StrUpper(throwing), A_LineNumber, ValueError)
-Throws(() => StrPut(throwing), A_LineNumber, ValueError)
-Throws(() => [throwing].Join(), A_LineNumber, ValueError)
-Throws(() => "<" throwing ">", A_LineNumber, ValueError)
-Throws(() => StrReplace("abc", "a", {}), A_LineNumber, TypeError)
+CheckStringExtensions21(stringResult)
 
 ; A CLR type-name fallback is not a script ToString method.
 plainLock := Lock()
@@ -129,7 +131,8 @@ AssertEq(Type(typeNameInstance), "custom", A_LineNumber)
 AssertEq(typeNameCalls[1], 1, A_LineNumber)
 
 ; An object given to %x% that is not a reference is a temporary variable holding it, as in AutoHotkey.
-Assert(%noKey% == noKey, A_LineNumber)
+temporaryObject := {}
+Assert(%temporaryObject% == temporaryObject, A_LineNumber)
 
 ; An Error keeps no text for an object given as its Message or Extra, as in AutoHotkey.
 objectError := Error({}, , {})

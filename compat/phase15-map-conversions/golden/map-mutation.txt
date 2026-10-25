@@ -1,0 +1,8 @@
+insert:1:a,2:b,3:c,5:e,7:g,
+delete-current:1:a,5:e,
+delete-earlier:1:a,3:c,
+delete-later:1:a,5:e,
+update:1:a,3:changed,5:e,
+clear:1:a,
+insert-before:1:a,1:a,3:c,5:e,
+1:a,2:b,3:c,

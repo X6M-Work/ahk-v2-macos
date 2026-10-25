@@ -38,6 +38,7 @@ namespace Keysharp.Internals.Threading
 		internal bool detectHiddenText = true;
 		internal bool detectHiddenWindows;
 		internal Encoding fileEncoding = Encoding.Default;
+		internal string fileEncodingName;
 		internal long keyDelay = 10L;
 		internal long keyDelayPlay = -1L;
 		internal long keyDuration = -1L;
@@ -72,6 +73,7 @@ namespace Keysharp.Internals.Threading
 			detectHiddenText = protoConfigData.detectHiddenText;
 			detectHiddenWindows = protoConfigData.detectHiddenWindows;
 			fileEncoding = protoConfigData.fileEncoding;
+			fileEncodingName = protoConfigData.fileEncodingName;
 			keyDelay = protoConfigData.keyDelay;
 			keyDelayPlay = protoConfigData.keyDelayPlay;
 			keyDuration = protoConfigData.keyDuration;

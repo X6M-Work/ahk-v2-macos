@@ -54,7 +54,7 @@ namespace Keysharp.Runtime
 				var declared = GatherTypeVariables(type);
 				var builtin = type.Assembly == typeof(Module).Assembly;
 				// Avoid LINQ specializations over ScriptVar during startup.
-				Variables = new Dictionary<string, ScriptVar>(declared.Count, StringComparer.OrdinalIgnoreCase);
+				Variables = new Dictionary<string, ScriptVar>(declared.Count, AhkIdentifierComparer.Instance);
 				var fieldCount = 0;
 
 				foreach (var (name, holder) in declared)
@@ -116,7 +116,7 @@ namespace Keysharp.Runtime
 			if (vartypes.HasFlag(VariableType.Property))
 				props = t.GetProperties(flags);
 
-			var vars = new Dictionary<string, MethodPropertyHolder>((fields?.Length ?? 0) + (props?.Length ?? 0), StringComparer.OrdinalIgnoreCase);
+			var vars = new Dictionary<string, MethodPropertyHolder>((fields?.Length ?? 0) + (props?.Length ?? 0), AhkIdentifierComparer.Instance);
 
 			bool wantnormal = vartypes.HasFlag(VariableType.NormalName);
 			bool wantspecial = vartypes.HasFlag(VariableType.SpecialName);
@@ -187,7 +187,7 @@ namespace Keysharp.Runtime
 			// modules at all (never in practice) has nothing to resolve to; gather from the program type then.
 			moduleType ??= defaultModuleType;
 			if (moduleType == null)
-				return programVars ??= GatherTypeVariables(script.ProgramType).ToDictionary(kv => kv.Key, kv => ScriptVar.Of(kv.Value), StringComparer.OrdinalIgnoreCase);
+				return programVars ??= GatherTypeVariables(script.ProgramType).ToDictionary(kv => kv.Key, kv => ScriptVar.Of(kv.Value), AhkIdentifierComparer.Instance);
 
 			return GetModule(moduleType).Variables;
 		}
@@ -272,7 +272,7 @@ namespace Keysharp.Runtime
 			if (funcName != null)
 			{
 				var funcInField = s.AsSpan(i, lenF);
-				if (!funcInField.Equals(funcName, StringComparison.OrdinalIgnoreCase))
+				if (!AhkIdentifierComparer.Instance.Equals(funcInField, funcName.AsSpan()))
 					return null; // function name doesn't match
 			}
 			i += lenF;

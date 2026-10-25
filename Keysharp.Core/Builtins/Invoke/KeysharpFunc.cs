@@ -93,6 +93,15 @@ namespace Keysharp.Builtins
 		public override bool IsBuiltIn => false;
 		public override string Name => "";
 
+		public override bool IsByRef(object paramIndex = null)
+		{
+			if (Inst is not Enumerator { UsesV20NativeContract: true })
+				return base.IsByRef(paramIndex);
+			if (paramIndex != null)
+				_ = base.IsByRef(paramIndex);
+			return false;
+		}
+
 		/// <summary>
 		/// Merges the arguments bound by name into the positional array at the slots their names denote, and reports
 		/// a bad or already-taken name while a Bind-time error is still possible. A name the target's variadic tail
@@ -286,7 +295,7 @@ namespace Keysharp.Builtins
 		internal bool IsPlainCall =>
 			(op == null || op.Count == 0) && (GetType() == typeof(KeysharpFunc) || GetType() == typeof(Closure));
 		public virtual string Name => mph.QualifiedName;
-		public bool IsVariadic => mph.variadicParamIndex != -1;
+		public bool IsVariadic => this is not Enumerator { UsesV20NativeContract: true } && mph.variadicParamIndex != -1;
 
 		/// <summary>
 		/// A description of this function's parameters, as an Array of objects with these properties:

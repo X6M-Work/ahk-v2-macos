@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "identifier-variables",
+      "category": "identifiers",
+      "script": "identifier-variables.ahk",
+      "expected_stdout": "golden/identifier-variables.txt"
+    },
+    {
+      "id": "identifier-functions",
+      "category": "identifiers",
+      "script": "identifier-functions.ahk",
+      "expected_stdout": "golden/identifier-functions.txt"
+    },
+    {
+      "id": "identifier-members",
+      "category": "identifiers",
+      "script": "identifier-members.ahk",
+      "expected_stdout": "golden/identifier-members.txt"
+    },
+    {
+      "id": "identifier-properties",
+      "category": "identifiers",
+      "script": "identifier-properties.ahk",
+      "expected_stdout": "golden/identifier-properties.txt"
+    },
+    {
+      "id": "identifier-labels",
+      "category": "identifiers",
+      "script": "identifier-labels.ahk",
+      "expected_stdout": "golden/identifier-labels.txt"
+    },
+    {
+      "id": "identifier-declared-properties",
+      "category": "identifiers",
+      "script": "identifier-declared-properties.ahk",
+      "expected_stdout": "golden/identifier-declared-properties.txt"
+    },
+    {
+      "id": "identifier-special-folds",
+      "category": "identifiers",
+      "script": "identifier-special-folds.ahk",
+      "expected_stdout": "golden/identifier-special-folds.txt"
+    }
+  ]
+}

@@ -15,5 +15,8 @@ public class CollectionsTests : TestRunner
 	public void Map() => Assert.IsTrue(TestScript("collections-map", true));
 
 	[Test, Category("Collections")]
+	public void MapKeyModes() => Assert.IsTrue(TestScript("collections-map-key-modes", false));
+
+	[Test, Category("Collections")]
 	public void Object() => Assert.IsTrue(TestScript("collections-object", false));
 }

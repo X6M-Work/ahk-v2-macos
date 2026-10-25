@@ -395,12 +395,7 @@ namespace Keysharp.Builtins
 		public static object A_FileEncoding
 		{
 			get => ThreadAccessors.A_FileEncoding;
-
-			set
-			{
-				if (Files.TryGetEncoding(value, out var val))
-					ThreadAccessors.A_FileEncoding = val;
-			}
+			set => ThreadAccessors.A_FileEncoding = value;
 		}
 
 		/// <summary>

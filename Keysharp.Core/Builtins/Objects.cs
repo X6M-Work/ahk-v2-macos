@@ -90,7 +90,7 @@ namespace Keysharp.Builtins
 			}
 
 			var props = new Dictionary<object, object>();
-			var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var seen = new HashSet<string>(AhkIdentifierComparer.Instance);
 			var anyPrototype = script.Vars.Prototypes[typeof(Any)];
 
 			// Built-in properties are registered in their prototypes' own properties, so walking those covers them too.
@@ -107,9 +107,9 @@ namespace Keysharp.Builtins
 				{
 					if (!desc.Enumerable
 							|| !(desc.Value != null || desc.StructField != null || desc.Get is KeysharpFunc && !desc.NoEnumGet)
-							|| name.Equals("__Class", StringComparison.OrdinalIgnoreCase)
-							|| name.Equals("__Static", StringComparison.OrdinalIgnoreCase)
-							|| ReferenceEquals(cursor, anyPrototype) && name.Equals("Base", StringComparison.OrdinalIgnoreCase))
+							|| AhkIdentifierComparer.Instance.Equals(name, "__Class")
+							|| AhkIdentifierComparer.Instance.Equals(name, "__Static")
+							|| ReferenceEquals(cursor, anyPrototype) && AhkIdentifierComparer.Instance.Equals(name, "Base"))
 						continue;
 
 					if (seen.Add(name))

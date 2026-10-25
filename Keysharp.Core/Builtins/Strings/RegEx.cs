@@ -72,24 +72,24 @@ namespace Keysharp.Builtins
 			RegexHolder exp;
 			var script = Script.TheScript;
 			var regdkt = script.RegExData.regdkt;
+			var cacheKey = (Pattern: n, V20: Script.CompatV20);
 
 			//Compiling (and JIT-compiling) a PCRE pattern is expensive, so cache the last 100 compiled
-			//patterns keyed by the needle, mirroring RegExMatchCs and AutoHotkey. The compiled RegexHolder
+			//patterns keyed by the needle and compatibility mode. The compiled RegexHolder
 			//is immutable and safe to share across calls/threads; matching happens outside the lock.
 			lock (script.RegExData.locker)//KeyedCollection is not threadsafe, and we need insertion order to evict the oldest.
 			{
-				if (!regdkt.TryGetValue(n, out exp))
+				if (!regdkt.TryGetValue(cacheKey, out exp))
 				{
 					try
 					{
-						exp = new RegexHolder(n);//This will not throw PCRE style errors like the documentation says.
+						exp = new RegexHolder(cacheKey);
 					}
 					catch (Exception ex)
 					{
 						return (long)Errors.ErrorOccurred("Regular expression compile error", null, ex.Message, DefaultErrorLong);
 					}
 
-					exp.tag = n;
 					regdkt.Add(exp);
 
 					while (regdkt.Count > 100)
@@ -237,22 +237,22 @@ namespace Keysharp.Builtins
 			int n = 0;
 			RegexHolder exp;
 			var regdkt = rd.regdkt;
+			var cacheKey = (Pattern: needle, V20: Script.CompatV20);
 
 			//Cache compiled patterns (see RegExMatch) to avoid recompiling/JIT-compiling on every call.
 			lock (rd.locker)
 			{
-				if (!regdkt.TryGetValue(needle, out exp))
+				if (!regdkt.TryGetValue(cacheKey, out exp))
 				{
 					try
 					{
-						exp = new RegexHolder(needle);//This will not throw PCRE style errors like the documentation says.
+						exp = new RegexHolder(cacheKey);
 					}
 					catch (Exception ex)
 					{
 						return (string)Errors.ErrorOccurred("Regular expression compile error", null, ex.Message, DefaultErrorString);
 					}
 
-					exp.tag = needle;
 					regdkt.Add(exp);
 
 					while (regdkt.Count > 100)
@@ -319,14 +319,14 @@ namespace Keysharp.Builtins
 		/// Thin derivation of a <see cref="KeyedCollection"/> to make it easy to look up
 		/// regular expression items.
 		/// </summary>
-		internal class RegexEntry : KeyedCollection<string, RegexHolder>
+		internal class RegexEntry : KeyedCollection<(string Pattern, bool V20), RegexHolder>
 		{
 			/// <summary>
-			/// Return the tag property of the <see cref="RegexHolder">.
+			/// Return the pattern and compatibility mode of the <see cref="RegexHolder">.
 			/// </summary>
 			/// <param name="item">The <see cref="RegexHolder"/> whose tag field will be returned.</param>
-			/// <returns>The tag field of the item.</returns>
-			protected override string GetKeyForItem(RegexHolder item) => item.tag;
+			/// <returns>The cache key of the item.</returns>
+			protected override (string Pattern, bool V20) GetKeyForItem(RegexHolder item) => item.CacheKey;
 		}
 	}
 }

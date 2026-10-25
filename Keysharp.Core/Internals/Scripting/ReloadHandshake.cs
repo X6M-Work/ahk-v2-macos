@@ -92,7 +92,7 @@ namespace Keysharp.Internals.Scripting
 				while (!SpinWait.SpinUntil(() => PosixParentId() != pid, WaitMs))
 #endif
 				{
-					if (Script.IsHeadless)
+					if (Script.IsHeadless || Script.TheScript.ErrorStdOut || Env.FindCommandLineArg("errorstdout") != null)
 						return false;
 
 #if !WINDOWS

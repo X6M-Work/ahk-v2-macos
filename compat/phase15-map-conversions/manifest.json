@@ -1,0 +1,8 @@
+{"schema_version":1,"cases":[
+{"id":"map-keys","category":"collections","script":"map-keys.ahk","expected_stdout":"golden/map-keys.txt"},
+{"id":"map-enumerators","category":"collections","script":"map-enumerators.ahk","expected_stdout":"golden/map-enumerators.txt"},
+{"id":"map-mutation","category":"collections","script":"map-mutation.ahk","expected_stdout":"golden/map-mutation.txt"},
+{"id":"map-set","category":"collections","script":"map-set.ahk","expected_stdout":"golden/map-set.txt"},
+{"id":"string-conversion","category":"types","script":"string-conversion.ahk","expected_stdout":"golden/string-conversion.txt"},
+{"id":"type-predicates","category":"types","script":"type-predicates.ahk","expected_stdout":"golden/type-predicates.txt"}
+]}

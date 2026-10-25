@@ -14,6 +14,110 @@ namespace Keysharp.Builtins
 	{
 		private static readonly SearchValues<char> wildcardsSv = SearchValues.Create("*?");
 		private static readonly SearchValues<char> fileOptionSeparators = SearchValues.Create(" \t\n");
+		private static TextWriter standardOutput, standardError;
+		private static StandardStreamWriter outputStream, errorStream;
+
+		internal static void InitializeStandardStreams()
+		{
+			if (standardOutput != null)
+				return;
+
+			Console.Out.Flush();
+			Console.Error.Flush();
+			outputStream = new StandardStreamWriter(Console.OpenStandardOutput());
+			errorStream = new StandardStreamWriter(Console.OpenStandardError());
+			Console.SetOut(outputStream);
+			Console.SetError(errorStream);
+			standardOutput = Console.Out;
+			standardError = Console.Error;
+		}
+
+		private sealed class StandardStreamWriter(Stream stream) : TextWriter
+		{
+			private Encoding activeEncoding;
+			private System.Text.Encoder encoder;
+
+			public override Encoding Encoding => Console.OutputEncoding;
+
+			public override void Write(char value)
+			{
+				Span<char> chars = stackalloc char[1];
+				chars[0] = value;
+				Write(chars);
+			}
+
+			public override void Write(string value)
+			{
+				if (value != null)
+					Write(value.AsSpan());
+			}
+
+			public override void Write(char[] buffer, int index, int count) => Write(buffer.AsSpan(index, count));
+
+			public override void Write(ReadOnlySpan<char> value)
+			{
+				var encoding = Encoding;
+
+				if (!ReferenceEquals(activeEncoding, encoding))
+				{
+					Flush();
+					activeEncoding = encoding;
+					encoder = encoding.GetEncoder();
+				}
+
+				WriteCharacters(value, false);
+			}
+
+			private void WriteCharacters(ReadOnlySpan<char> value, bool flush)
+			{
+				Span<byte> bytes = stackalloc byte[1024];
+				bool completed;
+
+				do
+				{
+					encoder.Convert(value, bytes, flush, out var charsUsed, out var bytesUsed, out completed);
+					stream.Write(bytes[..bytesUsed]);
+					value = value[charsUsed..];
+				}
+				while (!completed);
+			}
+
+			internal void WriteEncoded(string value, Encoding encoding)
+			{
+				if (encoding.CodePage == 1200)
+					stream.Write(MemoryMarshal.AsBytes(value.AsSpan()));
+				else
+					stream.Write(encoding.GetBytes(value));
+			}
+
+			public override void Flush()
+			{
+				if (encoder != null)
+					WriteCharacters([], true);
+
+				stream.Flush();
+			}
+		}
+
+		private static void WriteStandardStream(TextWriter writer, string value, Encoding encoding, bool error)
+		{
+			var original = error ? standardError : standardOutput;
+			var stream = error ? errorStream : outputStream;
+
+			// Hosted captures keep their TextWriter contract; process streams receive the requested bytes.
+			if (!ReferenceEquals(writer, original))
+			{
+				writer.Write(value);
+				return;
+			}
+
+			lock (writer)
+			{
+				writer.Flush();
+				stream.WriteEncoded(value, encoding ?? Encoding.Unicode);
+				stream.Flush();
+			}
+		}
 #if OSX
 		private static readonly char[] dirSeparators = [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
 #endif
@@ -107,7 +211,8 @@ namespace Keysharp.Builtins
 						_ = Diagnostics.Debug.WriteLine(s);
 
 #endif
-					console.Write(crlf && encoding != null ? TextStream.InsertCarriageReturns(s, '\0') : s);
+					WriteStandardStream(console, crlf && encoding != null ? TextStream.InsertCarriageReturns(s, '\0') : s,
+										encoding, target == "**");
 				}
 				// The loop owns, and closes when it ends, only an output file it opened, never a standard stream.
 				else if (info != null)
@@ -415,12 +520,12 @@ namespace Keysharp.Builtins
 			if (!encoding.CoerceString(out var s))
 				return DefaultObject;
 
-			if (s != "")
+			if (s != "" || (Script.CompatV20 && encoding != null))
 			{
 				if (!TryGetEncoding(s, out var enc))
 					return DefaultObject;
 
-				ThreadAccessors.A_FileEncoding = enc;
+				ThreadAccessors.SetFileEncoding(enc, s);
 			}
 
 			return prev;
@@ -972,7 +1077,9 @@ namespace Keysharp.Builtins
 		{
 			ThreadAccessors.A_LastError = 0;
 
-			if (!filename.CoerceString(out var file) || !TryGetEncoding(encoding, ThreadAccessors.A_FileEncodingRaw, out var enc))
+			var defaultEncoding = Script.CompatV20 && encoding is string { Length: 0 } ? NativeType.AnsiEncoding : ThreadAccessors.A_FileEncodingRaw;
+
+			if (!filename.CoerceString(out var file) || !TryGetEncoding(encoding, defaultEncoding, out var enc))
 				return DefaultObject;
 
 			// A number is AutoHotkey's flag values summed.
@@ -1559,7 +1666,8 @@ namespace Keysharp.Builtins
 		/// As <see cref="TryGetEncoding(object, Encoding, out Encoding)"/>, with empty or unset meaning the native UTF-16
 		/// encoding.
 		/// </summary>
-		internal static bool TryGetEncoding(object s, out Encoding encoding) => TryGetEncoding(s, Encoding.Unicode, out encoding);
+		internal static bool TryGetEncoding(object s, out Encoding encoding) =>
+			TryGetEncoding(s, Script.CompatV20 && s is string { Length: 0 } ? NativeType.AnsiEncoding : Encoding.Unicode, out encoding);
 
 		/// <summary>
 		/// Resolves an encoding name to an <see cref="Encoding"/>, falling back to the caller's default when the script

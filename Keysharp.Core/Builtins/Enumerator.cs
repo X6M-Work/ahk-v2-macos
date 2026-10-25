@@ -15,6 +15,7 @@ namespace Keysharp.Builtins
 		private readonly KeysharpFunc callback;
 
 		internal object Source { get; }
+		internal bool UsesV20NativeContract { get; }
 
 		// Zero selects adaptive arity.
 		internal long Count { get; }
@@ -52,8 +53,15 @@ namespace Keysharp.Builtins
 				InitializeBase(typeof(Enumerator));
 
 			Source = source;
-			Count = Math.Max(0, count);
+			UsesV20NativeContract = Script.CompatV20 && moveNext != null
+				&& (hasValue != null || source is Array or RegExMatchInfo || source is Map and not Ks.HashMap);
+			Count = UsesV20NativeContract ? count : Math.Max(0, count);
 			Inst = this;
+			if (UsesV20NativeContract)
+			{
+				MinParams = 0;
+				MaxParams = count;
+			}
 			this.moveNext = moveNext;
 			this.currentValue = currentValue;
 			this.currentPair = currentPair;
@@ -69,6 +77,9 @@ namespace Keysharp.Builtins
 		}
 
 		private static MethodPropertyHolder CallMethod() => callMethod ??= Reflections.FindAndCacheMethod(typeof(Enumerator), nameof(Call), 1);
+
+		public override bool IsByRef(object paramIndex = null) =>
+			UsesV20NativeContract && paramIndex == null ? MaxParams > 0 : base.IsByRef(paramIndex);
 
 		// OwnProps must not evaluate getters during name-only enumeration.
 		internal bool Advance(long requested)
@@ -92,6 +103,8 @@ namespace Keysharp.Builtins
 			{
 				if (callback != null)
 					return callback.Call(args);
+				if (UsesV20NativeContract)
+					return CallV20(args);
 
 				var argumentCount = args?.Length ?? 0;
 
@@ -126,6 +139,33 @@ namespace Keysharp.Builtins
 			{
 				return Errors.ErrorOccurred(e.Message);
 			}
+		}
+
+		private object CallV20(object[] args)
+		{
+			var argumentCount = args?.Length ?? 0;
+			var pairMode = hasValue != null || Source is Map ? argumentCount > 1
+				: Count == 0 ? argumentCount > 1 && args[1] is VarRef
+				: Source is Array ? Count > 1 : Count != 1;
+			var first = argumentCount > 0 ? args[0] as VarRef : null;
+			var second = pairMode && argumentCount > 1 ? args[1] as VarRef : null;
+
+			if (!Advance(second != null ? 2 : 1))
+			{
+				((IDisposable)this).Dispose();
+				return False;
+			}
+
+			if (pairMode && (second != null || first != null && hasValue == null))
+			{
+				var pair = CurrentPair;
+				Refs.SetValue(first, pair.Item1);
+				Refs.SetValue(second, pair.Item2);
+			}
+			else if (first != null)
+				Refs.SetValue(first, CurrentValue);
+
+			return True;
 		}
 	}
 }

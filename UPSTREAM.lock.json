@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "keysharp": {
+    "repository": "https://github.com/keysharp-org/Keysharp.git",
+    "commit": "86fa3c5c0e07dd2f66cad55a6b9d4a7eb467736b",
+    "compatibilityTarget": "2.1-alpha.36",
+    "license": "license.txt"
+  },
+  "eto": {
+    "repository": "https://github.com/keysharp-org/Eto.git",
+    "branch": "Keysharp",
+    "commit": "0fb601a1ab078211d68ccbec86b7ff16ab3b21ad",
+    "recursiveSubmodules": true
+  },
+  "autohotkeyReference": {
+    "version": "2.0.31",
+    "url": "https://github.com/AutoHotkey/AutoHotkey/releases/download/v2.0.31/AutoHotkey_2.0.31.zip",
+    "sha256": "CA1A595ACA4528755D8D4CD7FED23D497A37BD9A0B6892072612D68DEE1BD00A",
+    "platform": "windows-x64"
+  }
+}

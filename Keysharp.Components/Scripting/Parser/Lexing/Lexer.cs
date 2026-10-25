@@ -161,7 +161,7 @@ namespace Keysharp.Parsing.Lexing
 		// Words an expression follows rather than ends, so that ` .5` after one is a number, as in AutoHotkey; after any
 		// other name it is a member access there too. A member of that name, as in `obj.in .5` or `obj?.in .5`, is still a
 		// value.
-		private static readonly HashSet<string> ExpressionWords = new(System.StringComparer.OrdinalIgnoreCase)
+		private static readonly HashSet<string> ExpressionWords = new(AhkIdentifierComparer.Instance)
 		{
 			"and", "or", "not", "is", "in", "contains", "return", "throw", "if", "while", "until", "loop", "case", "switch"
 		};
@@ -1073,7 +1073,7 @@ namespace Keysharp.Parsing.Lexing
 		// is not lexed as code. Token-needing directives (#if/#import/#HotIf) are deliberately excluded.
 		// Internal so the parser can tell which directives arrive as a single verbatim token (commas inside its text)
 		// versus normally-lexed tokens, when it validates per-directive argument counts.
-		internal static readonly HashSet<string> RawArgDirectives = new(System.StringComparer.OrdinalIgnoreCase)
+		internal static readonly HashSet<string> RawArgDirectives = new(AhkIdentifierComparer.Instance)
 		{
 			"hotstring", "requires", "dllload", "singleinstance", "warn", "errorstdout", "package",
 			// An #Include path is the rest of the line as written, so an apostrophe or a run of spaces in it is a

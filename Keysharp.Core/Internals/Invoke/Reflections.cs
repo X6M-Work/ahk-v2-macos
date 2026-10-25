@@ -21,12 +21,12 @@ namespace Keysharp.Internals.Invoke
 		}
 		internal Dictionary<Type, Dictionary<string, FieldInfo>> staticFields = [];
 
-		internal sttd stringToTypeBuiltInMethods = new (StringComparer.OrdinalIgnoreCase);
-		internal sttd stringToTypeLocalMethods = new (StringComparer.OrdinalIgnoreCase);
-		internal sttd stringToTypeMethods = new (StringComparer.OrdinalIgnoreCase);
-		internal sttd stringToTypeStaticMethods = new (StringComparer.OrdinalIgnoreCase);
-		internal sttd stringToTypeProperties = new (StringComparer.OrdinalIgnoreCase);
-		internal Dictionary<string, Type> stringToTypes = new (StringComparer.OrdinalIgnoreCase);
+		internal sttd stringToTypeBuiltInMethods = new (AhkIdentifierComparer.Instance);
+		internal sttd stringToTypeLocalMethods = new (AhkIdentifierComparer.Instance);
+		internal sttd stringToTypeMethods = new (AhkIdentifierComparer.Instance);
+		internal sttd stringToTypeStaticMethods = new (AhkIdentifierComparer.Instance);
+		internal sttd stringToTypeProperties = new (AhkIdentifierComparer.Instance);
+		internal Dictionary<string, Type> stringToTypes = new (AhkIdentifierComparer.Instance);
 		internal ttsd typeToStringMethods = new ();
 		internal ttsd typeToStringStaticMethods = new ();
 		internal ttsd typeToStringProperties = new ();
@@ -44,7 +44,7 @@ namespace Keysharp.Internals.Invoke
 
 		private static readonly Lazy<IReadOnlyDictionary<string, MethodInfo>> builtinMethods = new(static () =>
 		{
-			var methods = new Dictionary<string, MethodInfo>(500, StringComparer.OrdinalIgnoreCase);
+			var methods = new Dictionary<string, MethodInfo>(500, AhkIdentifierComparer.Instance);
 
 			foreach (var t in builtinTypes.Value)
 				if (t.IsSealed && t.IsAbstract)
@@ -57,7 +57,7 @@ namespace Keysharp.Internals.Invoke
 
 		private static readonly Lazy<IReadOnlyDictionary<string, PropertyInfo>> builtinProperties = new(static () =>
 		{
-			var properties = new Dictionary<string, PropertyInfo>(200, StringComparer.OrdinalIgnoreCase);
+			var properties = new Dictionary<string, PropertyInfo>(200, AhkIdentifierComparer.Instance);
 
 			foreach (var t in builtinTypes.Value)
 				if (t.IsSealed && t.IsAbstract)
@@ -137,13 +137,13 @@ namespace Keysharp.Internals.Invoke
 							{
 								var nameToUse = Script.GetUserDeclaredName(field) ?? field.Name;
 								rd.staticFields.GetOrAdd(field.ReflectedType,
-									() => new Dictionary<string, FieldInfo>(fields.Length, StringComparer.OrdinalIgnoreCase))
+									() => new Dictionary<string, FieldInfo>(fields.Length, AhkIdentifierComparer.Instance))
 								[nameToUse] = field;
 							}
 						}
 						else//Make a dummy entry because this type has no fields. This saves us additional searching later on when we encounter a type derived from this one. It will make the first Dictionary lookup above return true.
 						{
-							rd.staticFields[t] = dkt = new Dictionary<string, FieldInfo>(StringComparer.OrdinalIgnoreCase);
+							rd.staticFields[t] = dkt = new Dictionary<string, FieldInfo>(AhkIdentifierComparer.Instance);
 							t = t.BaseType;
 							continue;
 						}
@@ -261,7 +261,7 @@ namespace Keysharp.Internals.Invoke
 
 								// type -> name -> overloads
 								var byName = typeToMethods.GetOrAdd(meth.ReflectedType,
-												_ => new ConcurrentDictionary<string, ConcurrentDictionary<int, MethodPropertyHolder>>(StringComparer.OrdinalIgnoreCase));
+												_ => new ConcurrentDictionary<string, ConcurrentDictionary<int, MethodPropertyHolder>>(AhkIdentifierComparer.Instance));
 
 								var overloads = byName.GetOrAdd(nameToUse, _ => new ConcurrentDictionary<int, MethodPropertyHolder>());
 								overloads[mph.ParamLength] = mph;
@@ -288,7 +288,7 @@ namespace Keysharp.Internals.Invoke
 						}
 						else//Make a dummy entry because this type has no methods. This saves us additional searching later on when we encounter a type derived from this one. It will make the first Dictionary lookup above return true.
 						{
-							typeToMethods[t] = new ConcurrentDictionary<string, ConcurrentDictionary<int, MethodPropertyHolder>>(StringComparer.OrdinalIgnoreCase);
+							typeToMethods[t] = new ConcurrentDictionary<string, ConcurrentDictionary<int, MethodPropertyHolder>>(AhkIdentifierComparer.Instance);
 							t = t.BaseType;
 							continue;
 						}
@@ -344,7 +344,7 @@ namespace Keysharp.Internals.Invoke
 
 								// type -> name -> overloads
 								var byName = rd.typeToStringProperties.GetOrAdd(prop.ReflectedType,
-												_ => new ConcurrentDictionary<string, ConcurrentDictionary<int, MethodPropertyHolder>>(StringComparer.OrdinalIgnoreCase));
+												_ => new ConcurrentDictionary<string, ConcurrentDictionary<int, MethodPropertyHolder>>(AhkIdentifierComparer.Instance));
 
 								var overloads = byName.GetOrAdd(nameToUse, _ => new ConcurrentDictionary<int, MethodPropertyHolder>());
 								overloads[mph.ParamLength] = mph;
@@ -357,7 +357,7 @@ namespace Keysharp.Internals.Invoke
 						}
 						else//Make a dummy entry because this type has no properties. This saves us additional searching later on when we encounter a type derived from this one. It will make the first Dictionary lookup above return true.
 						{
-							rd.typeToStringProperties[t] = new ConcurrentDictionary<string, ConcurrentDictionary<int, MethodPropertyHolder>>(StringComparer.OrdinalIgnoreCase);
+							rd.typeToStringProperties[t] = new ConcurrentDictionary<string, ConcurrentDictionary<int, MethodPropertyHolder>>(AhkIdentifierComparer.Instance);
 							t = t.BaseType;
 							continue;
 						}
@@ -411,8 +411,8 @@ namespace Keysharp.Internals.Invoke
 
 				if (Script.TheScript.ReflectionsData.typeToStringProperties.TryGetValue(t, out var dkt))
 				{
-					if (!string.Equals(name, "__Class", StringComparison.OrdinalIgnoreCase)
-						&& !string.Equals(name, "__Static", StringComparison.OrdinalIgnoreCase))
+					if (!AhkIdentifierComparer.Instance.Equals(name, "__Class")
+						&& !AhkIdentifierComparer.Instance.Equals(name, "__Static"))
 						if (dkt.TryGetValue(name, out var prop))
 							return true;
 				}

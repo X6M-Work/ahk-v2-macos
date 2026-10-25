@@ -179,6 +179,7 @@ namespace Keysharp.Runtime
 		// for an absent item instead of throwing (UnsetItemError/IndexError/etc.). This mirrors the caller's
 		// mode, since built-ins carry no [CompatibilityMode] of their own.
 		internal static bool CompatReturnsUnsetForMissing => currentCompatibilityReturnsUnsetByDefault;
+		internal static bool CompatV20 => !ReturnsUnsetByDefault(currentCompatibilityVersion ?? DefaultCompatibilityVersion);
 		internal const string DefaultErrorString = "";
 		internal const int INTERVAL_UNSPECIFIED = int.MinValue + 303;
 		internal const int maxEmergencyThreads = 10;
@@ -618,6 +619,10 @@ namespace Keysharp.Runtime
 			// constructing or publishing this Script so a bad artifact leaves the current process-wide engine intact.
 			var programType = program ?? GetCallingType();
 			var manifest = Keysharp.Internals.Scripting.AppManifest.FromAssembly(programType?.Assembly);
+
+			if (manifest != null && programType?.Assembly == Assembly.GetEntryAssembly())
+				Files.InitializeStandardStreams();
+
 			KeyState = new(this);
 
 #if LINUX

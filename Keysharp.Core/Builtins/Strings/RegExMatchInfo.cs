@@ -123,7 +123,8 @@ namespace Keysharp.Builtins
 
 		private Enumerator CreateEnumerator(int count)
 		{
-			count = count == 0 || count == 1 ? count : 2;
+			if (!Script.CompatV20)
+				count = count == 0 || count == 1 ? count : 2;
 			var index = -1;
 
 			return new Enumerator(
@@ -133,7 +134,7 @@ namespace Keysharp.Builtins
 					   () =>
 					   {
 						   var g = At(index);
-						   return count == 2 ? g.Name.Length == 0 ? (object)(long)index : g.Name : g.Value;
+						   return count is 0 or 1 ? g.Value : g.Name.Length == 0 ? (object)(long)index : g.Name;
 					   },
 			() =>
 			{

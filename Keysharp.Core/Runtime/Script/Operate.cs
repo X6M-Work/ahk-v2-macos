@@ -128,7 +128,7 @@ namespace Keysharp.Runtime
 					if (subject is Any kso)
 					{
 						var protos = TheScript.Vars.Prototypes;
-						var matchingProtoKey = protos.Keys.FirstOrDefault(t => TypePathNoNamespace(t).Equals(test, StringComparison.OrdinalIgnoreCase));
+						var matchingProtoKey = protos.Keys.FirstOrDefault(t => AhkIdentifierComparer.Instance.Equals(TypePathNoNamespace(t), test));
 						if (matchingProtoKey == null)
 							return false;
 						var targetProto = protos[matchingProtoKey];

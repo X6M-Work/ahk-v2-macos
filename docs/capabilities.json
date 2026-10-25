@@ -770,8 +770,8 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Returns whether any parameter, or the specified 1-based parameter, is ByRef."
+                     "macos":  "unknown",
+                     "notes":  "Reports ByRef parameters. v2.0 native enumerators follow their MaxParams metadata; bound native enumerators report no ByRef parameters."
                  },
                  {
                      "category":  "Core Language",
@@ -782,7 +782,7 @@
                      "linux_wayland":  "full",
                      "macos":  "full",
                      "notes":  "Whether the function itself is built-in. BoundFunc objects always return false, even when binding a built-in function with no arguments.",
-                     "tested-by":  "func-bound.ahk"
+                     "tested-by":  "compat/phase15-enumerators/"
                  },
                  {
                      "category":  "Core Language",
@@ -958,12 +958,12 @@
                      "category":  "Core Language",
                      "feature":  "__Delete",
                      "syntax":  "",
-                     "windows":  "full",
-                     "linux_x11":  "full",
-                     "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Meta-function invoked when an object is being deleted.",
-                     "tested-by":  "class-special-funcs.ahk"
+                     "windows":  "partial",
+                     "linux_x11":  "partial",
+                     "linux_wayland":  "partial",
+                     "macos":  "partial",
+                     "notes":  "Destruction uses managed GC and the destructor pump. Immediate destruction on last alias, scope exit, temporary release and resurrection differ from AHK 2.0.31; deterministic file cleanup is also unresolved.",
+                     "tested-by":  "class-special-funcs.ahk; compat/phase15-architecture/"
                  },
                  {
                      "category":  "Core Language",
@@ -1800,8 +1800,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Sets or returns the encoding used for reading and writing files. This differs from AHK in that it only supports ASCII (ascii), UTF-8 (utf-8/utf8-raw) or Unicode (utf-16/utf16-raw or unicode). ASCII will always return us-ascii because that is the name of the encoding in C#.",
-                     "tested-by":  "file-fileencoding.ahk"
+                     "notes":  "v2.0 exposes canonical CP0/CPnnn/UTF-8/UTF-16 and RAW names, retaining CP0 separately from an explicit code page. Defaults and timer thread copies preserve the encoding contract. v2.1 retains .NET encoding names.",
+                     "tested-by":  "file-fileencoding.ahk; compat/phase15-stdlib/string-native-encodings.ahk"
                  },
                  {
                      "category":  "Keysharp Module (Ks)",
@@ -3177,9 +3177,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Enumerates values or index/value pairs; omitted or zero NumberOfVars adapts to the outputs, while 1 or 2 fixes the mode and argument count.",
-                     "tested-by":  "collections-array.ahk; flow-enum.ahk; external-com-atp.ahk"
+                     "macos":  "unknown",
+                     "notes":  "v2.0 preserves NumberOfVars metadata, adapts omitted/zero mode to actual output VarRefs and ignores non-VarRef/extra arguments. v2.1 retains strict fixed/adaptive invocation.",
+                     "tested-by":  "collections-array.ahk; flow-enum.ahk; external-com-atp.ahk; compat/phase15-enumerators/"
                  },
                  {
                      "category":  "Collections",
@@ -4829,9 +4829,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Calls native functions; supports numeric type classes and void returns. Structured arrays pass by address but cannot be returned.",
-                     "tested-by":  "external-dllcall.ahk; struct-array.ahk; struct-basic.ahk"
+                     "macos":  "unknown",
+                     "notes":  "Calls native functions, including numeric type classes and void returns. v2.0 Float return/output values widen exactly to Double; v2.1 retains shortest-decimal widening. Structured arrays pass by address but cannot be returned. Native macOS ABI verification remains pending.",
+                     "tested-by":  "external-dllcall.ahk; struct-array.ahk; struct-basic.ahk; compat/phase15-native-windows/; compat/phase15-architecture/macos/sqrtf.ahk"
                  },
                  {
                      "category":  "FileSystem",
@@ -5213,8 +5213,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Writes text or binary data to the end of a file (first creating the file, if necessary).",
-                     "tested-by":  "assign-dyn-var.ahk"
+                     "notes":  "Writes text or binary data to the end of a file (first creating the file, if necessary). Standard output (*) and standard error (**) honor the requested encoding or A_FileEncoding without a BOM or changing Console.OutputEncoding. Hosted TextWriter captures receive text. Redirected UTF-8, CP1252 and UTF-16 stream bytes are covered by FileAppendStandardStreamEncoding; macOS execution remains unverified.",
+                     "tested-by":  "file-fileappend.ahk; file-fileappend-stdio.ahk (FileAndDirTests.FileAppendStandardStreamEncoding)"
                  },
                  {
                      "category":  "FileSystem",
@@ -5257,8 +5257,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Sets the default encoding for FileRead, Loop Read, FileAppend, and FileOpen. An encoding name which cannot be resolved raises a ValueError rather than falling back to another encoding.",
-                     "tested-by":  "file-fileencoding.ahk"
+                     "notes":  "Sets the default file encoding. In v2.0 an explicit empty string resets to CP0; omitted input queries without resetting. FileOpen explicit empty encoding selects CP0, while omission uses A_FileEncoding.",
+                     "tested-by":  "file-fileencoding.ahk; compat/phase15-stdlib/string-native-encodings.ahk"
                  },
                  {
                      "category":  "FileSystem",
@@ -7343,9 +7343,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Returns true if a string contains only digits.",
-                     "tested-by":  "misc-is.ahk"
+                     "macos":  "unknown",
+                     "notes":  "In v2.0 mode accepts String only and checks ASCII digits. The broader v2.1 Keysharp predicate remains available.",
+                     "tested-by":  "misc-is.ahk; compat/phase15-map-conversions/type-predicates.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -7354,9 +7354,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Returns true if a value is a floating-point number.",
-                     "tested-by":  "misc-is.ahk"
+                     "macos":  "unknown",
+                     "notes":  "Checks Float values and numeric strings; v2.0 does not trim newline whitespace from numeric text.",
+                     "tested-by":  "misc-is.ahk; compat/phase15-map-conversions/type-predicates.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -7365,9 +7365,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Returns true if a value is an integer.",
-                     "tested-by":  "misc-is.ahk"
+                     "macos":  "unknown",
+                     "notes":  "Checks Integer values and numeric strings; v2.0 does not trim newline whitespace from numeric text.",
+                     "tested-by":  "misc-is.ahk; compat/phase15-map-conversions/type-predicates.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -7452,9 +7452,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Returns true if a value is a valid time/date string.",
-                     "tested-by":  "misc-is.ahk"
+                     "macos":  "unknown",
+                     "notes":  "v2.0 accepts ASCII timestamps with an even 4-14 digits, Gregorian year 1601-9999 and valid calendar/time components. v2.1 retains the broader Keysharp date parser.",
+                     "tested-by":  "misc-is.ahk; compat/phase15-stdlib/time-validation.ahk; MiscTests.MiscIs"
                  },
                  {
                      "category":  "Core Language",
@@ -7869,9 +7869,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Reads though a file one line at a time. Optionally supports an output file, which can then be used with FileAppend with no filename argument. An encoding name which cannot be resolved raises a ValueError rather than falling back to another encoding.",
-                     "tested-by":  "flow-loop-read.ahk"
+                     "macos":  "unknown",
+                     "notes":  "Reads lines using A_FileEncoding and BOM detection. Missing inputs raise OSError, or run Else when present. Native macOS validation remains pending.",
+                     "tested-by":  "flow-loop-read.ahk; flow-loop-read.ahk; compat/phase15-stdlib/file-loop-encoding.ahk"
                  },
                  {
                      "category":  "Flow/Expressions",
@@ -7902,9 +7902,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Map object type. Float keys remain Float keys in both compatibility modes, distinct from Integer and String keys. Unlike AutoHotkey v2.1-alpha.35, v2.1 mode accepts Float keys.",
-                     "tested-by":  "assign-multiline.ahk; collections-map.ahk"
+                     "macos":  "unknown",
+                     "notes":  "In v2.0 mode Float keys become String keys, distinct from Integer keys; Set requires pairs and rejects odd counts before mutation. Native macOS validation remains pending.",
+                     "tested-by":  "assign-multiline.ahk; collections-map.ahk; compat/phase15-map-conversions/"
                  },
                  {
                      "category":  "Collections",
@@ -7913,9 +7913,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Enumerates keys or key/value pairs; omitted or zero NumberOfVars adapts to the outputs, while 1 or 2 fixes the mode and argument count.",
-                     "tested-by":  "collections-map.ahk; flow-enum.ahk"
+                     "macos":  "unknown",
+                     "notes":  "v2.0 observes live mutations and accepts output slots independently of NumberOfVars metadata; non-VarRef and extra arguments are ignored. v2.1 retains strict fixed/adaptive invocation.",
+                     "tested-by":  "collections-map.ahk; flow-enum.ahk; compat/phase15-map-conversions/map-enumerators.ahk; compat/phase15-map-conversions/map-mutation.ahk; compat/phase15-enumerators/; compat/phase15-map-conversions/"
                  },
                  {
                      "category":  "Collections",
@@ -7925,7 +7925,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Indexer property for getting or setting map values by key.",
+                     "notes":  "Key lookup uses the key mode captured when the Map was constructed; v2.0 Float keys become String keys, and cross-version callers preserve access to existing keys.",
                      "tested-by":  "collections-map.ahk"
                  },
                  {
@@ -7991,7 +7991,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Returns a shallow copy of all of the values and keys of the map. An instance created by ObjCreateWithDataPtr raises TypeError.",
+                     "notes":  "Shallow clone preserving key conversion mode and case sensitivity. An instance created by ObjCreateWithDataPtr raises TypeError.",
                      "tested-by":  "collections-map.ahk; struct-pack.ahk"
                  },
                  {
@@ -8057,7 +8057,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Sets zero or more items.",
+                     "notes":  "v2.0 requires key/value pairs, rejects odd counts before mutation and leaves the map unchanged for Set(). v2.1 and Ks.HashMap retain the collection-input extensions.",
                      "tested-by":  "collections-map.ahk"
                  },
                  {
@@ -8949,9 +8949,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "The NumGet function returns the binary number stored at the specified address+offset. The type is a name or a numeric type class such as UInt32; one which does not name a number raises a ValueError, and a name is matched in full where AutoHotkey reads only its first character.",
-                     "tested-by":  "external-numput-numget.ahk; external-callbackcreate.ahk"
+                     "macos":  "unknown",
+                     "notes":  "v2.0 reads the first type character after optional U, using an integer tag containing 6 as 64-bit; Float widens exactly to Double. v2.1 retains full-name matching. Numeric type classes are a Keysharp extension.",
+                     "tested-by":  "external-numput-numget.ahk; external-callbackcreate.ahk; compat/phase15-stdlib/numeric-memory-types.ahk"
                  },
                  {
                      "category":  "Interop/Memory",
@@ -8960,9 +8960,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "The NumPut function stores one or more numbers in binary format at the specified address+offset. Each type is a name or a numeric type class such as UInt32; a type or value which does not name a number raises a ValueError.",
-                     "tested-by":  "external-numput-numget.ahk; external-dllcall.ahk"
+                     "macos":  "unknown",
+                     "notes":  "v2.0 interprets the type prefix like NumGet. Numeric values and bounds are validated; writes may precede a later pair error, as in AHK. Numeric type classes are a Keysharp extension.",
+                     "tested-by":  "external-numput-numget.ahk; external-dllcall.ahk; compat/phase15-stdlib/numeric-memory-types.ahk"
                  },
                  {
                      "category":  "Collections",
@@ -9112,9 +9112,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Enumerates own properties; structs raise TypeError.",
-                     "tested-by":  "collections-object.ahk; struct-basic.ahk"
+                     "macos":  "unknown",
+                     "notes":  "Enumerates own properties; structs raise TypeError. v2.0 ignores invalid output slots and evaluates getters only when the second output is a real VarRef.",
+                     "tested-by":  "collections-object.ahk; struct-basic.ahk; compat/phase15-enumerators/enumerator-ownprops-getters.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -9893,12 +9893,12 @@
                      "category":  "Core Language",
                      "feature":  "RegExMatch()",
                      "syntax":  "",
-                     "windows":  "full",
-                     "linux_x11":  "full",
-                     "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Searches a string for a regular expression match. When there is no match the output variable is left unset (blank in v2.0 compatibility mode).",
-                     "tested-by":  "external-dllcall.ahk"
+                     "windows":  "partial",
+                     "linux_x11":  "partial",
+                     "linux_wayland":  "partial",
+                     "macos":  "partial",
+                     "notes":  "PCRE2 backend. v2.0 PCRE1 unknown/malformed escapes are normalized using validated compiler diagnostics; inline/scoped options, quoting, comments and classes are handled by PCRE2. Cache identity includes compatibility mode. This does not establish all PCRE1 equivalence.",
+                     "tested-by":  "external-dllcall.ahk; compat/phase15-stdlib/regex-escape-options.ahk; compat/phase15-regex-edge/; compat/phase15-regex-edge/; StringTests.RegExCompatibility"
                  },
                  {
                      "category":  "Keysharp Module (Ks)",
@@ -9918,9 +9918,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "RegExMatch result. Direct construction, including subclasses using the default Call, raises ValueError. __Enum([NumberOfVars]) includes the whole match at 0; omitted or zero adapts to value or name/index-and-value outputs, while 1 or 2 fixes the mode and argument count.",
-                     "tested-by":  "string-regexmatch.ahk; flow-enum.ahk; class-builtin-visibility.ahk"
+                     "macos":  "unknown",
+                     "notes":  "Match result including whole match at index 0. Direct construction and default subclass construction raise ValueError. v2.0 native enumeration preserves raw NumberOfVars metadata and ignores non-VarRef/extra arguments; v2.1 keeps strict arity.",
+                     "tested-by":  "string-regexmatch.ahk; flow-enum.ahk; class-builtin-visibility.ahk; compat/phase15-enumerators/"
                  },
                  {
                      "category":  "Core Language",
@@ -9983,9 +9983,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Compiles a replacement before asking the old instance to exit via WM_CLOSE (Windows) or SIGTERM (Linux/macOS). OnExit may veto; Windows headless exits first.",
-                     "tested-by":  "Gui/guitest.ks"
+                     "macos":  "unknown",
+                     "notes":  "Compiles a replacement, then asks the old process to exit via WM_CLOSE on Windows or SIGTERM on Linux/macOS. Successful self-reload, OnExit reason and timer reset verified on Windows. Noninteractive ErrorStdOut/headless replacement refuses a blocked predecessor without prompting.",
+                     "tested-by":  "Gui/guitest.ks; compat/phase15-reload/run_reload.py"
                  },
                  {
                      "category":  "Core Language",
@@ -10569,9 +10569,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Copies a string from a memory address or buffer, optionally converting it from a given code page. An encoding name which cannot be resolved raises a ValueError rather than falling back to another encoding.",
-                     "tested-by":  "external-dllcall.ahk"
+                     "macos":  "unknown",
+                     "notes":  "Decodes bounded buffers or zero-terminated raw pointers with the requested encoding. Empty encoding means CP0 in v2.0, UTF-16 in v2.1; omission retains native UTF-16. Native pointer lifetime remains subject to the architecture gate.",
+                     "tested-by":  "external-dllcall.ahk; compat/phase15-stdlib/string-native-encodings.ahk; compat/phase15-stdlib/string-pointer-contracts.ahk"
                  },
                  {
                      "category":  "Interop/Memory",
@@ -10580,9 +10580,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "For an object, returns its ToString() result unchanged, including an object or no value; a missing method raises MethodError. Implicit string conversion in builtin arguments and concatenation requires a scalar result and otherwise raises TypeError. Errors raised by ToString propagate.",
-                     "tested-by":  "string-string.ahk; types-conversions.ahk"
+                     "macos":  "unknown",
+                     "notes":  "v2.0 implicit object-to-text conversion raises TypeError. Explicit String(obj) invokes a user ToString method and preserves its result; builtin Array/Map conversion raises MethodError. Direct collection ToString methods remain extensions.",
+                     "tested-by":  "string-string.ahk; types-conversions.ahk; compat/phase15-map-conversions/string-conversion.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -10689,9 +10689,9 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Writes string data to a buffer/address using specified encoding. An encoding name which cannot be resolved raises a ValueError rather than falling back to another encoding.",
-                     "tested-by":  "string-strputstrget.ahk"
+                     "macos":  "unknown",
+                     "notes":  "Writes encoded string bytes and terminator within capacity. Empty encoding means CP0 in v2.0, UTF-16 in v2.1; omission retains native UTF-16.",
+                     "tested-by":  "string-strputstrget.ahk; compat/phase15-stdlib/string-native-encodings.ahk"
                  },
                  {
                      "category":  "Interop/Memory",
@@ -12163,6 +12163,17 @@
                      "linux_wayland":  "partial",
                      "macos":  "partial",
                      "notes":  "Windows broadcasts WM_SETTINGCHANGE. Linux publishes pending EnvSet changes to the D-Bus activation environment and systemd user manager; D-Bus deletions become empty values because its update API cannot unset them. macOS publishes pending changes to the current launchd session. Existing processes are unchanged and these updates are not persistent."
+                 },
+                 {
+                     "category": "Core Language",
+                     "feature": "Identifier comparison",
+                     "syntax": "Variables, functions, classes, properties, labels and dynamic identifiers",
+                     "windows": "partial",
+                     "linux_x11": "unknown",
+                     "linux_wayland": "unknown",
+                     "macos": "unknown",
+                     "notes": "Folds ASCII A-Z only; Unicode code units remain distinct. Official AHK 2.0.31 fixtures cover lexical/dynamic lookups, properties, classes, closures and labels. This is selected evidence, not exhaustive identifier conformance.",
+                     "tested-by": "ParserTests.IdentifierNames; compat/phase15-symbols/"
                  }
              ]
 }

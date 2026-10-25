@@ -1,0 +1,6 @@
+CP1252|été|fin|
+UTF-8-RAW|été|fin|
+UTF-16-RAW|été|fin|
+bom|été
+missing|OSError
+missing-else

@@ -45,7 +45,7 @@ namespace Keysharp.Builtins
 			if (type is Class cls)
 				code = Struct.GetNumericTypeCode(cls);
 			else if (type.CoerceString(out var name, "UInt"))
-				code = NativeType.Parse(name);
+				code = NativeType.ParseMemory(name);
 			else
 				return DefaultObject;
 
@@ -63,7 +63,7 @@ namespace Keysharp.Builtins
 			if (size >= 0 && off > size - width)
 				return Errors.IndexErrorOccurred($"Memory access exceeded buffer size. Offset {off}, length {width}, buffer size {size}.", DefaultObject);
 
-			return NativeType.ReadMemory(code, addr + (nint)off);
+			return NativeType.ReadMemory(code, addr + (nint)off, Script.CompatV20);
 		}
 
 		/// <summary>
@@ -101,7 +101,7 @@ namespace Keysharp.Builtins
 
 			for (var i = 0; i <= lastPairIndex; i += 2)
 			{
-				var code = obj[i] is Class cls ? Struct.GetNumericTypeCode(cls) : NativeType.Parse(obj[i] as string);
+				var code = obj[i] is Class cls ? Struct.GetNumericTypeCode(cls) : NativeType.ParseMemory(obj[i] as string);
 
 				if (!NativeType.IsNumeric(code))
 					return (long)Errors.ValueErrorOccurred($"Type of {Errors.Describe(obj[i])} is not a number that can be written to memory.", obj[i], DefaultErrorLong);

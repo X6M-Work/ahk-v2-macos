@@ -98,6 +98,52 @@ public class FileAndDirTests : TestRunner
 	[Test, Category("FileAndDir")]
 	public void FileAppend() => Assert.IsTrue(TestScript("file-fileappend", true));
 
+	[Test, Category("FileAndDir"), Category("Curated")]
+	public void FileAppendStandardStreamEncoding()
+	{
+		var launcher = Path.Combine(AppContext.BaseDirectory, OperatingSystem.IsWindows() ? "Keysharp.exe" : "Keysharp");
+		Assert.That(File.Exists(launcher), Is.True, $"launcher not built at {launcher}");
+		var start = new ProcessStartInfo(launcher)
+		{
+			WorkingDirectory = Path.GetTempPath(),
+			UseShellExecute = false,
+			CreateNoWindow = true,
+			RedirectStandardOutput = true,
+			RedirectStandardError = true,
+		};
+		start.Environment["KEYSHARP_DAEMON"] = "0";
+		start.Environment["KEYSHARP_FORCE_HEADLESS"] = "1";
+		start.ArgumentList.Add("--errorstdout=UTF-8");
+		start.ArgumentList.Add(Path.Combine(path, "file-fileappend-stdio.ahk"));
+		using var process = Process.Start(start);
+		using var output = new MemoryStream();
+		using var error = new MemoryStream();
+		var outputTask = process.StandardOutput.BaseStream.CopyToAsync(output);
+		var errorTask = process.StandardError.BaseStream.CopyToAsync(error);
+
+		try
+		{
+			Assert.That(process.WaitForExit(60000), Is.True, "FileAppend child did not exit within 60 seconds");
+			Assert.That(Task.WaitAll([outputTask, errorTask], 5000), Is.True, "FileAppend child streams did not close");
+			Assert.That(process.ExitCode, Is.Zero, Encoding.UTF8.GetString(error.ToArray()));
+			var expected = Encoding.UTF8.GetBytes("é漢😀\nété\n")
+				.Concat(new byte[] { 0xe9 })
+				.Concat(Encoding.Unicode.GetBytes("漢"))
+				.Concat(Encoding.UTF8.GetBytes("éx\r\ny\r\n")).ToArray();
+			Assert.That(error.ToArray(), Is.EqualTo(expected), "stderr encoding or BOM differed");
+			Assert.That(output.ToArray(), Is.EqualTo(expected.Concat(Encoding.UTF8.GetBytes("pass")).ToArray()),
+				"stdout encoding, BOM or final pass differed");
+		}
+		finally
+		{
+			if (!process.HasExited)
+			{
+				process.Kill(entireProcessTree: true);
+				Assert.That(process.WaitForExit(5000), Is.True, "FileAppend child did not stop");
+			}
+		}
+	}
+
 	[Test, Category("FileAndDir")]
 	public void FileCopy() => Assert.IsTrue(TestScript("file-filecopy", true));
 

@@ -76,6 +76,9 @@ public partial class StringTests : TestRunner
 	public void RegExMatch() => Assert.IsTrue(TestScript("string-regexmatch", false));
 
 	[Test, Category("String")]
+	public void RegExCompatibility() => Assert.IsTrue(TestScript("string-regex-compatibility", false));
+
+	[Test, Category("String")]
 	public void RegExMatchCs() => Assert.IsTrue(TestScript("string-regexmatch-cs", false));
 
 	[Test, Category("String")]

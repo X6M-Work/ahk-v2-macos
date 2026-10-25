@@ -1,6 +1,7 @@
 #NoTrayIcon
 #ErrorStdOut
 #Warn All, StdOut
+#Requires AutoHotkey v2.1-alpha
 #Include <assert>
 
 ; Return true to continue enumerating, false to stop

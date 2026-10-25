@@ -102,14 +102,14 @@ namespace Keysharp.Compilation.Syntax
 			foreach (var module in modules)
 			{
 				var declarations = module.Body.Concat(NamedArrows(module.Body, null)).ToList();
-				var namedDeclarations = new Dictionary<string, Stmt>(StringComparer.OrdinalIgnoreCase);
+				var namedDeclarations = new Dictionary<string, Stmt>(AhkIdentifierComparer.Instance);
 				foreach (var statement in declarations)
 				{
 					var name = statement switch { FunctionDecl function => function.Name, ClassDecl type => type.Name, _ => null };
 					if (name != null) namedDeclarations.TryAdd(name, statement);
 				}
 				var locals = CollectLocalDeclNames(declarations);
-				var globals = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+				var globals = new HashSet<string>(AhkIdentifierComparer.Instance);
 				foreach (var statement in module.Body)
 					VisitScope(statement, node =>
 					{
@@ -156,7 +156,7 @@ namespace Keysharp.Compilation.Syntax
 					if (binding.Directive.ReExport) module.ExportNames.Add(name);
 			}
 			var declaredExports = modules.ToDictionary(module => module,
-				module => new HashSet<string>(module.ExportNames, StringComparer.OrdinalIgnoreCase));
+				module => new HashSet<string>(module.ExportNames, AhkIdentifierComparer.Instance));
 
 			bool CanExportWildcard(ModInfo module, string name)
 			{
@@ -194,7 +194,7 @@ namespace Keysharp.Compilation.Syntax
 								source.ExportNames.Add(name);
 							}
 			var candidates = modules.ToDictionary(module => module,
-				module => module.OwnBindings.Where(item => item.Value.Synthetic).ToDictionary(item => item.Key, item => item.Value, StringComparer.OrdinalIgnoreCase));
+				module => module.OwnBindings.Where(item => item.Value.Synthetic).ToDictionary(item => item.Key, item => item.Value, AhkIdentifierComparer.Instance));
 			void RebuildExports()
 			{
 				foreach (var module in modules)
@@ -235,7 +235,7 @@ namespace Keysharp.Compilation.Syntax
 
 			foreach (var module in modules)
 			{
-				var names = new HashSet<string>(module.OwnBindings.Keys, StringComparer.OrdinalIgnoreCase);
+				var names = new HashSet<string>(module.OwnBindings.Keys, AhkIdentifierComparer.Instance);
 				names.UnionWith(module.NamedBindings.Keys);
 				foreach (var import in module.ModuleBindings.Where(im => NamedImports(im.Named).Any(item => item.Name == "*")))
 					names.UnionWith(ExportNames(ImportSource(import)).Where(name => !name.StartsWith('_')));
@@ -254,7 +254,7 @@ namespace Keysharp.Compilation.Syntax
 		}
 
 		private static bool SameImport(ImportRef left, ImportRef right) =>
-			left.Source == right.Source && StringComparer.OrdinalIgnoreCase.Equals(left.Member, right.Member);
+			left.Source == right.Source && AhkIdentifierComparer.Instance.Equals(left.Member, right.Member);
 
 		private MemberBinding ResolveMemberBinding(ModuleSource source, string name, bool create = false, ImportDirective at = null,
 			List<(ModInfo, string)> visiting = null, bool wildcard = false, Action<ImportDirective> selectedWildcard = null)
@@ -267,7 +267,7 @@ namespace Keysharp.Compilation.Syntax
 			if (module.OwnBindings.TryGetValue(name, out var own) && !own.Synthetic) return own;
 			visiting ??= new();
 			var key = (module, name);
-			if (visiting.Any(item => item.Item1 == module && StringComparer.OrdinalIgnoreCase.Equals(item.Item2, name)))
+			if (visiting.Any(item => item.Item1 == module && AhkIdentifierComparer.Instance.Equals(item.Item2, name)))
 			{
 				if (!wildcard) Diag($"{NodeAnchor(at)}This import declaration conflicts with an existing import: {name}");
 				return null;

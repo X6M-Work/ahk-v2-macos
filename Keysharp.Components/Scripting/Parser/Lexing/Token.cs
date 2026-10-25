@@ -45,7 +45,7 @@ namespace Keysharp.Parsing.Lexing
 
 		/// <summary>Case-insensitive match of the token text (used for contextual keywords).</summary>
 		public bool IsKeyword(string word) =>
-			Kind == TokenKind.Identifier && string.Equals(Text, word, System.StringComparison.OrdinalIgnoreCase);
+			Kind == TokenKind.Identifier && AhkIdentifierComparer.Instance.Equals(Text, word);
 
 		public override string ToString() =>
 			Kind switch

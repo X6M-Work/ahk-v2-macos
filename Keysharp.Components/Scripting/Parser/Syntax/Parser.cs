@@ -24,7 +24,7 @@ namespace Keysharp.Parsing.Syntax
 		// compilation (`--define:NAME`, or Ks.RunScript's Defines option), and #define adds more. Seeded per Parser
 		// and deliberately NOT inherited from an importing file — #include shares this Parser (so its #defines do
 		// carry), but a module file gets its own, which is why the supplied set has to be passed down to those too.
-		private readonly HashSet<string> _defines = new(System.StringComparer.OrdinalIgnoreCase)
+		private readonly HashSet<string> _defines = new(AhkIdentifierComparer.Instance)
 		{
 			"KEYSHARP"
 #if WINDOWS
@@ -54,7 +54,7 @@ namespace Keysharp.Parsing.Syntax
 		private readonly HashSet<string> _included = new(SourcePathComparer);   // #include dedup
 		private readonly Dictionary<string, string> _includedSources = new(SourcePathComparer);
 		private readonly List<int> _includeParents = [];   // see ProgramNode.IncludeParents
-		private ObjectStackPool<HashSet<string>> _scratchHashStrings = new(() => new(System.StringComparer.OrdinalIgnoreCase), item => item.Clear());
+		private ObjectStackPool<HashSet<string>> _scratchHashStrings = new(() => new(AhkIdentifierComparer.Instance), item => item.Clear());
 		private ObjectStackPool<List<Token>> _scratchListTokens = new(() => [], item => item.Clear());
 
 		private const int MaxIncludeDepth = 100;
@@ -240,7 +240,7 @@ namespace Keysharp.Parsing.Syntax
 
 		// Keywords that can start a statement — used to disambiguate a trailing `?` (maybe operator) from a ternary.
 		private static readonly System.Collections.Generic.HashSet<string> statementKeywords =
-			new(System.StringComparer.OrdinalIgnoreCase)
+			new(AhkIdentifierComparer.Instance)
 			// NOTE: `throw` and `class` are intentionally excluded — both can appear as a ternary then-branch
 			// (`cond ? throw(x) : y`, and `class` is a legal variable name: `cond ? class : y`), so a `?` followed
 			// by them is a ternary, not the maybe operator.
@@ -253,7 +253,7 @@ namespace Keysharp.Parsing.Syntax
 		// legal variable name (see the note above). Used where an identifier is consumed AS A NAME — member/method
 		// names are unaffected (`obj.return` stays valid), since those go through a different path.
 		private static readonly System.Collections.Generic.HashSet<string> reservedNames =
-			new(statementKeywords, System.StringComparer.OrdinalIgnoreCase) { "case" };
+			new(statementKeywords, AhkIdentifierComparer.Instance) { "case" };
 
 		// Rejects a reserved word used where a name is expected (e.g. `x := return`, `a return` auto-concat, `class for`).
 		private void RejectReservedName(string name, Token at, string role)
@@ -474,7 +474,7 @@ namespace Keysharp.Parsing.Syntax
 		}
 
 		private static readonly System.Collections.Generic.HashSet<string> loopSubKinds =
-			new(System.StringComparer.OrdinalIgnoreCase) { "parse", "files", "read", "reg" };
+			new(AhkIdentifierComparer.Instance) { "parse", "files", "read", "reg" };
 
 		private Stmt ParseLoop()
 		{
@@ -986,7 +986,7 @@ namespace Keysharp.Parsing.Syntax
 			scriptDir ??= System.IO.Path.GetDirectoryName(_mainScriptPath) ?? _includeDir;
 			var moduleFile = sourceTokens.Count > 0 ? sourceTokens[0].File : null;
 			var scopes = new Stack<(bool Definition, bool BackCompat)>();
-			var modules = new Dictionary<string, (bool BackCompat, string File, bool Set)>(StringComparer.OrdinalIgnoreCase)
+			var modules = new Dictionary<string, (bool BackCompat, string File, bool Set)>(AhkIdentifierComparer.Instance)
 			{
 				["__Init"] = (true, moduleFile, false)
 			};
@@ -1322,7 +1322,7 @@ namespace Keysharp.Parsing.Syntax
 		}
 
 		private static readonly HashSet<string> continuationWords =
-			new(System.StringComparer.OrdinalIgnoreCase) { "and", "or", "is", "in", "contains", "as" };
+			new(AhkIdentifierComparer.Instance) { "and", "or", "is", "in", "contains", "as" };
 
 		private static bool CanContinueLine(List<Token> tokens, int start, int end)
 		{
@@ -1363,7 +1363,7 @@ namespace Keysharp.Parsing.Syntax
 
 		// Built-in variables AutoHotkey permits inside an #include path (the compile-time set). Restricting to this
 		// list keeps parsing from invoking accessors with side effects or runtime-only state.
-		private static readonly HashSet<string> includePathVars = new(System.StringComparer.OrdinalIgnoreCase)
+		private static readonly HashSet<string> includePathVars = new(AhkIdentifierComparer.Instance)
 		{
 			"A_AhkPath", "A_AppData", "A_AppDataCommon", "A_ComputerName", "A_ComSpec", "A_Desktop", "A_DesktopCommon",
 			"A_IsCompiled", "A_LineFile", "A_MyDocuments", "A_ProgramFiles", "A_Programs", "A_ProgramsCommon",
@@ -1827,7 +1827,7 @@ namespace Keysharp.Parsing.Syntax
 		// Detected by lookahead: the callee primary (name/member/index) is followed by whitespace + an
 		// argument start, or a comma — but not by an adjacent '(' (a call expression) or an operator.
 		private static readonly System.Collections.Generic.HashSet<string> verbalOps =
-			new(System.StringComparer.OrdinalIgnoreCase) { "not", "and", "or", "is", "in", "contains" };
+			new(AhkIdentifierComparer.Instance) { "not", "and", "or", "is", "in", "contains" };
 
 		private bool IsCommandStatement()
 		{

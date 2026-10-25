@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {"id":"arithmetic","category":"expressions","script":"arithmetic.ahk","expected_stdout":"golden/arithmetic.txt"},
+    {"id":"short-circuit","category":"expressions","script":"short-circuit.ahk","expected_stdout":"golden/short-circuit.txt"},
+    {"id":"closures","category":"functions","script":"closures.ahk","expected_stdout":"golden/closures.txt"},
+    {"id":"byref-defaults","category":"functions","script":"byref-defaults.ahk","expected_stdout":"golden/byref-defaults.txt"},
+    {"id":"variadic","category":"functions","script":"variadic.ahk","expected_stdout":"golden/variadic.txt"},
+    {"id":"classes","category":"objects","script":"classes.ahk","expected_stdout":"golden/classes.txt"},
+    {"id":"inheritance","category":"objects","script":"inheritance.ahk","expected_stdout":"golden/inheritance.txt"},
+    {"id":"arrays","category":"collections","script":"arrays.ahk","expected_stdout":"golden/arrays.txt"},
+    {"id":"maps","category":"collections","script":"maps.ahk","expected_stdout":"golden/maps.txt"},
+    {"id":"exceptions","category":"flow","script":"exceptions.ahk","expected_stdout":"golden/exceptions.txt"},
+    {"id":"control-flow","category":"flow","script":"control-flow.ahk","expected_stdout":"golden/control-flow.txt"},
+    {"id":"unicode","category":"text","script":"unicode.ahk","expected_stdout":"golden/unicode.txt"},
+    {"id":"regex","category":"text","script":"regex.ahk","expected_stdout":"golden/regex.txt"},
+    {"id":"file-io","category":"files","script":"file-io.ahk","expected_stdout":"golden/file-io.txt"}
+  ]
+}

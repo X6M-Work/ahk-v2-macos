@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+usage() { printf '%s\n' 'Usage: ahk run SCRIPT [ARGS...] | ahk validate SCRIPT [ARGS...] | ahk doctor'; }
+(($#)) || { usage >&2; exit 2; }
+action="$1"
+shift
+case "${action}" in
+  -h|--help|help) usage; exit 0 ;;
+  doctor) (($# == 0)) || die 'doctor takes no arguments.'; exec bash "${MACOS_SCRIPTS_DIR}/doctor.sh" ;;
+  run|validate) ;;
+  *) usage >&2; exit 2 ;;
+esac
+(($#)) || die "${action} requires a script path."
+[[ -f "$1" && -r "$1" ]] || die "Script is missing or unreadable: $1"
+script="$1"
+shift
+case "${script}" in /*) ;; *) script="${PWD}/${script}" ;; esac
+resolve_keysharp || die 'Keysharp executable not found. Build on macOS or set KEYSHARP_EXECUTABLE to its executable path.'
+if [[ "${action}" == validate ]]; then
+  exec "${KEYSHARP_PATH}" --errorstdout --validate "${script}" "$@"
+fi
+exec "${KEYSHARP_PATH}" "${script}" "$@"

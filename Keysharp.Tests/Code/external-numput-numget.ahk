@@ -1,6 +1,7 @@
 #ErrorStdOut
 #Warn All, StdOut
 #NoTrayIcon
+#Requires AutoHotkey v2.0
 #Include <assert>
 
 buf := Buffer(100, 0)
@@ -15,14 +16,14 @@ ret := NumPut("int", -1, buf)
 b1 := NumGet(buf, 0, "int")
 
 AssertEq(b1, -1, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 4, ret, A_LineNumber)
 
 ret := NumPut("uint", 0xFFFFFFFF, buf)
 b1 := NumGet(buf, 0, "uint")
 
 AssertEq(b1, 0xFFFFFFFF, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 4, ret, A_LineNumber)
 
 ret := NumPut("char", 123, buf)
@@ -43,7 +44,7 @@ ret := NumPut("uchar", 255, buf)
 b1 := NumGet(buf, 0, "uchar")
 
 AssertEq(b1, 255, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 1, ret, A_LineNumber)
 
 ret := NumPut("uchar", 256, buf)
@@ -57,63 +58,63 @@ ret := NumPut("short", 10000, buf)
 b1 := NumGet(buf, 0, "short")
 
 AssertEq(b1, 10000, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 2, ret, A_LineNumber)
 
 ret := NumPut("short", -10000, buf)
 b1 := NumGet(buf, 0, "short")
 
 AssertEq(b1, -10000, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 2, ret, A_LineNumber)
 
 ret := NumPut("ushort", 50000, buf)
 b1 := NumGet(buf, 0, "ushort")
 
 AssertEq(b1, 50000, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 2, ret, A_LineNumber)
 
 ret := NumPut("ushort", 65536, buf)
 b1 := NumGet(buf, 0, "ushort")
 
 AssertEq(b1, 0, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 2, ret, A_LineNumber)
 
 ret := NumPut("int64", 0xFFFFFFFFFFFFFFFF, buf)
 b1 := NumGet(buf, 0, "int64")
 
 AssertEq(b1, -1, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 8, ret, A_LineNumber)
 
 ret := NumPut("double", 1.2345, buf)
 b1 := NumGet(buf, 0, "double")
 
 AssertEq(b1, 1.2345, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 8, ret, A_LineNumber)
 
 ret := NumPut("double", -1.2345, buf)
 b1 := NumGet(buf, 0, "double")
 
 AssertEq(b1, -1.2345, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 8, ret, A_LineNumber)
 
 ret := NumPut("float", 1.2345, buf)
 b1 := NumGet(buf, 0, "float")
 
-AssertEq(b1, 1.2345, A_LineNumber)
-	
+AssertEq(b1, 1.2345000505447388, A_LineNumber)
+
 AssertEq(buf.Ptr + 4, ret, A_LineNumber)
 
 ret :=NumPut("float", -1.2345, buf)
 b1 := NumGet(buf, 0, "float")
 
-AssertEq(b1, -1.2345, A_LineNumber)
-	
+AssertEq(b1, -1.2345000505447388, A_LineNumber)
+
 AssertEq(buf.Ptr + 4, ret, A_LineNumber)
 
 NumPut("char", 1, buf)
@@ -124,14 +125,14 @@ NumPut("char", 4, buf, 3)
 b1 := NumGet(buf, 0, "uint")
 
 AssertEq(b1, 0x04030201, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 4, ret, A_LineNumber)
 
 ret := NumPut("int", 1234, "short", 10000, "double", 1.2345, buf)
 b1 := NumGet(buf, 0, "int")
 
 AssertEq(b1, 1234, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 14, ret, A_LineNumber)
 
 b1 := NumGet(buf, 4, "short")
@@ -150,7 +151,7 @@ ret := NumPut("int", 0x01020304, buf, 2)
 b1 := NumGet(buf, 0, "int")
 
 AssertEq(b1, 0x03040000, A_LineNumber)
-	
+
 AssertEq(buf.Ptr + 6, ret, A_LineNumber)
 
 buf := Buffer(4, 0)
@@ -193,9 +194,10 @@ AssertEq(ret, 705032704, A_LineNumber)
 ; A type which does not name a number is rejected rather than silently reading or writing the wrong bytes.
 Throws(() => NumGet(buf, 0, "bogus"), A_LineNumber, ValueError)
 Throws(() => NumGet(buf, 0, ""), A_LineNumber, ValueError)
-Throws(() => NumGet(buf, 0, "str"), A_LineNumber, ValueError)
+AssertEq(NumGet(buf, 0, "str"), NumGet(buf, 0, "short"), A_LineNumber)
 Throws(() => NumPut("bogus", 1, buf), A_LineNumber, ValueError)
-Throws(() => NumPut("str", 1, buf), A_LineNumber, ValueError)
+AssertEq(NumPut("str", 1, buf), buf.Ptr + 2, A_LineNumber)
+AssertEq(NumGet(buf, "short"), 1, A_LineNumber)
 
 ; Pairs are written as they are read, so the ones before a rejected type have already landed.
 NumPut("int64", 0, buf)
@@ -257,5 +259,18 @@ if A_PtrSize = 8
 	AssertEq(NumGet(classBuf, 8, Float32.Ptr), 1.5, A_LineNumber)
 Throws(() => NumGet(classBuf, Struct), A_LineNumber, ValueError)
 Throws(() => NumPut(Struct, 1, classBuf), A_LineNumber, ValueError)
+
+
+CheckNativeTypes21() {
+    #Requires AutoHotkey v2.1-alpha.1
+    memory := Buffer(4)
+    NumPut("Float", 1.2345, memory)
+    AssertEq(NumGet(memory, "Float"), 1.2345, A_LineNumber)
+    NumPut("Float", -1.2345, memory)
+    AssertEq(NumGet(memory, "Float"), -1.2345, A_LineNumber)
+    Throws(() => NumGet(memory, 0, "str"), A_LineNumber, ValueError)
+    Throws(() => NumPut("str", 1, memory), A_LineNumber, ValueError)
+}
+CheckNativeTypes21()
 
 FileAppend "pass", "*"

@@ -188,6 +188,9 @@ namespace Keysharp.Internals.Threading
 		{
 			get
 			{
+				if (Script.CompatV20)
+					return Script.TheScript.Threads.CurrentThread.configData.fileEncodingName ?? "CP0";
+
 				var fileEncoding = A_FileEncodingRaw;
 				var val = fileEncoding.BodyName;
 
@@ -206,15 +209,43 @@ namespace Keysharp.Internals.Threading
 			}
 			set
 			{
-				if (value is Encoding enc || Files.TryGetEncoding(value, out enc))
-					Script.TheScript.Threads.CurrentThread.configData.fileEncoding = enc;
+				if (value is Encoding enc)
+					SetFileEncoding(enc, null);
+				else if (value.CoerceString(out var name) && Files.TryGetEncoding(name, out enc))
+					SetFileEncoding(enc, name);
 			}
+		}
+
+		internal static void SetFileEncoding(Encoding encoding, string requestedName)
+		{
+			var config = Script.TheScript.Threads.CurrentThread.configData;
+			config.fileEncoding = encoding;
+			var number = requestedName.AsSpan();
+
+			if (number.StartsWith("CP", StringComparison.OrdinalIgnoreCase))
+				number = number[2..];
+
+			config.fileEncodingName = requestedName != null && (number.IsEmpty || int.TryParse(number, out var codePage) && codePage == 0)
+				? "CP0"
+				: encoding.CodePage switch
+				{
+					65001 => encoding.GetPreamble().Length == 0 ? "UTF-8-RAW" : "UTF-8",
+					1200 => encoding.GetPreamble().Length == 0 ? "UTF-16-RAW" : "UTF-16",
+					var code => $"CP{code}"
+				};
 		}
 
 		/// <summary>
 		/// Wrapper to retrieve the file encoding as an <see cref="Encoding"/> object.
 		/// </summary>
-		internal static Encoding A_FileEncodingRaw => Script.TheScript.Threads.CurrentThread.configData.fileEncoding;
+		internal static Encoding A_FileEncodingRaw
+		{
+			get
+			{
+				var config = Script.TheScript.Threads.CurrentThread.configData;
+				return Script.CompatV20 && config.fileEncodingName == null ? NativeType.AnsiEncoding : config.fileEncoding;
+			}
+		}
 
 		/// <summary>
 		/// The delay in milliseconds between SendEvent keystrokes.

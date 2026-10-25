@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {"id":"macos-getpid","category":"native-capability","script":"getpid.ahk","expected_stdout":"golden/getpid.txt","platforms":["Darwin"]},
+    {"id":"macos-strlen","category":"native-capability","script":"strlen.ahk","expected_stdout":"golden/strlen.txt","platforms":["Darwin"]},
+    {"id":"macos-qsort-callback","category":"native-capability","script":"qsort-callback.ahk","expected_stdout":"golden/qsort-callback.txt","platforms":["Darwin"]},
+    {"id":"macos-sqrtf","category":"native-capability","script":"sqrtf.ahk","expected_stdout":"golden/sqrtf.txt","platforms":["Darwin"]}
+  ]
+}

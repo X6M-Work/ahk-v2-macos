@@ -2,6 +2,9 @@ namespace Keysharp.Tests;
 
 public class ParserTests : TestRunner
 {
+	[Test, Category("Parser")]
+	public void IdentifierNames() => Assert.IsTrue(TestScript("identifier-names", false));
+
 	private static (byte[] Bytes, string Error) Compile(string source) => CompileRaw("#ErrorStdOut\n" + source);
 
 	// Compiles the source exactly as written, with no leading directive. Only a case whose subject is the FIRST

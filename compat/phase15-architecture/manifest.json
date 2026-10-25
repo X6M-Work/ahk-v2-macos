@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {"id":"destructor-alias","category":"object-lifetime","script":"destructor-alias.ahk","expected_stdout":"golden/destructor-alias.txt"},
+    {"id":"destructor-scope","category":"object-lifetime","script":"destructor-scope.ahk","expected_stdout":"golden/destructor-scope.txt"},
+    {"id":"destructor-temporary","category":"object-lifetime","script":"destructor-temporary.ahk","expected_stdout":"golden/destructor-temporary.txt"},
+    {"id":"destructor-resurrection","category":"object-lifetime","script":"destructor-resurrection.ahk","expected_stdout":"golden/destructor-resurrection.txt"},
+    {"id":"file-scope-close","category":"object-lifetime","script":"file-scope-close.ahk","expected_stdout":"golden/file-scope-close.txt"}
+  ]
+}

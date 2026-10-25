@@ -1,0 +1,1 @@
+{"schema_version":1,"cases":[{"id":"regex-escape-lexing","category":"regex-characterization","script":"regex-escape-lexing.ahk","expected_stdout":"golden/regex-escape-lexing.txt"}]}

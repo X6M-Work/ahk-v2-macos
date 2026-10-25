@@ -103,6 +103,7 @@ namespace Keysharp.Builtins
 		/// The case comparison to use for string keys.
 		/// </summary>
 		private eCaseSense caseSense = eCaseSense.On;
+		private readonly bool v20Keys;
 
 		/// <summary>
 		/// The comparer to use when enumerating with <see cref="EnumerableMap"/>
@@ -234,6 +235,7 @@ namespace Keysharp.Builtins
 		/// <param name="caseSense">The case comparison mode for string keys.</param>
 		internal Map(eCaseSense caseSense) : base(null)
 		{
+			v20Keys = Script.CompatV20 && this is not Ks.HashMap;
 			this.caseSense = caseSense;
 			map = new Dictionary<object, object>(CaseEqualityComp.For(caseSense));
 		}
@@ -246,7 +248,7 @@ namespace Keysharp.Builtins
 		public KeysharpFunc __Enum(object NumberOfVars = null)
 		{
 			_ = NumberOfVars.TryCoerceInt(out var count);
-			return CreateEnumerator(count > 1 ? 2 : count == 0 ? 0 : 1);
+			return CreateEnumerator(Script.CompatV20 ? count : count > 1 ? 2 : count == 0 ? 0 : 1);
 		}
 
 		/// <summary>
@@ -336,6 +338,8 @@ namespace Keysharp.Builtins
 		/// <exception cref="UnsetItemError">An <see cref="UnsetItemError"/> exception is thrown if the key was not found.</exception>
 		public object Delete(object key)
 		{
+			key = NormalizeKey(key);
+
 			if (map.Remove(key, out var val))
 			{
 				if (enumerableMap != null)
@@ -391,7 +395,7 @@ namespace Keysharp.Builtins
 		/// </summary>
 		/// <param name="key">The key to search for.</param>
 		/// <returns>True if key is found, else false.</returns>
-		public bool Has(object key) => map.ContainsKey(key);
+		public bool Has(object key) => map.ContainsKey(NormalizeKey(key));
 
 		/// <summary>
 		/// Sets zero or more items.
@@ -401,6 +405,20 @@ namespace Keysharp.Builtins
 		/// <exception cref="ValueError">A <see cref="ValueError"/> exception is thrown if values was not of a supported type.</exception>
 		public Map Set(params object[] args)
 		{
+			if (Script.CompatV20 && this is not Ks.HashMap)
+			{
+				if ((args?.Length ?? 0) % 2 != 0)
+				{
+					_ = Errors.ErrorOccurred("Invalid number of parameters.");
+					return this;
+				}
+
+				for (var i = 0; i < (args?.Length ?? 0); i += 2)
+					Insert(args[i], args[i + 1]);
+
+				return this;
+			}
+
 			if (enumerableMap != null)
 				enumerableMap = null;
 
@@ -492,6 +510,7 @@ namespace Keysharp.Builtins
 		// MapComparer ranks object keys alike, so the entry found must be checked to be this key.
 		private void Insert(object key, object value)
 		{
+			key = NormalizeKey(key);
 			ref var slot = ref CollectionsMarshal.GetValueRefOrAddDefault(map, key, out var existed);
 			slot = value;
 
@@ -512,10 +531,39 @@ namespace Keysharp.Builtins
 		/// <param name="key">The key to search for.</param>
 		/// <param name="value">The value found.</param>
 		/// <returns>True if key was found else false.</returns>
-		internal bool TryGetValue(object key, out object value) => map.TryGetValue(key, out value);
+		internal bool TryGetValue(object key, out object value) => map.TryGetValue(NormalizeKey(key), out value);
+
+		private object NormalizeKey(object key) => !v20Keys ? key : key switch
+		{
+			double number => Script.FormatFloat(number),
+			bool boolean => boolean ? 1L : 0L,
+			int integer => (long)integer,
+			_ => key
+		};
 
 		private Enumerator CreateEnumerator(int count = 0)
 		{
+			if (Script.CompatV20 && this is not Ks.HashMap)
+			{
+				var position = -1;
+				KeyValuePair<object, object> current = default;
+
+				return new Enumerator(
+					this,
+					count,
+					() =>
+					{
+						var pairs = (KeyValuePair<object, object>[])EnumerableMap;
+						if (++position >= pairs.Length)
+							return false;
+						current = pairs[position];
+						return true;
+					},
+					() => current.Key,
+					() => (current.Key, current.Value),
+					() => position = -1);
+			}
+
 			var enumerable = EnumerableMap;
 
 			if (enumerable is KeyValuePair<object, object>[] pairs)
@@ -573,7 +621,7 @@ namespace Keysharp.Builtins
 			{
 				if (value == null)
 				{
-					if (map.Remove(key))
+					if (map.Remove(NormalizeKey(key)))
 						enumerableMap = null;
 					else if (!Script.CompatReturnsUnsetForMissing)
 						_ = Errors.UnsetItemErrorOccurred(key);

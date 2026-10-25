@@ -65,6 +65,31 @@ namespace Keysharp.Internals.Interop
 			_ => NativeTypeCode.Invalid
 		};
 
+		internal static NativeTypeCode ParseMemory(ReadOnlySpan<char> tag)
+		{
+			if (!Script.CompatV20)
+				return Parse(tag);
+
+			var unsigned = !tag.IsEmpty && (tag[0] | 0x20) == 'u';
+
+			if (unsigned)
+				tag = tag[1..];
+
+			if (tag.IsEmpty)
+				return NativeTypeCode.Invalid;
+
+			return (tag[0] | 0x20) switch
+			{
+				'i' => tag.Contains('6') ? unsigned ? NativeTypeCode.UInt64 : NativeTypeCode.Int64 : unsigned ? NativeTypeCode.UInt : NativeTypeCode.Int,
+				's' => unsigned ? NativeTypeCode.UShort : NativeTypeCode.Short,
+				'c' => unsigned ? NativeTypeCode.UChar : NativeTypeCode.Char,
+				'p' => unsigned ? NativeTypeCode.UPtr : NativeTypeCode.Ptr,
+				'f' => NativeTypeCode.Float,
+				'd' => NativeTypeCode.Double,
+				_ => NativeTypeCode.Invalid
+			};
+		}
+
 		/// <summary>
 		/// The number of bytes a value of this type occupies in memory. A type that names no storage of its own
 		/// (Void, Invalid) is 0; the string types are the pointer that is actually passed.
@@ -106,7 +131,7 @@ namespace Keysharp.Internals.Interop
 		/// statement rather than an expression because the arms have to keep their own types: an expression would
 		/// find one common type for them all and hand a script a Float where it asked for an Integer.
 		/// </summary>
-		internal static unsafe object ReadMemory(NativeTypeCode code, nint address)
+		internal static unsafe object ReadMemory(NativeTypeCode code, nint address, bool exactFloat = false)
 		{
 			var p = (void*)address;
 
@@ -127,7 +152,7 @@ namespace Keysharp.Internals.Interop
 
 				case NativeTypeCode.Double: return Unsafe.ReadUnaligned<double>(p);
 
-				case NativeTypeCode.Float: return WidenFloat(Unsafe.ReadUnaligned<float>(p));
+				case NativeTypeCode.Float: return exactFloat ? (double)Unsafe.ReadUnaligned<float>(p) : WidenFloat(Unsafe.ReadUnaligned<float>(p));
 
 				//A string output slot holds the address of a string, so it dereferences to the string itself,
 				//with StrGet's guard against a null or implausibly low address. None of them are freed: as
@@ -222,6 +247,9 @@ namespace Keysharp.Internals.Interop
 		/// </summary>
 		internal static double WidenFloat(float value)
 		{
+			if (Script.CompatV20)
+				return value;
+
 			// Below 2^24 every integral float is exact, and so is its plain cast.
 			if (MathF.Abs(value) < 16777216f && value == MathF.Truncate(value))
 				return value;

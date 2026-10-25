@@ -44,3 +44,7 @@ demos/*.gif
 /result
 /result-*
 .claude
+/.deps/
+/compat/reports/
+__pycache__/
+*.pyc

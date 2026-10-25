@@ -35,21 +35,21 @@ namespace Keysharp.Compilation.Syntax
 		public readonly List<string> CompileWarnings = new();
 
 		// Global slot table: script name -> emitted C# field identifier (keyword-escaped).
-		private readonly Dictionary<string, string> _fields = new(StringComparer.OrdinalIgnoreCase);
+		private readonly Dictionary<string, string> _fields = new(AhkIdentifierComparer.Instance);
 		// A named fat arrow's self-reference resolves to its own function object.
-		private readonly Dictionary<string, System.Func<ExpressionSyntax>> _inlineAliases = new(StringComparer.OrdinalIgnoreCase);
+		private readonly Dictionary<string, System.Func<ExpressionSyntax>> _inlineAliases = new(AhkIdentifierComparer.Instance);
 		private readonly List<MemberDeclarationSyntax> _fieldDecls = new();
 		// The references NativeStringArguments makes for naked variables (see VariableRef).
 		private readonly HashSet<Expr> _implicitRefs = new(ReferenceEqualityComparer.Instance);
 		// Function statics are emitted beside their callable: module fields by default, class fields inside LowerClass.
 		private List<MemberDeclarationSyntax> _staticFieldSink;
-		private readonly Dictionary<string, string> _userFuncByLower = new(StringComparer.OrdinalIgnoreCase);
+		private readonly Dictionary<string, string> _userFuncByLower = new(AhkIdentifierComparer.Instance);
 		// The same top-level functions, keeping their declarations so #Warn NamedArg can check a named argument
 		// against the callee's parameter list.
-		private readonly Dictionary<string, FunctionDecl> _userFuncDeclByLower = new(StringComparer.OrdinalIgnoreCase);
+		private readonly Dictionary<string, FunctionDecl> _userFuncDeclByLower = new(AhkIdentifierComparer.Instance);
 		// The same for classes, so a constructor call `MyClass(x: 1)` can be checked against __New's parameters.
-		private readonly Dictionary<string, ClassDecl> _userClassDeclByLower = new(StringComparer.OrdinalIgnoreCase);
-		private readonly Dictionary<string, string> _userClassByLower = new(StringComparer.OrdinalIgnoreCase);
+		private readonly Dictionary<string, ClassDecl> _userClassDeclByLower = new(AhkIdentifierComparer.Instance);
+		private readonly Dictionary<string, string> _userClassByLower = new(AhkIdentifierComparer.Instance);
 		private bool _inMethod;
 		private string _currentClassBase;   // base type name of the class being lowered (for `super`)
 		// Dotted C# path of the class currently being lowered (e.g. "Outer.Inner"), or null at module scope, which names
@@ -95,7 +95,7 @@ namespace Keysharp.Compilation.Syntax
 
 		private sealed class LabelTable
 		{
-			public readonly Dictionary<string, ScriptLabel> ByName = new(StringComparer.OrdinalIgnoreCase);
+			public readonly Dictionary<string, ScriptLabel> ByName = new(AhkIdentifierComparer.Instance);
 			public bool ComputedGoto;   // a goto whose label is computed can reach any label, so every one needs a C# label
 		}
 		// Null outside a scope whose body uses %name%, else whether its FuncScope (KS_scope) has a writer.
@@ -115,12 +115,12 @@ namespace Keysharp.Compilation.Syntax
 		private readonly Dictionary<FatArrowExpr, FunctionDecl> _arrowDecls = new(ReferenceEqualityComparer.Instance);   // see ArrowDecl
 		private readonly HashSet<string> _emittedFuncImpls = new();   // guards against duplicate hoisted nested functions
 		private readonly List<ImportWildcard> _moduleWildcards = new();
-		private readonly HashSet<string> _moduleExplicitImports = new(StringComparer.OrdinalIgnoreCase);
+		private readonly HashSet<string> _moduleExplicitImports = new(AhkIdentifierComparer.Instance);
 		// The variables the module being lowered declares or assigns at its top level, and those a function in it declares
 		// global. They are its own, so no wildcard import supplies them.
-		private HashSet<string> _moduleOwnVars = new(StringComparer.OrdinalIgnoreCase);
+		private HashSet<string> _moduleOwnVars = new(AhkIdentifierComparer.Instance);
 		// Module-scope import aliases -> what each binds, for #Warn NamedArg, `extends` and writes to an import.
-		private readonly Dictionary<string, ImportRef> _importMembers = new(StringComparer.OrdinalIgnoreCase);
+		private readonly Dictionary<string, ImportRef> _importMembers = new(AhkIdentifierComparer.Instance);
 
 		// A member of a module, or the module object when Member is null. Constant is what a read-only error calls what it
 		// binds (Func, Class, Module or built-in variable), decided when it is bound, or null for a variable a write reaches.
@@ -216,7 +216,7 @@ namespace Keysharp.Compilation.Syntax
 		// The globals the module assigns, and the unset reads found, which are warned about once every assignment is known
 		// (see AnalyzeWarnings). Unheld is a read of a name the reading function holds no variable of, and Global one worded
 		// as a global's.
-		private HashSet<string> _warnAssignedGlobals = new(StringComparer.OrdinalIgnoreCase);
+		private HashSet<string> _warnAssignedGlobals = new(AhkIdentifierComparer.Instance);
 		private List<(NameExpr Read, bool Unheld, bool Global)> _warnUnsetReads = new();
 		// The function scope enclosing the one analyzed, for its assume-global mode and declared globals.
 		private FunctionScope _warnScope;
@@ -258,8 +258,8 @@ namespace Keysharp.Compilation.Syntax
 		private readonly ObjectStackPool<List<MemberDeclarationSyntax>> _scratchListMembers = new(() => [], item => item.Clear());
 		private readonly ObjectStackPool<List<MemberDeclarationSyntax>> _scratchListMembersDangerous = new(() => []);
 		private readonly HashSet<SyntaxAnnotation> _scratchSettleStale = new();
-		private readonly ObjectStackPool<HashSet<string>> _scratchCaseSensitiveHashStrings = new(() => new(StringComparer.OrdinalIgnoreCase), item => item.Clear());
-		private readonly ObjectStackPool<HashSet<string>> _scratchCaseInsensitiveHashStrings = new(() => new(StringComparer.OrdinalIgnoreCase), item => item.Clear());
+		private readonly ObjectStackPool<HashSet<string>> _scratchCaseSensitiveHashStrings = new(() => new(AhkIdentifierComparer.Instance), item => item.Clear());
+		private readonly ObjectStackPool<HashSet<string>> _scratchCaseInsensitiveHashStrings = new(() => new(AhkIdentifierComparer.Instance), item => item.Clear());
 		private readonly ObjectStackPool<List<string>> _scratchListStrings = new(() => [], item => item.Clear());
 		private readonly ObjectStackPool<Settlement> _scratchLowerCallableBodySettlements = new(() => new(), item =>
 		{
@@ -310,7 +310,7 @@ namespace Keysharp.Compilation.Syntax
 		}
 
 		private static bool IsUnsetKeyword(Expr expr) =>
-			expr is NameExpr name && StringComparer.OrdinalIgnoreCase.Equals(name.Name, "unset");
+			expr is NameExpr name && AhkIdentifierComparer.Instance.Equals(name.Name, "unset");
 
 		// The variable of an unset test written as a comparison against the `unset` keyword — `x = unset`, `x == unset`,
 		// `x is unset`, their negations, and the same with the operands reversed. This is a Keysharp extension (AutoHotkey
@@ -319,7 +319,7 @@ namespace Keysharp.Compilation.Syntax
 		private static NameExpr UnsetTestOperand(BinaryExpr binary)
 		{
 			// `is` is a verbal operator, so it carries whatever casing the source used.
-			var isTypeTest = StringComparer.OrdinalIgnoreCase.Equals(binary.Op, "is");
+			var isTypeTest = AhkIdentifierComparer.Instance.Equals(binary.Op, "is");
 
 			if (!isTypeTest && binary.Op is not ("=" or "==" or "!=" or "!=="))
 				return null;
@@ -378,7 +378,7 @@ namespace Keysharp.Compilation.Syntax
 		// Case-insensitive so verbal operators carry any source casing (Is, AND, Or).
 		private static readonly Dictionary<string, string> BinOps = new(
 			Keysharp.Runtime.OperatorCatalog.All.Where(op => op.Arity == 2)
-				.ToDictionary(op => op.Symbol, op => op.Kind.ToString()), StringComparer.OrdinalIgnoreCase)
+				.ToDictionary(op => op.Symbol, op => op.Kind.ToString()), AhkIdentifierComparer.Instance)
 		{
 			["&&"] = "BooleanAnd", ["||"] = "BooleanOr", ["and"] = "BooleanAnd", ["or"] = "BooleanOr",
 			["is"] = "Is",   // `??` / `??=` are lowered to C#'s short-circuiting null-coalescing operator, not a helper call.
@@ -436,13 +436,13 @@ namespace Keysharp.Compilation.Syntax
 			// EVERY import in the module regardless of nesting (top-level, control-flow, function/class/switch/hotkey
 			// bodies) — drives file loading and execution order, which stay eager and scope-blind. Superset of the above.
 			public List<ImportDirective> AllImports = new();
-			public Dictionary<string, ExportK> Exports = new(StringComparer.OrdinalIgnoreCase);
-			public HashSet<string> DirectVariables = new(StringComparer.OrdinalIgnoreCase);
+			public Dictionary<string, ExportK> Exports = new(AhkIdentifierComparer.Instance);
+			public HashSet<string> DirectVariables = new(AhkIdentifierComparer.Instance);
 			public HashSet<string> InlineMembers;
-			public Dictionary<string, MemberBinding> OwnBindings = new(StringComparer.OrdinalIgnoreCase);
-			public Dictionary<string, ModuleImport> NamedBindings = new(StringComparer.OrdinalIgnoreCase);
-			public Dictionary<string, MemberBinding> Bindings = new(StringComparer.OrdinalIgnoreCase);
-			public HashSet<string> ExportNames = new(StringComparer.OrdinalIgnoreCase);
+			public Dictionary<string, MemberBinding> OwnBindings = new(AhkIdentifierComparer.Instance);
+			public Dictionary<string, ModuleImport> NamedBindings = new(AhkIdentifierComparer.Instance);
+			public Dictionary<string, MemberBinding> Bindings = new(AhkIdentifierComparer.Instance);
+			public HashSet<string> ExportNames = new(AhkIdentifierComparer.Instance);
 		}
 
 		// File names tried for a module reference, Keysharp-native first then AHK-compatible.
@@ -519,7 +519,7 @@ namespace Keysharp.Compilation.Syntax
 		private void ScanExports(ModInfo m)
 		{
 			var assigned = new List<string>();
-			var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var seen = new HashSet<string>(AhkIdentifierComparer.Instance);
 			// A declaration of a built-in variable names the built-in rather than declaring a variable of the module.
 			void Declare(string name)
 			{
@@ -545,7 +545,7 @@ namespace Keysharp.Compilation.Syntax
 			}
 			foreach (var function in NamedArrows(m.Body, null)) m.Exports[function.Name] = ExportK.Function;
 			// A variable keeps the spelling it first has at the top level, which errors and ListVars name it by.
-			var spellings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var spellings = new HashSet<string>(AhkIdentifierComparer.Instance);
 			CollectSpellings(m.Body, null, spellings);
 			foreach (var name in assigned) Declare(spellings.TryGetValue(name, out var spelling) ? spelling : name);
 			// A global declaration in a function declares the module's variable as one at the top level does, and exports it
@@ -603,11 +603,11 @@ namespace Keysharp.Compilation.Syntax
 		{
 			member = null;
 
-			if (StringComparer.OrdinalIgnoreCase.Equals(name, im.Alias ?? (!im.Quoted ? ImportBindingName(im.Module) : null)))
+			if (AhkIdentifierComparer.Instance.Equals(name, im.Alias ?? (!im.Quoted ? ImportBindingName(im.Module) : null)))
 				return true;
 
 			foreach (var (imported, alias) in NamedImports(im.Named))
-				if (imported != "*" && StringComparer.OrdinalIgnoreCase.Equals(alias, name))
+				if (imported != "*" && AhkIdentifierComparer.Instance.Equals(alias, name))
 				{
 					member = imported;
 					return true;
@@ -618,9 +618,9 @@ namespace Keysharp.Compilation.Syntax
 
 		private static Dictionary<string, ExportK> BuiltinExportKinds(string module)
 		{
-			var exports = new Dictionary<string, ExportK>(StringComparer.OrdinalIgnoreCase);
+			var exports = new Dictionary<string, ExportK>(AhkIdentifierComparer.Instance);
 			var rd = Script.TheScript.ReflectionsData;
-			if (StringComparer.OrdinalIgnoreCase.Equals(module, "AHK"))
+			if (AhkIdentifierComparer.Instance.Equals(module, "AHK"))
 			{
 				foreach (var name in rd.flatPublicStaticMethods.Keys) exports[name] = ExportK.Function;
 				foreach (var name in rd.flatPublicStaticProperties.Keys) exports[name] = ExportK.Variable;
@@ -749,7 +749,7 @@ namespace Keysharp.Compilation.Syntax
 		// precedence over any imported name (even a later import), so these are excluded from import binding.
 		private static HashSet<string> CollectLocalDeclNames(List<Stmt> body)
 		{
-			var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var set = new HashSet<string>(AhkIdentifierComparer.Instance);
 			foreach (var s in body)
 			{
 				switch (s)
@@ -806,7 +806,7 @@ namespace Keysharp.Compilation.Syntax
 		private static Dictionary<string, System.Reflection.MemberInfo> MembersOf(Type modType) => ModuleMembers.GetOrAdd(modType, static type =>
 		{
 			const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly;
-			var table = new Dictionary<string, System.Reflection.MemberInfo>(StringComparer.OrdinalIgnoreCase);
+			var table = new Dictionary<string, System.Reflection.MemberInfo>(AhkIdentifierComparer.Instance);
 
 			foreach (var member in type.GetMethods(flags).Where(mi => !mi.IsSpecialName)
 				.Concat<System.Reflection.MemberInfo>(type.GetNestedTypes(System.Reflection.BindingFlags.Public)).Concat(type.GetProperties(flags)))
@@ -823,7 +823,7 @@ namespace Keysharp.Compilation.Syntax
 
 		// A built-in member is named by its [UserDeclaredName], else its CLR name, as every run-time table names it.
 		private static bool NamedAs(System.Reflection.MemberInfo member, string name) =>
-			StringComparer.OrdinalIgnoreCase.Equals(Script.GetUserDeclaredName(member) ?? member.Name, name);
+			AhkIdentifierComparer.Instance.Equals(Script.GetUserDeclaredName(member) ?? member.Name, name);
 
 		// What a name resolves to across modules, as far as the compiler can see: a script module (Decl null) or one of its
 		// declarations, or a built-in member (a Type for a class or a built-in module, typeof(Ahk) for the AHK module).
@@ -882,11 +882,11 @@ namespace Keysharp.Compilation.Syntax
 		// A member of what a name resolves to: a nested class of a class, or a member of a module object.
 		private NameTarget MemberTarget(NameTarget target, string name) => target switch
 		{
-			{ Decl: ClassDecl cd } => cd.Nested.FirstOrDefault(n => StringComparer.OrdinalIgnoreCase.Equals(n.Name, name)) is { } nested
+			{ Decl: ClassDecl cd } => cd.Nested.FirstOrDefault(n => AhkIdentifierComparer.Instance.Equals(n.Name, name)) is { } nested
 				? target with { Decl = nested, Type = target.Type + "." + NameMangler.ClassType(nested.Name) } : null,
 			{ InlineDeclaration: TypeDeclarationSyntax inline } => inline.Members.OfType<TypeDeclarationSyntax>().FirstOrDefault(n =>
 				IsScriptVisible(n) && InlineFacts(n) is { ScriptClass: true, Hidden: false }
-				&& StringComparer.OrdinalIgnoreCase.Equals(InlineDeclaredName(n, n.Identifier.ValueText), name)) is { } nested
+				&& AhkIdentifierComparer.Instance.Equals(InlineDeclaredName(n, n.Identifier.ValueText), name)) is { } nested
 				? target with { InlineDeclaration = nested, Type = target.Type + "." + nested.Identifier.Text } : null,
 			{ Module: { } m, Decl: null, InlineDeclaration: null } => BindingTarget(ResolveMemberBinding(new(m), name)),
 			{ Builtin: Type type } when type == typeof(Keysharp.Runtime.Ahk) => BindingTarget(ResolveMemberBinding(AhkSource, name)),
@@ -1074,7 +1074,7 @@ namespace Keysharp.Compilation.Syntax
 		}
 
 		private static Semver.SemVersion RequiresMode(Stmt s) =>
-			s is DirectiveStmt d && StringComparer.OrdinalIgnoreCase.Equals(d.Name, "Requires") ? MapRequires(d.Args) : null;
+			s is DirectiveStmt d && AhkIdentifierComparer.Instance.Equals(d.Name, "Requires") ? MapRequires(d.Args) : null;
 
 		/// <summary>
 		/// Gives each top-level definition the mode of the version directives before it in its own inclusion of its file,
@@ -1140,14 +1140,14 @@ namespace Keysharp.Compilation.Syntax
 		{
 			public long SourceOrder;
 			public ModuleSource Source;
-			public Dictionary<string, ImportBinding> Hits = new(StringComparer.OrdinalIgnoreCase);
+			public Dictionary<string, ImportBinding> Hits = new(AhkIdentifierComparer.Instance);
 		}
 
 		// A lexical import scope (one class body or one callable body): explicit alias bindings plus wildcard sources.
 		private sealed class ImportScope
 		{
 			public FunctionScope Owner;
-			public Dictionary<string, ImportBinding> Named = new(StringComparer.OrdinalIgnoreCase);
+			public Dictionary<string, ImportBinding> Named = new(AhkIdentifierComparer.Instance);
 			public List<ImportWildcard> Wildcards = new();
 		}
 
@@ -1173,7 +1173,7 @@ namespace Keysharp.Compilation.Syntax
 		// The variables of one callable, searched outward through the callables enclosing a closure as FindUpVar does.
 		private sealed class FunctionScope(FunctionScope parent, bool isStatic = false)
 		{
-			public readonly Dictionary<string, LocalStorage> Variables = new(StringComparer.OrdinalIgnoreCase);
+			public readonly Dictionary<string, LocalStorage> Variables = new(AhkIdentifierComparer.Instance);
 			public readonly FunctionScope Parent = parent;   // the enclosing callable of a fat arrow or nested function
 			public FunctionScope Root => Parent?.Root ?? this;
 			public readonly bool IsStatic = isStatic;        // a `static` nested function
@@ -1191,11 +1191,11 @@ namespace Keysharp.Compilation.Syntax
 
 			public bool Reaches(ScopeVar v) => v.Owner == this || v.Storage is VarStorage.Static or VarStorage.Global || UpVars?.Contains(v.Key) == true;
 			// Locals holds the parameters and every other local; ByRef is the by-ref parameters.
-			public readonly HashSet<string> ByRef = new(StringComparer.OrdinalIgnoreCase), ExplicitLocals = new(StringComparer.OrdinalIgnoreCase),
-				Locals = new(StringComparer.OrdinalIgnoreCase), Globals = new(StringComparer.OrdinalIgnoreCase), Closures = new(StringComparer.OrdinalIgnoreCase);
-			public readonly Dictionary<string, string> Statics = new(StringComparer.OrdinalIgnoreCase);   // name -> SL_ field
+			public readonly HashSet<string> ByRef = new(AhkIdentifierComparer.Instance), ExplicitLocals = new(AhkIdentifierComparer.Instance),
+				Locals = new(AhkIdentifierComparer.Instance), Globals = new(AhkIdentifierComparer.Instance), Closures = new(AhkIdentifierComparer.Instance);
+			public readonly Dictionary<string, string> Statics = new(AhkIdentifierComparer.Instance);   // name -> SL_ field
 			// How each variable the callable holds is declared, which an error about it says.
-			public readonly Dictionary<string, VarKind> Kinds = new(StringComparer.OrdinalIgnoreCase);
+			public readonly Dictionary<string, VarKind> Kinds = new(AhkIdentifierComparer.Instance);
 			// A bare `global` of the callable's own, which hides the enclosing callables' variables, as FindUpVar does.
 			public bool DeclaresGlobal;
 			// The source a variable's declared spelling is read from: the parameters, the nested functions and the body.
@@ -1234,7 +1234,7 @@ namespace Keysharp.Compilation.Syntax
 			// Every variable Find reaches, once each, nearest scope first.
 			public IEnumerable<ScopeVar> Visible()
 			{
-				var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+				var seen = new HashSet<string>(AhkIdentifierComparer.Instance);
 				var crossedStatic = false;
 
 				for (var s = this; s != null; s = s.Parent)
@@ -1278,7 +1278,7 @@ namespace Keysharp.Compilation.Syntax
 			{
 				if (spellings == null)
 				{
-					spellings = new(StringComparer.OrdinalIgnoreCase);
+					spellings = new(AhkIdentifierComparer.Instance);
 
 					foreach (var name in (Params ?? []).Select(p => p.Name).Concat(Nested.Select(fd => fd.Name)))
 						spellings.Add(name);
@@ -1356,7 +1356,7 @@ namespace Keysharp.Compilation.Syntax
 		private ImportBinding ScopedMemberBinding(string modName, string member, ImportDirective im)
 		{
 			var binding = ResolvedImportBinding(ImportSource(im), member, member, im);
-			if (binding == null && !StringComparer.OrdinalIgnoreCase.Equals(modName, "AHK"))
+			if (binding == null && !AhkIdentifierComparer.Instance.Equals(modName, "AHK"))
 				Diag($"{NodeAnchor(im)}#Import: module '{modName}' has no exported member named '{member}'");
 			return binding;
 		}
@@ -1591,19 +1591,19 @@ namespace Keysharp.Compilation.Syntax
 		private ExpressionSyntax VariableRef(string name, WriteTarget target, bool naked = false)
 		{
 			var binding = Bind(name, writing: !naked);
-			var variable = _inMethod && StringComparer.OrdinalIgnoreCase.Equals(name, "this") ? Receiver() : binding.Variable;
+			var variable = _inMethod && AhkIdentifierComparer.Instance.Equals(name, "this") ? Receiver() : binding.Variable;
 			var refIfSet = Access("Keysharp.Builtins.Misc.RefIfSet");
 			if (variable.Storage == VarStorage.ByRef) return naked ? Inv(refIfSet, LocalValue(variable)) : LocalValue(variable);
-			var canonical = variable.Storage is VarStorage.Local or VarStorage.Static || StringComparer.OrdinalIgnoreCase.Equals(name, "this") ? null : ResolvedReferenceTarget(name, binding);
+			var canonical = variable.Storage is VarStorage.Local or VarStorage.Static || AhkIdentifierComparer.Instance.Equals(name, "this") ? null : ResolvedReferenceTarget(name, binding);
 			if (canonical != null)
 			{
 				var reference = MemberReference(canonical, naked);
 				return naked ? canonical.Storage == ModuleBindingKind.Field ? Inv(refIfSet, reference) : target.Read : reference;
 			}
-			var field = variable.Storage == VarStorage.Local || StringComparer.OrdinalIgnoreCase.Equals(name, "this") ? null : StaticField(name, variable, writing: !naked);
+			var field = variable.Storage == VarStorage.Local || AhkIdentifierComparer.Instance.Equals(name, "this") ? null : StaticField(name, variable, writing: !naked);
 			var own = variable.Storage == VarStorage.Local ? LocalBox(variable)
 				: field is { } f ? FieldRefGS(f.Type, f.Field, target.Read, target.Write(Id("KS_value"))) : null;
-			var declaredName = field?.Name ?? (StringComparer.OrdinalIgnoreCase.Equals(name, "this") ? "this" : variable.Owner?.Spelling(name) ?? name);
+			var declaredName = field?.Name ?? (AhkIdentifierComparer.Instance.Equals(name, "this") ? "this" : variable.Owner?.Spelling(name) ?? name);
 			//IsNativeStringVariable passes on only a variable with a reference of its own.
 			if (naked) return own != null ? Inv(refIfSet, own) : target.Read;
 			return own != null ? Inv(Access("Keysharp.Builtins.Misc.MakeVarRef"), own, Str(declaredName))
@@ -1633,7 +1633,7 @@ namespace Keysharp.Compilation.Syntax
 			if (v.Storage is VarStorage.Local or VarStorage.ByRef or VarStorage.Closure)
 				for (var s = _scope; s != v.Owner; s = s.Parent)
 				{
-					(s.UpVars ??= new(StringComparer.OrdinalIgnoreCase)).Add(v.Key);
+					(s.UpVars ??= new(AhkIdentifierComparer.Instance)).Add(v.Key);
 					s.Captures |= v.Storage != VarStorage.Closure;
 				}
 		}
@@ -1795,7 +1795,7 @@ namespace Keysharp.Compilation.Syntax
 
 		private ExpressionSyntax NameRef(string lower, bool writing = false)
 		{
-			if (_inMethod && StringComparer.OrdinalIgnoreCase.Equals(lower, "this") && _scope.Find(lower).Storage == VarStorage.None) { CaptureThis(); return LocalValue(Receiver()); }
+			if (_inMethod && AhkIdentifierComparer.Instance.Equals(lower, "this") && _scope.Find(lower).Storage == VarStorage.None) { CaptureThis(); return LocalValue(Receiver()); }
 
 			var binding = Bind(lower, writing);
 
@@ -2076,7 +2076,7 @@ namespace Keysharp.Compilation.Syntax
 		/// families, and the DHHR takes #HotIf/#Hotstring at top level (so only a nested one reaches the switch).
 		/// They reach the default arm as legitimate no-ops. Anything genuinely implemented has a `case` above instead.
 		/// </summary>
-		private static readonly HashSet<string> DirectivesHandledElsewhere = new(StringComparer.OrdinalIgnoreCase)
+		private static readonly HashSet<string> DirectivesHandledElsewhere = new(AhkIdentifierComparer.Instance)
 		{
 			"Include", "IncludeAgain", "Import", "Module", "HotIf", "Hotstring",
 			"Define", "Undef", "If", "ElIf", "Else", "EndIf",
@@ -2094,7 +2094,7 @@ namespace Keysharp.Compilation.Syntax
 			var active = _errorStdOutActive;
 
 			foreach (var directive in _scratchManifestDirectives.OrderBy(directive => directive.SourceOrder))
-				if (StringComparer.OrdinalIgnoreCase.Equals(directive.Name, "ErrorStdOut"))
+				if (AhkIdentifierComparer.Instance.Equals(directive.Name, "ErrorStdOut"))
 					_errorStdOutActive = true;
 				else if (IsCanonicalManifestDirective(directive))
 					ApplyManifestDirectiveOnce(directive);
@@ -2110,14 +2110,14 @@ namespace Keysharp.Compilation.Syntax
 				CollectStatements(stmt, _scratchErrorStdOutBeforeDirectives);
 
 			if (_scratchErrorStdOutBeforeDirectives.Any(directive => directive.SourceOrder < sourceOrder
-					&& StringComparer.OrdinalIgnoreCase.Equals(directive.Name, "ErrorStdOut")))
+					&& AhkIdentifierComparer.Instance.Equals(directive.Name, "ErrorStdOut")))
 				_errorStdOutActive = true;
 		}
 
 		private static bool IsCanonicalManifestDirective(DirectiveStmt directive) =>
-			StringComparer.OrdinalIgnoreCase.Equals(directive.Name, "NoTrayIcon")
-			|| StringComparer.OrdinalIgnoreCase.Equals(directive.Name, "TrayIcon")
-			|| StringComparer.OrdinalIgnoreCase.Equals(directive.Name, "SingleInstance");
+			AhkIdentifierComparer.Instance.Equals(directive.Name, "NoTrayIcon")
+			|| AhkIdentifierComparer.Instance.Equals(directive.Name, "TrayIcon")
+			|| AhkIdentifierComparer.Instance.Equals(directive.Name, "SingleInstance");
 
 		// Every statement of type T at any depth: in control flow, and in function, method, property, hotkey and fat-arrow
 		// bodies alike.
@@ -2285,7 +2285,7 @@ namespace Keysharp.Compilation.Syntax
 					else
 						EvaluateAppDirective(app);
 				}
-				else if (s is DirectiveStmt d && StringComparer.OrdinalIgnoreCase.Equals(d.Name, "Module"))
+				else if (s is DirectiveStmt d && AhkIdentifierComparer.Instance.Equals(d.Name, "Module"))
 					afterModule = true;
 			}
 
@@ -2522,10 +2522,10 @@ namespace Keysharp.Compilation.Syntax
 				case LiteralExpr l:
 					val = l.Kind == LiteralKind.String ? DecodeString(l.Raw) : l.Raw;
 					return true;
-				case NameExpr n when StringComparer.OrdinalIgnoreCase.Equals(n.Name, "true"):
+				case NameExpr n when AhkIdentifierComparer.Instance.Equals(n.Name, "true"):
 					val = true;
 					return true;
-				case NameExpr n when StringComparer.OrdinalIgnoreCase.Equals(n.Name, "false"):
+				case NameExpr n when AhkIdentifierComparer.Instance.Equals(n.Name, "false"):
 					val = false;
 					return true;
 				case UnaryExpr { Op: "-", Postfix: false } u when TryGetAppNumber(u.Operand, out var num):
@@ -2591,7 +2591,7 @@ namespace Keysharp.Compilation.Syntax
 
 		// ---- #Warn (compile-time warning analysis) ----
 
-		private static readonly HashSet<string> WarnModeNames = new(System.StringComparer.OrdinalIgnoreCase)
+		private static readonly HashSet<string> WarnModeNames = new(AhkIdentifierComparer.Instance)
 		{ "MsgBox", "StdOut", "OutputDebug", "Off", "On" };
 		private static string CanonWarnMode(ReadOnlySpan<char> m) => m switch
 		{
@@ -2788,7 +2788,7 @@ namespace Keysharp.Compilation.Syntax
 					if (isPublicStaticMethod || mem is FieldDeclarationSyntax or PropertyDeclarationSyntax
 						|| InlineFacts(mem).ScriptClass)
 						foreach (var physical in DeclaredNames(mem))
-							(m.InlineMembers ??= new(StringComparer.OrdinalIgnoreCase)).Add(InlineDeclaredName(mem, physical));
+							(m.InlineMembers ??= new(AhkIdentifierComparer.Instance)).Add(InlineDeclaredName(mem, physical));
 
 					// BuildInlineSources diagnoses invalid [Export] usage.
 					if (isPublicStaticMethod && InlineExported(mem))
@@ -2825,7 +2825,7 @@ namespace Keysharp.Compilation.Syntax
 
 					var lower = name;
 					_userFuncByLower[lower] = name;
-					_ = (_inlineFuncNames ??= new(StringComparer.OrdinalIgnoreCase)).Add(name);
+					_ = (_inlineFuncNames ??= new(AhkIdentifierComparer.Instance)).Add(name);
 				}
 			}
 		}
@@ -2968,7 +2968,7 @@ namespace Keysharp.Compilation.Syntax
 		{
 			foreach (var n in DeclaredNames(m))
 			{
-				if (_startupModules.Contains(module) && StringComparer.OrdinalIgnoreCase.Equals(n, NameMangler.StartupMethod))
+				if (_startupModules.Contains(module) && AhkIdentifierComparer.Instance.Equals(n, NameMangler.StartupMethod))
 				{
 					Diag($"{at}#CSharp: '{n}' is a name Keysharp generates into this class; rename it");
 					continue;
@@ -2986,7 +2986,7 @@ namespace Keysharp.Compilation.Syntax
 				var visible = InlineDeclaredName(m, n);
 				if (_moduleGlobals?.TryGetValue(module, out var globals) == true && globals.Contains(visible))
 					Diag($"{at}#CSharp: '{visible}' collides with a variable or function the script declares; rename one of them");
-				else if (Keywords.InlineReservedModuleNames.Contains(n) || StringComparer.OrdinalIgnoreCase.Equals(n, module))
+				else if (Keywords.InlineReservedModuleNames.Contains(n) || AhkIdentifierComparer.Instance.Equals(n, module))
 					Diag($"{at}#CSharp: '{n}' is a name Keysharp generates into this class; rename it");
 			}
 		}
@@ -3322,7 +3322,7 @@ namespace Keysharp.Compilation.Syntax
 		{
 			capabilities = null;
 
-			if (!StringComparer.OrdinalIgnoreCase.Equals(directive.Name, "Requires"))
+			if (!AhkIdentifierComparer.Instance.Equals(directive.Name, "Requires"))
 				return false;
 
 			var parts = (directive.Args ?? "").Trim().Split((char[])null, 2,
@@ -3367,7 +3367,7 @@ namespace Keysharp.Compilation.Syntax
 
 			foreach (var s in body)
 			{
-				if (s is not DirectiveStmt d || !StringComparer.OrdinalIgnoreCase.Equals(d.Name, "Package"))
+				if (s is not DirectiveStmt d || !AhkIdentifierComparer.Instance.Equals(d.Name, "Package"))
 					continue;
 
 				ActivateErrorStdOutBefore(body, d.SourceOrder);
@@ -3498,7 +3498,7 @@ namespace Keysharp.Compilation.Syntax
 		private void PrescanWarnDirectives(List<Stmt> body)
 		{
 			foreach (var s in body)
-				if (s is DirectiveStmt d && StringComparer.OrdinalIgnoreCase.Equals(d.Name, "Warn"))
+				if (s is DirectiveStmt d && AhkIdentifierComparer.Instance.Equals(d.Name, "Warn"))
 					ApplyWarnDirective(d.Args);
 		}
 
@@ -3576,7 +3576,7 @@ namespace Keysharp.Compilation.Syntax
 				// In an assume-global scope every bare name is a GLOBAL, which may be assigned in another scope we can't
 				// see here. We can't locally prove such a global is never assigned, so skip both VarUnset and
 				// LocalSameAsGlobal for this scope's own reads/locals (params still resolve normally).
-				var provided = new HashSet<string>(paramLowers, StringComparer.OrdinalIgnoreCase);
+				var provided = new HashSet<string>(paramLowers, AhkIdentifierComparer.Instance);
 				if (body != null) foreach (var s in body) CollectProvided(s, provided);
 				if (arrow != null) CollectProvided(arrow, provided);
 				foreach (var fd in scope.Nested) provided.Add(fd.Name);   // named fat arrows among them
@@ -3595,10 +3595,10 @@ namespace Keysharp.Compilation.Syntax
 				var ownImports = _scratchListImports.Get();
 				if (body != null) foreach (var s in body) { if (s is ImportDirective id) ownImports.Add(id); else CollectNestedImports(s, ownImports); }
 				HashSet<string> imported = null;
-				if (ownImports.Count > 0) AddImportProvidedNames(ownImports, imported = new(StringComparer.OrdinalIgnoreCase));
+				if (ownImports.Count > 0) AddImportProvidedNames(ownImports, imported = new(AhkIdentifierComparer.Instance));
 				if (outerProvided != null || imported != null)
 				{
-					readable = new HashSet<string>(provided, StringComparer.OrdinalIgnoreCase);
+					readable = new HashSet<string>(provided, AhkIdentifierComparer.Instance);
 					if (outerProvided != null) readable.UnionWith(outerProvided);
 					if (imported != null) readable.UnionWith(imported);
 				}
@@ -3680,7 +3680,7 @@ namespace Keysharp.Compilation.Syntax
 				case UnaryExpr { Op: "&", Operand: NameExpr reference }:
 					provided.Add(reference.Name);
 					break;
-				case CallExpr call when call.Callee is NameExpr callee && StringComparer.OrdinalIgnoreCase.Equals(callee.Name, "IsSet")
+				case CallExpr call when call.Callee is NameExpr callee && AhkIdentifierComparer.Instance.Equals(callee.Name, "IsSet")
 					&& call.Args.Count == 1 && call.Args[0].Value is NameExpr argument:
 					provided.Add(argument.Name);
 					break;
@@ -3715,7 +3715,7 @@ namespace Keysharp.Compilation.Syntax
 					return;
 				case UnaryExpr unary when unary.Op == "&" || unary.Op == "?" && unary.Operand is NameExpr:
 					return;
-				case CallExpr call when call.Callee is NameExpr callee && StringComparer.OrdinalIgnoreCase.Equals(callee.Name, "IsSet")
+				case CallExpr call when call.Callee is NameExpr callee && AhkIdentifierComparer.Instance.Equals(callee.Name, "IsSet")
 					&& call.Args.Count == 1 && call.Args[0].Value is NameExpr:
 					CheckReads(call.Callee, provided, warned);
 					return;
@@ -3770,7 +3770,7 @@ namespace Keysharp.Compilation.Syntax
 					// Class-body `#import` names are visible to every method/property/nested class of the class — pass them
 					// down as the "outer provided" set (combined with any enclosing class's imports) so VarUnset doesn't
 					// flag a class-imported name. Methods do NOT capture outer locals, so this carries only imports.
-					var classProvided = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+					var classProvided = new HashSet<string>(AhkIdentifierComparer.Instance);
 					if (outerProvided != null) classProvided.UnionWith(outerProvided);
 					AddImportProvidedNames(cd.Imports, classProvided);
 					var classArg = classProvided.Count > 0 ? classProvided : null;
@@ -3959,15 +3959,15 @@ namespace Keysharp.Compilation.Syntax
 				case AssignExpr a: return LowerAssign(a);
 				case BinaryExpr b:
 					// && / and and || / or short-circuit and yield an operand (not a bool), so they can't be plain calls.
-					if (b.Op == "&&" || StringComparer.OrdinalIgnoreCase.Equals(b.Op, "and")) return LowerShortCircuit(b, andOp: true);
-					if (b.Op == "||" || StringComparer.OrdinalIgnoreCase.Equals(b.Op, "or")) return LowerShortCircuit(b, andOp: false);
+					if (b.Op == "&&" || AhkIdentifierComparer.Instance.Equals(b.Op, "and")) return LowerShortCircuit(b, andOp: true);
+					if (b.Op == "||" || AhkIdentifierComparer.Instance.Equals(b.Op, "or")) return LowerShortCircuit(b, andOp: false);
 					// `a ?? b` (maybe): the left's unset must yield null (not throw) so the default applies — rewrite its
 					// outer GetPropertyValue/GetIndex/Invoke to the *OrNull form (as for IsSet). Lowered to C#'s `??` so b is
 					// only evaluated when a is unset (short-circuit) — `b ?? MsgBox()` must not call MsgBox() when b is set.
 					if (b.Op == "??") return Coalesce(RewriteToOrNull(LowerExpr(b.Left)), LowerExpr(b.Right));
 					// `X is unset` tests whether X is unset, so X itself must NOT raise when unset — make its
 					// outer GetIndex/GetPropertyValue/Invoke lenient (`*OrNull`); `Is(null, null)` is then true.
-					if (StringComparer.OrdinalIgnoreCase.Equals(b.Op, "is")
+					if (AhkIdentifierComparer.Instance.Equals(b.Op, "is")
 						&& b.Right is NameExpr { Name: "unset" })
 						return Op("Is", RewriteToOrNull(LowerExpr(b.Left)), Null);
 					if (BinOps.TryGetValue(b.Op, out var m))
@@ -4498,7 +4498,7 @@ namespace Keysharp.Compilation.Syntax
 				if (a.Name == null)
 					continue;
 
-				var at1 = names.FindIndex(n => string.Equals(n, a.Name, System.StringComparison.OrdinalIgnoreCase));
+				var at1 = names.FindIndex(n => AhkIdentifierComparer.Instance.Equals(n, a.Name));
 
 				// The same two messages the runtime binder raises, from the same builders -- the warning and the
 				// error a script hits for one mistake must not read differently.
@@ -4519,7 +4519,7 @@ namespace Keysharp.Compilation.Syntax
 			var ps = target?.Decl switch
 			{
 				FunctionDecl fd => fd.Params,
-				ClassDecl cd => cd.Methods.FirstOrDefault(m => !m.Static && StringComparer.OrdinalIgnoreCase.Equals(m.Name, "__New"))?.Params,
+				ClassDecl cd => cd.Methods.FirstOrDefault(m => !m.Static && AhkIdentifierComparer.Instance.Equals(m.Name, "__New"))?.Params,
 				_ => null
 			};
 
@@ -4571,7 +4571,7 @@ namespace Keysharp.Compilation.Syntax
 			if (c.Args.Count != 0) CheckNamedArgs(c);
 
 			// IsSet(member/index/call) must not throw on an unset target — rewrite the arg to its *OrNull form.
-			bool isSet = c.Callee is NameExpr ne && StringComparer.OrdinalIgnoreCase.Equals(ne.Name, "IsSet")
+			bool isSet = c.Callee is NameExpr ne && AhkIdentifierComparer.Instance.Equals(ne.Name, "IsSet")
 				&& c.Args.Count == 1 && c.Args[0].Value != null && !c.Args[0].Spread;
 			var callArguments = NativeStringArguments(c);
 			var keptArgument = KeptStrPtrArgument(c, callArguments);
@@ -4627,7 +4627,7 @@ namespace Keysharp.Compilation.Syntax
 			{
 				var arg = call.Args[i];
 				// A spread makes subsequent type/value positions unknowable until runtime.
-				if (arg.Spread || (arg.IsNamed && !(pairs == 0 && string.Equals(arg.Name, "Value", System.StringComparison.OrdinalIgnoreCase)))) break;
+				if (arg.Spread || (arg.IsNamed && !(pairs == 0 && AhkIdentifierComparer.Instance.Equals(arg.Name, "Value")))) break;
 				if (pairs != 0 && (i <= pairs || ((i - pairs) & 1) == 0 || !IsLiteralStringType(call.Args[i - 1].Value))) continue;
 				if (!IsNativeStringVariable(arg.Value)) continue;
 
@@ -4646,7 +4646,7 @@ namespace Keysharp.Compilation.Syntax
 		{
 			if (args.Count != 1 || args[0].Spread || args[0].IsNamed
 					|| args[0].Value is null or LiteralExpr or UnaryExpr { Op: "&" }
-					|| !StringComparer.OrdinalIgnoreCase.Equals((call.Callee as NameExpr)?.Name, "StrPtr")
+					|| !AhkIdentifierComparer.Instance.Equals((call.Callee as NameExpr)?.Name, "StrPtr")
 					|| NativeCallTarget(call.Callee)?.Builtin is not { Name: "StrPtr" } method || method.DeclaringType != typeof(Keysharp.Builtins.Strings))
 				return null;
 
@@ -4712,17 +4712,17 @@ namespace Keysharp.Compilation.Syntax
 
 		private static bool IsLoadPackageMember(MemberExpr callee)
 		{
-			if (!StringComparer.OrdinalIgnoreCase.Equals(callee.Name, "LoadPackage"))
+			if (!AhkIdentifierComparer.Instance.Equals(callee.Name, "LoadPackage"))
 				return false;
 
 			var target = callee.Target;
 
 			if (target is NameExpr direct)
-				return StringComparer.OrdinalIgnoreCase.Equals(direct.Name, "Clr");
+				return AhkIdentifierComparer.Instance.Equals(direct.Name, "Clr");
 
 			return target is MemberExpr { Name: var clr, Target: NameExpr root }
-				   && StringComparer.OrdinalIgnoreCase.Equals(clr, "Clr")
-				   && StringComparer.OrdinalIgnoreCase.Equals(root.Name, "Ks");
+				   && AhkIdentifierComparer.Instance.Equals(clr, "Clr")
+				   && AhkIdentifierComparer.Instance.Equals(root.Name, "Ks");
 		}
 
 		private ExpressionSyntax LowerObject(ObjectExpr o)
@@ -4792,7 +4792,7 @@ namespace Keysharp.Compilation.Syntax
 			// arguments at all, where AutoHotkey passes one unset element. The cast forces the packing.
 			// Keyed on the source keyword, since an omitted argument lowers to the same null and stays omitted.
 			if (list.Count == 1 && named == null && positional.Count == 1
-					&& positional[0].Value is NameExpr un && StringComparer.OrdinalIgnoreCase.Equals(un.Name, "unset"))
+					&& positional[0].Value is NameExpr un && AhkIdentifierComparer.Instance.Equals(un.Name, "unset"))
 				list[0] = SyntaxFactory.CastExpression(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)), list[0]);
 
 			_scratchLowerArgsExpressionsDangerous.Return(list);//Note this return doesn't clear because it will be used very briefly and modified by the caller.
@@ -5084,7 +5084,7 @@ namespace Keysharp.Compilation.Syntax
 			}
 			else
 				for (var i = _loopFrames.Count - 1; i >= _loopBase; i--)
-					if (_loopFrames[i].Labels?.Contains(target, StringComparer.OrdinalIgnoreCase) == true)
+					if (_loopFrames[i].Labels?.Contains(target, AhkIdentifierComparer.Instance) == true)
 					{
 						frame = _loopFrames[i];
 						break;
@@ -5185,8 +5185,7 @@ namespace Keysharp.Compilation.Syntax
 			var statements = new List<StatementSyntax> { LocalDeclVar(name, Inv(Access("Keysharp.Runtime.Flow.GotoLabel"), LowerExpr(g.Expression))) };
 			foreach (var label in CallableLabels().ByName.Values)
 				if (UnreachableBecause(label) == null)
-					statements.Add(SyntaxFactory.IfStatement(Inv(Access("System.String.Equals"), Id(name), Str(label.Name),
-						Access("System.StringComparison.OrdinalIgnoreCase")), Goto(LabelId(label))));
+					statements.Add(SyntaxFactory.IfStatement(Inv(Access("Keysharp.Runtime.AhkIdentifierComparer.Instance.Equals"), Id(name), Str(label.Name)), Goto(LabelId(label))));
 
 			statements.Add(CallStmt("Keysharp.Runtime.Flow.GotoFailed", Id(name), BoolLit(_finallyBlock >= 0)));
 			return SyntaxFactory.Block(statements);
@@ -5762,7 +5761,7 @@ namespace Keysharp.Compilation.Syntax
 			// name that is merely read still reaches the module variable. `static __Init` is its own scope, which
 			// falls out of the two InitMethod calls each computing this from their own field list.
 			var assignedOrdered = new List<string>();
-			var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var seen = new HashSet<string>(AhkIdentifierComparer.Instance);
 			foreach (var f in fieldList) if (f.Init != null) CollectAssigned(f.Init, assignedOrdered, seen);
 			if (extraList != null) foreach (var st in extraList) CollectAssigned(st, assignedOrdered, seen);
 			var scope = _scope = new FunctionScope(null);
@@ -5918,7 +5917,7 @@ namespace Keysharp.Compilation.Syntax
 			{
 				var thisFuncName = ClassMemberFuncName(pr.Name, pr.Static) + ".Get";
 				var savedM = _inMethod; var savedS = _currentMethodStatic; _inMethod = true; _currentMethodStatic = pr.Static;
-				var body = LowerCallableBody(new HashSet<string>(idxLowers, StringComparer.OrdinalIgnoreCase), pr.GetBody, pr.GetArrow, getterName,
+				var body = LowerCallableBody(new HashSet<string>(idxLowers, AhkIdentifierComparer.Instance), pr.GetBody, pr.GetArrow, getterName,
 					thisFuncName, out var scope, byRefParams, pr.Params);
 				_inMethod = savedM; _currentMethodStatic = savedS;
 				var ps = SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList(Prepend(ThisParam(), IdxParams())));
@@ -5927,7 +5926,7 @@ namespace Keysharp.Compilation.Syntax
 			if (pr.HasSet)
 			{
 				var thisFuncName = ClassMemberFuncName(pr.Name, pr.Static) + ".Set";
-				var setParams = new HashSet<string>(idxLowers, StringComparer.OrdinalIgnoreCase) { "value" };
+				var setParams = new HashSet<string>(idxLowers, AhkIdentifierComparer.Instance) { "value" };
 				var savedM = _inMethod; var savedS = _currentMethodStatic; _inMethod = true; _currentMethodStatic = pr.Static;
 				var body = LowerCallableBody(setParams, pr.SetBody, pr.SetArrow, setterName,
 					thisFuncName, out var scope, byRefParams, pr.Params);
@@ -6032,7 +6031,7 @@ namespace Keysharp.Compilation.Syntax
 			_currentCompat = ScanRequires(fd.Body?.Body) ?? _currentCompat;   // nested-function `#Requires` (restored after)
 			var body = LowerCallableBody(paramLowers, fd.Body, fd.ArrowBody, implName, fd.Name,
 				out var scope, byRefParams, fd.Params, capturing: true, staticNested: fd.Static);
-			(_scope.Functions ??= new(StringComparer.OrdinalIgnoreCase))[nameLower] = scope;
+			(_scope.Functions ??= new(AhkIdentifierComparer.Instance))[nameLower] = scope;
 			var fn = SyntaxFactory.LocalFunctionStatement(ObjType, SyntaxFactory.Identifier(implName))
 				.WithParameterList(ParamDecls(fd.Params, includeThis: false))
 				.WithBody(body)
@@ -6103,7 +6102,7 @@ namespace Keysharp.Compilation.Syntax
 		{
 			// AutoHotkey builds every hotkey, hotstring and #HotIf body from one `<Hotkey>(ThisHotkey)` template
 			// (Script::CreateHotFunc), so that is the name A_ThisFunc reports inside all three.
-			var lowered = LowerCallableBody(new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "thishotkey" }, body, null, name, "<Hotkey>", out var scope);
+			var lowered = LowerCallableBody(new HashSet<string>(AhkIdentifierComparer.Instance) { "thishotkey" }, body, null, name, "<Hotkey>", out var scope);
 			_hotMembers.Add(ObjMethod(name, ParamDecls(HotCallbackParams, includeThis: false), lowered, scope.Labels));
 			return name;
 		}
@@ -6550,7 +6549,7 @@ namespace Keysharp.Compilation.Syntax
 		private List<DerefArm> DerefArms()
 		{
 			var arms = new List<DerefArm>();
-			var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var seen = new HashSet<string>(AhkIdentifierComparer.Instance);
 			void Arm(string key, ExpressionSyntax read, ExpressionSyntax write, string name = null, VarKind kind = default, ExpressionSyntax reference = null)
 			{
 				if (seen.Add(key)) arms.Add(new(key, read, write, name, kind, reference));
@@ -6618,7 +6617,7 @@ namespace Keysharp.Compilation.Syntax
 		// Roslyn's stack in a function holding a few thousand variables, so the arms are a flat run of ifs.
 		private static BlockSyntax ScopeLookup(IEnumerable<(string Name, ExpressionSyntax Value)> arms, ExpressionSyntax unmatched) =>
 			SyntaxFactory.Block(arms.Select(arm => (StatementSyntax)SyntaxFactory.IfStatement(
-					Inv(Access("System.String.Equals"), Id("KS_name"), Str(arm.Name), Access("System.StringComparison.OrdinalIgnoreCase")),
+					Inv(Access("Keysharp.Runtime.AhkIdentifierComparer.Instance.Equals"), Id("KS_name"), Str(arm.Name)),
 					SyntaxFactory.ReturnStatement(arm.Value)))
 				.Append(SyntaxFactory.ReturnStatement(unmatched)));
 
@@ -6651,10 +6650,10 @@ namespace Keysharp.Compilation.Syntax
 		// Calls to builtins that consume the executing-function scope, even when the body never uses %name%.
 		// RegExMatch/RegExReplace: a callout can resolve this function's closures by name — but only worth a scope when
 		// the function actually has closures (gated at the call site). ListVars: display this function's locals.
-		private static readonly HashSet<string> RegexTriggerCallees = new(StringComparer.OrdinalIgnoreCase)
+		private static readonly HashSet<string> RegexTriggerCallees = new(AhkIdentifierComparer.Instance)
 		{ "RegExMatch", "RegExReplace" };
 		private static bool IsRegexTrigger(Expr e) => e is CallExpr c && c.Callee is NameExpr ne && RegexTriggerCallees.Contains(ne.Name);
-		private static bool IsListVarsTrigger(Expr e) => e is CallExpr c && c.Callee is NameExpr ne && StringComparer.OrdinalIgnoreCase.Equals(ne.Name, "ListVars");
+		private static bool IsListVarsTrigger(Expr e) => e is CallExpr c && c.Callee is NameExpr ne && AhkIdentifierComparer.Instance.Equals(ne.Name, "ListVars");
 
 		// An assignment to a dynamically-named variable (`%n% := v` / `%n% op= v`, `%n%++/--`, `&%n%`) — i.e. the scope
 		// needs a WRITER, not just a reader.
@@ -6703,11 +6702,11 @@ namespace Keysharp.Compilation.Syntax
 						continue;
 
 					VarKind? existing = paramLowers.Contains(name)
-						|| receiver && StringComparer.OrdinalIgnoreCase.Equals(name, "this") ? VarKind.Parameter
+						|| receiver && AhkIdentifierComparer.Instance.Equals(name, "this") ? VarKind.Parameter
 						: kinds != null && kinds.TryGetValue(name, out var declared) ? declared : null;
 
 					if (existing == null)
-						(kinds ??= new(StringComparer.OrdinalIgnoreCase))[name] = kind;
+						(kinds ??= new(AhkIdentifierComparer.Instance))[name] = kind;
 					else if (existing != kind)
 						Diag($"{NodeAnchor(d)}This {Keysharp.Builtins.Errors.DeclarationKind(kind)} declaration conflicts with an existing {Keysharp.Builtins.Errors.DeclarationKind(existing.Value)}: {name}");
 				}
@@ -6813,7 +6812,7 @@ namespace Keysharp.Compilation.Syntax
 
 			// A callback's explicit `this` parameter shadows the enclosing method's receiver.
 			// Other assignments to `this` reassign that receiver rather than declaring a local.
-			if (_inMethod && !paramLowers.Contains("this", StringComparer.OrdinalIgnoreCase))
+			if (_inMethod && !paramLowers.Contains("this", AhkIdentifierComparer.Instance))
 			{
 				_ = scope.Locals.Remove("this");
 				_ = scope.Globals.Remove("this");
@@ -6933,7 +6932,7 @@ namespace Keysharp.Compilation.Syntax
 				// Runtime variable lookup is case-insensitive even though C# member lookup is not.
 				var globals = new HashSet<string>(fieldDecls.OfType<FieldDeclarationSyntax>()
 											 .SelectMany(f => f.Declaration.Variables).Select(v => v.Identifier.Text),
-											 StringComparer.OrdinalIgnoreCase);
+											 AhkIdentifierComparer.Instance);
 				foreach (var statement in _boundModule.Body)
 					VisitScope(statement, node =>
 					{
@@ -7549,7 +7548,7 @@ namespace Keysharp.Compilation.Syntax
 
 		private (HashSet<string> All, HashSet<string> ByRef) ParamSets(List<Param> ps, bool hasReceiver = false)
 		{
-			var all = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var all = new HashSet<string>(AhkIdentifierComparer.Instance);
 			HashSet<string> byRef = null;
 
 			foreach (var p in ps)
@@ -7559,13 +7558,13 @@ namespace Keysharp.Compilation.Syntax
 					continue;
 
 				var lower = p.Name;
-				if (hasReceiver && StringComparer.OrdinalIgnoreCase.Equals(lower, "this"))
+				if (hasReceiver && AhkIdentifierComparer.Instance.Equals(lower, "this"))
 					Diag($"This parameter declaration conflicts with the method's receiver: {p.Name}");
 				if (!all.Add(lower))
 					Diag($"This parameter declaration conflicts with an existing parameter: {p.Name}");
 
 				if (p.ByRef)
-					(byRef ??= new(StringComparer.OrdinalIgnoreCase)).Add(lower);
+					(byRef ??= new(AhkIdentifierComparer.Instance)).Add(lower);
 			}
 
 			return (all, byRef);

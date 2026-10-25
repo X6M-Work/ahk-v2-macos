@@ -1,0 +1,2 @@
+o-small|o-capital|sigma|final-sigma|ascii
+o-capital

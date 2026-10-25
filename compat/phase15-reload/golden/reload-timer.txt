@@ -1,0 +1,7 @@
+first|loaded
+exit|Reload|0
+second|loaded
+fresh|0
+old-exited|1
+timer|1
+exit|Exit|0

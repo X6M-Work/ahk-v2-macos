@@ -97,7 +97,7 @@ namespace Keysharp.Language
 		/// class, so rejecting them here would be a false positive. The module's OWN class name is not listed either
 		/// — it varies per module (including `__Main`), so it is tested directly at the use site.</para>
 		/// </summary>
-		internal static readonly FrozenSet<string> InlineReservedModuleNames = FrozenSet.Create(StringComparer.OrdinalIgnoreCase,
+		internal static readonly FrozenSet<string> InlineReservedModuleNames = FrozenSet.Create(AhkIdentifierComparer.Instance,
 				AutoExecSectionName, "KS_module");
 
 		/// <summary>
@@ -105,10 +105,10 @@ namespace Keysharp.Language
 		/// the module set because the two do not overlap, and checking a class member against `MainScript` would
 		/// reject it with a message ("a name Keysharp generates into this class") that is simply untrue.
 		/// </summary>
-		internal static readonly FrozenSet<string> InlineReservedClassNames = FrozenSet.Create(StringComparer.OrdinalIgnoreCase,
+		internal static readonly FrozenSet<string> InlineReservedClassNames = FrozenSet.Create(AhkIdentifierComparer.Instance,
 				"__Init", "__New", ClassStaticPrefix + "__Init");   // NameMangler.StaticInit() -- "static__Init", not "__StaticInit"
 
-		internal static FrozenSet<string> ClassReservedKeywords = FrozenSet.Create(StringComparer.OrdinalIgnoreCase,
+		internal static FrozenSet<string> ClassReservedKeywords = FrozenSet.Create(AhkIdentifierComparer.Instance,
 				"Call", "__New", "__Init", "__Get", "__Set", "__Item", "__Class", "__StaticInit");
 
         //internal const string BitShiftLeft = "<<";

@@ -16,6 +16,7 @@ public static class Program
 	[STAThread]
 	public static int Main(string[] args)
 	{
+		Files.InitializeStandardStreams();
 		// Run Script's static constructor eagerly so any error messageboxes render correctly even before a
 		// Script instance exists (e.g. a daemon compile failure reported below).
 		System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(Script).TypeHandle);

@@ -31,14 +31,16 @@ a .= "hello"
 
 Assert(a = "hello", A_LineNumber)
 
-; Unlike AutoHotkey, an object concatenates when it has a ToString method, as the string that method returns, and is a
-; TypeError on either side otherwise.
-x := {ToString: (this) => "named"}
-AssertEq("a" . x . "b", "anamedb", A_LineNumber)
-x := [1, 2]
-AssertEq("a" . x, "a" String(x), A_LineNumber)
-x := {}
-Throws(() => "a" . x, A_LineNumber, TypeError)
-Throws(() => x . "a", A_LineNumber, TypeError)
+CheckObjectConcatenation21() {
+	#Requires AutoHotkey v2.1-alpha.1
+	objectText := {ToString: (this) => "named"}
+	AssertEq("a" . objectText . "b", "anamedb", A_LineNumber)
+	objectText := [1, 2]
+	AssertEq("a" . objectText, "a" String(objectText), A_LineNumber)
+	objectText := {}
+	Throws(() => "a" . objectText, A_LineNumber, TypeError)
+	Throws(() => objectText . "a", A_LineNumber, TypeError)
+}
+CheckObjectConcatenation21()
 
 FileAppend "pass", "*"

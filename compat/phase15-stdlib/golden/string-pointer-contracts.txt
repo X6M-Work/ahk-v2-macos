@@ -1,0 +1,4 @@
+read|été🌍
+stable|1
+write|A
+stable-write|1

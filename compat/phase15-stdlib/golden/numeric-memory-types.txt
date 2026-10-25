@@ -1,0 +1,14 @@
+i|4|1
+Int16|8|1
+UChar|1|1
+Str|2|1
+P|8|1
+F|4|1.0
+D|8|1.0
+z|ValueError
+|ValueError
+value|String|ValueError
+value|String|ValueError
+value|String|2
+value|Float|2
+float|1.2345000505447388

@@ -1,4 +1,7 @@
 #NoTrayIcon
+#ErrorStdOut
+#Warn All, StdOut
+#Requires AutoHotkey v2.0
 #Import Ks { StringBuffer }
 #Include <assert>
 
@@ -118,11 +121,11 @@ AssertEq(IsObject(m), 1, A_LineNumber)
 AssertEq(IsObject(ComObjArray(13, 1)), 1, A_LineNumber)
 #endif
 
-AssertEq(IsDigit(1), 1, A_LineNumber)
+Throws(() => IsDigit(1), A_LineNumber, TypeError)
 
-AssertEq(IsDigit(-1), 0, A_LineNumber)
+Throws(() => IsDigit(-1), A_LineNumber, TypeError)
 
-AssertEq(IsDigit(1.234), 0, A_LineNumber)
+Throws(() => IsDigit(1.234), A_LineNumber, TypeError)
 
 AssertEq(IsDigit("0123456789"), 1, A_LineNumber)
 
@@ -137,13 +140,13 @@ Throws(() => IsDigit(a), A_LineNumber, TypeError)
 Throws(() => IsDigit(m), A_LineNumber, TypeError)
 
 ; A StringBuffer is checked as its text, as it is used wherever a string is.
-AssertEq(IsDigit(StringBuffer("123")), 1, A_LineNumber)
+Throws(() => IsDigit(StringBuffer("123")), A_LineNumber, TypeError)
 
-AssertEq(IsXDigit(1), 1, A_LineNumber)
+Throws(() => IsXDigit(1), A_LineNumber, TypeError)
 
-AssertEq(IsXDigit(-1), 0, A_LineNumber)
+Throws(() => IsXDigit(-1), A_LineNumber, TypeError)
 
-AssertEq(IsXDigit(1.234), 0, A_LineNumber)
+Throws(() => IsXDigit(1.234), A_LineNumber, TypeError)
 
 AssertEq(IsXDigit("0123456789"), 1, A_LineNumber)
 
@@ -157,11 +160,11 @@ Throws(() => IsXDigit(a), A_LineNumber, TypeError)
 
 Throws(() => IsXDigit(m), A_LineNumber, TypeError)
 
-AssertEq(IsAlpha(1), 0, A_LineNumber)
+Throws(() => IsAlpha(1), A_LineNumber, TypeError)
 
-AssertEq(IsAlpha(-1), 0, A_LineNumber)
+Throws(() => IsAlpha(-1), A_LineNumber, TypeError)
 
-AssertEq(IsAlpha(1.234), 0, A_LineNumber)
+Throws(() => IsAlpha(1.234), A_LineNumber, TypeError)
 
 AssertEq(IsAlpha("0123456789"), 0, A_LineNumber)
 
@@ -177,11 +180,11 @@ Throws(() => IsAlpha(a), A_LineNumber, TypeError)
 
 Throws(() => IsAlpha(m), A_LineNumber, TypeError)
 
-AssertEq(IsUpper(1), 0, A_LineNumber)
+Throws(() => IsUpper(1), A_LineNumber, TypeError)
 
-AssertEq(IsUpper(-1), 0, A_LineNumber)
+Throws(() => IsUpper(-1), A_LineNumber, TypeError)
 
-AssertEq(IsUpper(1.234), 0, A_LineNumber)
+Throws(() => IsUpper(1.234), A_LineNumber, TypeError)
 
 AssertEq(IsUpper("0123456789"), 0, A_LineNumber)
 
@@ -197,11 +200,11 @@ Throws(() => IsUpper(a), A_LineNumber, TypeError)
 
 Throws(() => IsUpper(m), A_LineNumber, TypeError)
 
-AssertEq(IsLower(1), 0, A_LineNumber)
+Throws(() => IsLower(1), A_LineNumber, TypeError)
 
-AssertEq(IsLower(-1), 0, A_LineNumber)
+Throws(() => IsLower(-1), A_LineNumber, TypeError)
 
-AssertEq(IsLower(1.234), 0, A_LineNumber)
+Throws(() => IsLower(1.234), A_LineNumber, TypeError)
 
 AssertEq(IsLower("0123456789"), 0, A_LineNumber)
 
@@ -217,11 +220,11 @@ Throws(() => IsLower(a), A_LineNumber, TypeError)
 
 Throws(() => IsLower(m), A_LineNumber, TypeError)
 
-AssertEq(IsAlnum(1), 1, A_LineNumber)
+Throws(() => IsAlnum(1), A_LineNumber, TypeError)
 
-AssertEq(IsAlnum(-1), 0, A_LineNumber)
+Throws(() => IsAlnum(-1), A_LineNumber, TypeError)
 
-AssertEq(IsAlnum(1.234), 0, A_LineNumber)
+Throws(() => IsAlnum(1.234), A_LineNumber, TypeError)
 
 AssertEq(IsAlnum("0123456789"), 1, A_LineNumber)
 
@@ -237,11 +240,11 @@ Throws(() => IsAlnum(a), A_LineNumber, TypeError)
 
 Throws(() => IsAlnum(m), A_LineNumber, TypeError)
 
-AssertEq(IsSpace(1), 0, A_LineNumber)
+Throws(() => IsSpace(1), A_LineNumber, TypeError)
 
-AssertEq(IsSpace(-1), 0, A_LineNumber)
+Throws(() => IsSpace(-1), A_LineNumber, TypeError)
 
-AssertEq(IsSpace(1.234), 0, A_LineNumber)
+Throws(() => IsSpace(1.234), A_LineNumber, TypeError)
 
 AssertEq(IsSpace("0123456789"), 0, A_LineNumber)
 
@@ -260,6 +263,13 @@ AssertEq(IsSpace(" `t`n`r`v`f"), 1, A_LineNumber)
 Throws(() => IsSpace(a), A_LineNumber, TypeError)
 
 Throws(() => IsSpace(m), A_LineNumber, TypeError)
+
+AssertEq(IsTime("1600"), 0, A_LineNumber)
+AssertEq(IsTime("1601"), 1, A_LineNumber)
+AssertEq(IsTime("9999"), 1, A_LineNumber)
+AssertEq(IsTime("19000229"), 0, A_LineNumber)
+AssertEq(IsTime("20000229"), 1, A_LineNumber)
+AssertEq(IsTime("200401010000000"), 0, A_LineNumber)
 
 AssertEq(IsTime("2021"), 1, A_LineNumber)
 
@@ -286,5 +296,33 @@ AssertEq(IsTime("20211215203599"), 0, A_LineNumber)
 Throws(() => IsTime(a), A_LineNumber, TypeError)
 
 Throws(() => IsTime(m), A_LineNumber, TypeError)
+
+
+CheckTextExtensions21() {
+    #Requires AutoHotkey v2.1-alpha.1
+    AssertEq(IsDigit(1), 1, A_LineNumber)
+    AssertEq(IsDigit(-1), 0, A_LineNumber)
+    AssertEq(IsDigit(1.234), 0, A_LineNumber)
+    AssertEq(IsDigit(StringBuffer("123")), 1, A_LineNumber)
+    AssertEq(IsXDigit(1), 1, A_LineNumber)
+    AssertEq(IsXDigit(-1), 0, A_LineNumber)
+    AssertEq(IsXDigit(1.234), 0, A_LineNumber)
+    AssertEq(IsAlpha(1), 0, A_LineNumber)
+    AssertEq(IsAlpha(-1), 0, A_LineNumber)
+    AssertEq(IsAlpha(1.234), 0, A_LineNumber)
+    AssertEq(IsUpper(1), 0, A_LineNumber)
+    AssertEq(IsUpper(-1), 0, A_LineNumber)
+    AssertEq(IsUpper(1.234), 0, A_LineNumber)
+    AssertEq(IsLower(1), 0, A_LineNumber)
+    AssertEq(IsLower(-1), 0, A_LineNumber)
+    AssertEq(IsLower(1.234), 0, A_LineNumber)
+    AssertEq(IsAlnum(1), 1, A_LineNumber)
+    AssertEq(IsAlnum(-1), 0, A_LineNumber)
+    AssertEq(IsAlnum(1.234), 0, A_LineNumber)
+    AssertEq(IsSpace(1), 0, A_LineNumber)
+    AssertEq(IsSpace(-1), 0, A_LineNumber)
+    AssertEq(IsSpace(1.234), 0, A_LineNumber)
+}
+CheckTextExtensions21()
 
 FileAppend "pass", "*"

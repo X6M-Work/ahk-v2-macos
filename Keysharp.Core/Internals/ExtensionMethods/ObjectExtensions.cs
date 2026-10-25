@@ -185,6 +185,12 @@ namespace Keysharp.Internals.ExtensionMethods
 		// for no value. What the ToString raises propagates.
 		private static bool ToStringCore(object obj, out string text)
 		{
+			if (Script.CompatV20 && obj is Any)
+			{
+				text = null;
+				return false;
+			}
+
 			if (obj is Any && (!Script.TryInvoke(obj, "ToString", out obj) || obj is Any))
 			{
 				text = null;

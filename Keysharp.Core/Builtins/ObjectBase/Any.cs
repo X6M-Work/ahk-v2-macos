@@ -86,7 +86,7 @@ namespace Keysharp.Builtins
 
 			if (op != null)
 			{
-				copy.op = new(op.Count, StringComparer.OrdinalIgnoreCase);
+				copy.op = new(op.Count, AhkIdentifierComparer.Instance);
 
 				foreach (var (name, desc) in op)
 					copy.op[name] = desc.Clone();
@@ -98,7 +98,7 @@ namespace Keysharp.Builtins
 
 		internal Dictionary<string, OwnPropsDesc> EnsureOwnProps()
 		{
-			return op ??= new Dictionary<string, OwnPropsDesc>(StringComparer.OrdinalIgnoreCase);
+			return op ??= new Dictionary<string, OwnPropsDesc>(AhkIdentifierComparer.Instance);
 		}
 
 		internal void InitializeBase(System.Type t)

@@ -30,7 +30,15 @@ namespace Keysharp.Builtins
 		public static object staticCall(object @this, object value)
 		{
 			if (value is Any)
+			{
+				if (Script.CompatV20 && value is Array or Map
+					&& Script.TryGetOwnPropsMap((Any)value, "ToString", out var descriptor)
+					&& descriptor.Call is KeysharpFunc { Mph: { mi: { DeclaringType: var declaringType } } }
+					&& (declaringType == typeof(Array) || declaringType == typeof(Map)))
+					return Errors.MissingMethodErrorOccurred(value, "ToString");
+
 				return Script.InvokeOrNull(value, "ToString");
+			}
 
 			if (!value.CoerceString(out var text, DefaultObject))
 				return DefaultObject;

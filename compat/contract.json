@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "target": {
+    "language": "AutoHotkey",
+    "version": "2.0.31",
+    "reference_platform": "windows-x64",
+    "documentation_commit": "c9c15a922fa91b69095e4d6225c6691c4d959175",
+    "platforms": [
+      "osx-arm64",
+      "osx-x64"
+    ],
+    "minimum_macos": "15"
+  },
+  "compatibility": {
+    "source_unchanged": true,
+    "exact_results": [
+      "stdout",
+      "stderr",
+      "exit_code",
+      "error_type",
+      "observable_object_lifetime",
+      "native_memory"
+    ],
+    "extensions_do_not_count_as_coverage": true,
+    "windows_only_apis_are_unresolved_requirements": true,
+    "complete": false
+  },
+  "gates": [
+    {
+      "id": "contract",
+      "status": "documented",
+      "evidence": "docs/compatibility-contract.md"
+    },
+    {
+      "id": "native-macos",
+      "status": "pending",
+      "reason": "No local Mac available; Windows execution is not native macOS evidence."
+    },
+    {
+      "id": "architecture",
+      "status": "blocked",
+      "reason": "Immediate reference-counted destruction differs from the managed GC; native ABI probes remain unexecuted on macOS."
+    },
+    {
+      "id": "language",
+      "status": "in-progress",
+      "corpora": [
+        "corpus",
+        "phase15-symbols",
+        "phase15-map-conversions",
+        "phase15-stdlib",
+        "phase15-regex-edge",
+        "phase15-enumerators"
+      ]
+    },
+    {
+      "id": "stdlib-lifecycle",
+      "status": "in-progress",
+      "corpora": [
+        "phase15-runtime",
+        "phase15-architecture",
+        "phase15-native-windows",
+        "phase15-reload"
+      ]
+    }
+  ],
+  "release_rule": "Do not claim 100% compatibility until all applicable requirements have differential and native platform evidence; equal failures are not passes."
+}

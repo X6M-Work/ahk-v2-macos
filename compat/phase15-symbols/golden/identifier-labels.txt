@@ -1,0 +1,4 @@
+capital
+final-sigma
+ascii
+1|1|1|1|1

@@ -1,143 +1,57 @@
-<img src="assets/Keysharp.png" Alt="Project logo" width="128" height="128">
+# AHK v2 for macOS
 
-# Keysharp
+Run AutoHotkey v2-style scripts on macOS with the complete [Keysharp](https://github.com/keysharp-org/Keysharp) engine. This source fork adds reproducible dependency pins, macOS tooling, and a compatibility test corpus against official AutoHotkey on Windows.
 
-Keysharp is a cross-platform C# implementation of [AutoHotkey v2](https://www.autohotkey.com/docs/v2/), targeting AutoHotkey v2.1-alpha.36 compatibility. It parses AutoHotkey-style scripts, compiles them through .NET, and runs them on Windows, Linux, and macOS.
+**Experimental. 100% AutoHotkey compatibility is a goal, not an achieved or guaranteed property.** Windows DLLs, registry APIs, native COM interfaces, and some language behaviors cannot run unchanged. See the [compatibility notes and French quickstart](docs/macos-compatibility.md).
 
-> **Status:** under active development and not yet recommended for production. Windows has the broadest compatibility; Linux and macOS support continues to improve.
+The stable compatibility contract is [AutoHotkey 2.0.31](docs/compatibility-contract.md). The [architecture gate](docs/architecture-phase15.md) records the unresolved immediate-destruction mismatch. The expanded local test suite keeps architecture failures visible and tests regex, enumeration, encodings, native Float values and self-Reload.
 
-Most scripts run unmodified on Windows. On Linux and macOS, calls to Windows DLLs, registry functions and native COM interfaces need platform-specific replacements. `DllCall` can call each platform's native libraries, and `ComObject` uses D-Bus on Linux and Apple Events on macOS; see the [platform details](docs/reference.md#comobject-off-windows).
+## Run on macOS
 
-- [Download a release](https://github.com/keysharp-org/Keysharp/releases)
-- [Platform compatibility](#platform-compatibility)
-- [Full setup & build guide](docs/reference.md)
-- [AutoHotkey v2 differences](docs/reference.md#differences)
-
-## Demos
-
-<a href="https://github.com/user-attachments/assets/c362ccf2-f096-4d0e-960a-aef2d9ce46b5" target="_blank">▶ Watch the Keysharp demos</a> *(8 MB GIF)*
-
-See the [demos folder](./demos) for example scripts showcasing Keysharp's
-cross-platform image, overlay, OCR, input and window-management APIs.
-
-## Quick Start
-
-1. Install Keysharp for your platform (see [Install](#install)).
-2. Create a script named `hello.ks`:
-   ```ahk
-   MsgBox("Hello from Keysharp!")
-   ```
-3. Double-click it, or run it from a terminal:
-   ```sh
-   keysharp hello.ks
-   ```
-
-Keysharp runs `.ahk`/`.ks` source scripts and `.cks` compiled scripts. It also ships **Keyview**, a lightweight editor with live validation, running, and `.cks` compilation — open it without a file for an autosaved scratchpad.
-
-For per-platform setup, permissions, portable/standalone runs, command-line switches, and building from source, see the [detailed reference](docs/reference.md).
-
-## Install
-
-Prebuilt packages are on the [Releases](https://github.com/keysharp-org/Keysharp/releases) page. All platforms require the [.NET 10 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) (the Linux and macOS installers help set this up).
-
-### Windows
-
-- **Install:** download and run the MSI. It associates `.ks`/`.cks` files, adds **Edit** (open in Keyview) and **Compile** right-click actions, and can add Keysharp to `PATH`.
-- **Run:** double-click a script, or `Keysharp.exe hello.ks`.
-- **Uninstall:** Settings → Apps → Installed apps.
-- **VS Code:** with thqby's *AutoHotkey v2 Language Support* extension, set the interpreter path to your `Keysharp.exe` (usually `C:\Program Files\Keysharp\Keysharp.exe`).
-
-### Linux
-
-On Ubuntu 24.04 (noble), Ubuntu 26.04 (resolute), and derivatives using those bases
-(including Pop!_OS 24.04), prefer the [Launchpad PPA](https://launchpad.net/~descolada/+archive/ubuntu/keysharp)
-so apt keeps installed packages updated:
+Requires macOS 15+, the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), Git, and Python 3. Apple Silicon and Intel are supported build targets.
 
 ```sh
-sudo apt install software-properties-common
-sudo add-apt-repository ppa:descolada/keysharp
-sudo apt update
-sudo apt install keysharp
+bash scripts/macos/bootstrap.sh
+bash scripts/macos/build.sh --configuration Release
+bash scripts/macos/ahk doctor
+bash scripts/macos/ahk run examples/macos/hello.ahk
 ```
 
-On GNOME or Cinnamon, run `keysharp-desktop enable-extension` as your graphical
-user and log out and back in if requested.
+The launcher also supports `validate your-script.ahk`. Input automation requires macOS Accessibility and Input Monitoring permissions; screen capture requires Screen Recording permission. More examples: [hotkeys](examples/macos/hotkeys.ahk), [timers](examples/macos/timer.ahk), and [GUI](examples/macos/gui.ahk).
 
-The PPA does not target Debian or Ubuntu 22.04-based distributions such as Pop!_OS 22.04.
+## What is included
 
-- On Debian and other supported distributions,
-  download `keysharp-linux-setup.sh` from a [release](https://github.com/keysharp-org/Keysharp/releases), then run:
-  ```sh
-  sudo sh ./keysharp-linux-setup.sh
-  ```
-- Log out and back in if setup reports a newly enabled compositor extension.
-- Run `keysharp hello.ks`.
+- Complete Keysharp parser, compiler, runtime, native macOS backends, and Keyview editor sources.
+- Frozen [Keysharp and Eto revisions](UPSTREAM.lock.json); dependency bootstrap checks the exact Eto commit.
+- Terminal launcher, environment diagnostics, and build helpers under [`scripts/macos`](scripts/macos).
+- [Conformance runner](compat/README.md) comparing the same scripts with official AutoHotkey v2.0.31 on Windows.
+- GitHub Actions for native Apple Silicon/Intel builds, selected upstream tests, and compatibility reports.
+- A manual packaging workflow producing unsigned `.app` bundles inside `.pkg` and `.dmg` artifacts, with SHA-256 checksums.
 
-Setup adds the optional `keysharp-input` and `keysharp-desktop` services and keeps
-healthy compatible installations. [Linux installation](docs/install-linux.md) covers
-updates, optional components, diagnosis, portable installs, removal and VS Code.
+Workflows are provided for execution in your repository. Their presence does not establish that macOS builds or interactive automation have been tested. Passing the included corpus demonstrates only those cases.
 
-On NixOS, use the [NixOS guide](docs/linux-nixos.md) for a flake-based installation,
-GNOME or COSMIC setup, and source-build commands. The release installer does not
-configure NixOS services.
+See [publishing to GitHub](docs/publish-to-github.md) for the commands to publish this source fork.
+The [local validation record](docs/validation.md) distinguishes executed Windows checks from pending macOS verification.
 
-### macOS
+For local macOS validation, transfer the Windows reference reports, then run:
 
-- **Requirements:** macOS 15 or later. Download `osx-arm64` for Apple Silicon or `osx-x64` for an Intel Mac.
-- **Install:** open the **DMG** and double-click **Install Keysharp** (or run the standalone **PKG**). Apple's Installer lets you install for all users in `/Applications` (administrator password) or only for yourself in `~/Applications`. It downloads the .NET 10 runtime if needed. Under **Customize**, terminal commands and opening Keysharp afterwards are selected by default and the VS Code shim is optional. Per-user terminal commands go in `~/.local/bin`, which is added to your login shell's `PATH`; open a new Terminal window to use them.
-- **Gatekeeper:** local self-signed, ad-hoc-signed, and unsigned builds are not notarized. If macOS blocks setup, try opening it and then choose **System Settings → Privacy & Security → Open Anyway**, following [Apple's instructions](https://support.apple.com/en-us/102445). For a trusted download whose quarantine flag prevents opening, clear that flag:
+```sh
+bash scripts/macos/verify-local.sh --baseline-dir /path/to/official-reports
+```
 
-  ```bash
-  # Use the actual file you downloaded (the .pkg works the same way).
-  xattr -dr com.apple.quarantine ~/Downloads/keysharp-*-osx-*.dmg
-  ```
+This builds the native host target and runs every local conformance gate plus the native ABI prototypes. Known incompatibilities return a failure status. No GitHub repository is required. See [the runner guide](compat/README.md).
 
-  If an installed app is blocked for the same reason, clear its quarantine flag:
+## Build and inspect
 
-  ```bash
-  xattr -dr com.apple.quarantine /Applications/Keysharp.app /Applications/Keyview.app
-  ```
+```sh
+bash scripts/macos/build.sh --configuration Release --rid osx-arm64 --publish
+python3 -m unittest discover -s compat/tests -v
+```
 
-  For a per-user installation, replace `/Applications` with `"$HOME/Applications"`.
-- **Run:** `keysharp hello.ks`, or use `Keyview.app`. Keysharp requests **Input Monitoring**, **Accessibility**, and **Screen Recording** permissions as features need them — grant them in System Settings → Privacy & Security.
-- **Uninstall:** click **Uninstall Keysharp** in Keysharp's dashboard, double-click **Uninstall Keysharp** in the DMG, or run `keysharp-uninstall`. Both terminal prompts default to Yes, and the dialog defaults to **Uninstall and Delete Settings**. To keep settings, choose **Uninstall** in the dialog, answer no to deleting settings, or pass `--keep-settings` in the terminal. The .NET runtime and macOS privacy permissions are kept.
-- **VS Code:** select the compatibility shim under **Customize** during installation. Use `/Users/YOUR_USERNAME/.local/bin/AutoHotkey.exe` as the interpreter path.
-- **GUI editing shortcuts:** GUIs are automatically given a minimal macOS menu bar (an App menu plus the standard Edit menu), so ⌘C/⌘V/⌘X/⌘A/⌘Z work in their text controls. Add the `-AppMenu` option (e.g. `MyGui := Gui("-AppMenu")`) to opt out; it has no effect on Windows/Linux.
+Use `osx-x64` on Intel. Published files go under `dist/publish/<rid>/`. See the [package guide](docs/macos-compatibility.md#packages) and [manual desktop test checklist](docs/macos-manual-tests.md).
 
-> thqby's VS Code extension targets AutoHotkey on Windows: editing and running scripts work cross-platform, but Windows-specific debugging, help, and compiler integration do not. See the [full setup guide](docs/reference.md) for portable runs, permissions, and platform details.
+## Origin and license
 
-## Platform Compatibility
+Based on Keysharp commit [`86fa3c5`](https://github.com/keysharp-org/Keysharp/commit/86fa3c5c0e07dd2f66cad55a6b9d4a7eb467736b). Keysharp targets AutoHotkey v2.1-alpha.36; this fork uses v2.0.31 as its initial stable reference for the shared corpus. These are distinct compatibility targets.
 
-`Full` means the feature is generally usable; `Partial` means known gaps remain; `Unverified` means the backend is implemented but has not been verified on hardware. See the [full capability matrix](docs/capabilities.md) and [per-platform details](docs/reference.md).
-
-| Capability | Windows | Linux | macOS |
-|---|---|---|---|
-| Parser and script execution | Full | Full | Full |
-| File and directory operations | Full | Partial | Partial |
-| Hotkeys, hotstrings, and input | Full | Partial | Partial |
-| GUI windows and window automation | Full | Partial | Partial |
-| Screen capture and pixel functions | Full | Partial | Partial |
-| Native function calls (`DllCall`) | Full | Full | Full |
-| Registry APIs | Full | Unsupported | Unsupported |
-| COM automation (`ComObject`) | Full | Partial (D-Bus) | Unverified (Apple Events) |
-
-## Building From Source
-
-Install the .NET 10 SDK and run `dotnet build Keysharp.sln -c Debug`. Linux and macOS
-also need the sibling [Keysharp Eto fork](https://github.com/keysharp-org/Eto/tree/Keysharp).
-See [building and packaging](docs/building.md) for the commands and prerequisites.
-
-## Documentation
-
-- [Detailed reference](docs/reference.md) — full setup, permissions, command-line switches, building from source, and AutoHotkey v2 differences
-- [Capability matrix](docs/capabilities.md) — per-feature, per-platform status
-- [Privacy policy](PRIVACY.md) — local data, scripts, and network services
-- [AutoHotkey v2 docs](https://www.autohotkey.com/docs/v2/) — the language Keysharp implements
-
-## Acknowledgements
-
-Keysharp builds on work from IronAHK, AutoHotkey, Eto.Forms, Scintilla, NAudio, and many other open-source projects and community contributors. See the [full acknowledgements](docs/reference.md#code-acknowledgements).
-
-## Contributing and Support
-
-Please use the [issue tracker](https://github.com/keysharp-org/Keysharp/issues) for bug reports, compatibility gaps, and feature requests.
+Keysharp builds on IronAHK and other open-source projects. Original authors, copyright notices, and the upstream [license](license.txt) are preserved. Read the [original README](docs/UPSTREAM-README.md), [detailed reference](docs/reference.md), and [capability matrix](docs/capabilities.md) for upstream behavior. This project is not an official AutoHotkey release.

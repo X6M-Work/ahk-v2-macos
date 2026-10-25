@@ -14,13 +14,13 @@ namespace Keysharp.Compilation.Syntax
 			public ModInfo Root;
 			public List<string> SearchPath;
 			public IReadOnlyList<int> IncludeParents = [];   // see ProgramNode.IncludeParents
-			public readonly Dictionary<string, ModInfo> Names = new(StringComparer.OrdinalIgnoreCase);
+			public readonly Dictionary<string, ModInfo> Names = new(AhkIdentifierComparer.Instance);
 		}
 
 		private sealed record ModuleSource(ModInfo Script = null, string Builtin = null)
 		{
 			public string Name => Script?.Name ?? Builtin;
-			public bool IsAhk => Script?.IsAhk ?? StringComparer.OrdinalIgnoreCase.Equals(Builtin, "AHK");
+			public bool IsAhk => Script?.IsAhk ?? AhkIdentifierComparer.Instance.Equals(Builtin, "AHK");
 		}
 
 		private ModuleGroup _mainGroup;
@@ -53,9 +53,9 @@ namespace Keysharp.Compilation.Syntax
 
 		private ModuleSource FindNamedModule(ModuleGroup group, string name)
 		{
-			if (StringComparer.OrdinalIgnoreCase.Equals(name, "__Main")) return new(_mainGroup.Root);
-			if (StringComparer.OrdinalIgnoreCase.Equals(name, "__Init") || name.Length == 0) return new(group.Root);
-			if (StringComparer.OrdinalIgnoreCase.Equals(name, "AHK")) return AhkSource;
+			if (AhkIdentifierComparer.Instance.Equals(name, "__Main")) return new(_mainGroup.Root);
+			if (AhkIdentifierComparer.Instance.Equals(name, "__Init") || name.Length == 0) return new(group.Root);
+			if (AhkIdentifierComparer.Instance.Equals(name, "AHK")) return AhkSource;
 			if (group.Names.TryGetValue(name, out var module)) return new(module);
 			return Script.TheScript.ReflectionsData.stringToTypes.TryGetValue(name, out var type)
 				&& typeof(Module).IsAssignableFrom(type) ? new(Builtin: Script.GetUserDeclaredName(type) ?? type.Name) : null;
@@ -67,18 +67,18 @@ namespace Keysharp.Compilation.Syntax
 			var current = group.Root;
 			foreach (var statement in body)
 			{
-				if (statement is DirectiveStmt directive && StringComparer.OrdinalIgnoreCase.Equals(directive.Name, "Module"))
+				if (statement is DirectiveStmt directive && AhkIdentifierComparer.Instance.Equals(directive.Name, "Module"))
 				{
 					var name = (directive.Args ?? "").Trim();
 					current = FindNamedModule(group, name)?.Script;
 					if (current == null)
 					{
 						current = new ModInfo { Name = name, Group = group, Dir = System.IO.Path.GetDirectoryName(group.Path) ?? _includeDir, MainInclusion = directive.Inclusion,
-							IsAhk = StringComparer.OrdinalIgnoreCase.Equals(name, "AHK"),
-							CodeName = StringComparer.OrdinalIgnoreCase.Equals(name, "AHK") ? "AHK"
+							IsAhk = AhkIdentifierComparer.Instance.Equals(name, "AHK"),
+							CodeName = AhkIdentifierComparer.Instance.Equals(name, "AHK") ? "AHK"
 								: group == _mainGroup ? NameMangler.ModuleClass(name) : "__KSFile" + group.Index + "_" + NameMangler.ModuleClass(name) };
 						group.Names.Add(name, current);
-						if (StringComparer.OrdinalIgnoreCase.Equals(name, "AHK")) _ahkModule = current;
+						if (AhkIdentifierComparer.Instance.Equals(name, "AHK")) _ahkModule = current;
 					}
 					if (!mods.Contains(current)) mods.Add(current);
 				}

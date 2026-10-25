@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {"id":"float-return-output","category":"native-abi","script":"float-return-output.ahk","expected_stdout":"golden/float-return-output.txt","platforms":["Windows"]}
+  ]
+}
