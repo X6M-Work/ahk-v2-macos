@@ -2,7 +2,7 @@
 #Warn All, StdOut
 #NoTrayIcon
 
-#import KS { RealThread, Await, A_RealThread, A_Thread, Lock }
+#import KS { RealThread, Await, A_RealThread, A_Thread, Lock, Task }
 #MaxThreads 256
 #Include <assert>
 lockit := Lock()
@@ -221,21 +221,22 @@ Assert(sharedLock.Acquire(0), A_LineNumber)
 
 sharedLock.Release()
 
-holderReady := false
-holder := RealThread(HoldSharedLock)
+lockSignals := {Ready: "", Release: ""}
+holderReady := Task.Create(ready => lockSignals.Ready := ready)
+holderRelease := Task.Create(release => lockSignals.Release := release)
+holder := RealThread(HoldSharedLock, lockSignals.Ready, holderRelease)
 
-; Wait until the holder really owns the lock rather than guessing how long it takes to start.
-Loop 1000
+try
 {
-	if holderReady
-		break
+	Assert(holderReady.Wait(15000), A_LineNumber)
+	acquired := sharedLock.Acquire(50)
+	Assert(!acquired, A_LineNumber)
 
-	Sleep 5
+	if acquired
+		sharedLock.Release()
 }
-
-Assert(holderReady, A_LineNumber)
-
-Assert(!sharedLock.Acquire(50), A_LineNumber)
+finally
+	lockSignals.Release.Call()
 
 Await(holder.Task)
 
@@ -243,12 +244,17 @@ Assert(sharedLock.Acquire(1000), A_LineNumber)
 
 sharedLock.Release()
 
-HoldSharedLock() {
-	global holderReady
+HoldSharedLock(ready, release) {
 	sharedLock.Acquire()
-	holderReady := true
-	Sleep 200
-	sharedLock.Release()
+
+	try
+	{
+		ready()
+		; Keep ownership until the main thread has checked contention, regardless of scheduling delays.
+		Await(release)
+	}
+	finally
+		sharedLock.Release()
 }
 
 CoordMode "Mouse", "Screen"
