@@ -137,7 +137,15 @@ dp(PACKED.Prototype, "b", {type:Int32, pack:1})
 dp(UNION.Prototype, "b", {type:Int32, offset:"a"})
 dp(PTR_HOLDER.Prototype, "pt", {type:POINT.Ptr})
 
-pt := POINT()
+pt := POINT(10, 20)
+for args in [[1], [1, 2, 3]]
+    Throws(() => POINT(args*), A_LineNumber, Error)
+for args in [[unset, 2], [Int32(1), 2]]
+    Throws(() => POINT(args*), A_LineNumber, TypeError)
+Throws(() => Int32[2](1), A_LineNumber, Error)
+AssertEq(POINT.Ptr(pt.Ptr).__Value.Ptr, pt.Ptr, A_LineNumber)
+AssertEq(Struct.At(0).Size, 0, A_LineNumber)
+AssertEq(Struct.At(1).Ptr, 1, A_LineNumber)
 
 ; Struct instances cannot own dynamic properties, including through the Obj functions.
 for target in [pt, POINT.At(pt.Ptr), Int32(), POINT.Ptr(), Int32[2]()] {
@@ -154,8 +162,7 @@ Assert(!(pt.Size != 8), A_LineNumber)
 
 Assert(!(!HasProp(pt, "x") || !HasProp(pt, "y")), A_LineNumber)
 
-pt.x := 10
-pt.y := 20
+pt.__New()
 
 Assert(!(pt.x != 10 || pt.y != 20), A_LineNumber)
 
@@ -183,8 +190,7 @@ pt2 := POINT.At(pt.Ptr)
 
 Assert(!(pt2.x != 10 || pt2.y != 20), A_LineNumber)
 
-num := Int32()
-num.__Value := 42
+num := Int32(42)
 
 Assert(!(num.Size != 4 || num.__Value != 42), A_LineNumber)
 
@@ -234,9 +240,7 @@ packedInst.b := 0x11223344
 
 Assert(!(packedInst.Size != 5 || packedInst.b != 0x11223344), A_LineNumber)
 
-unionInst := UNION()
-unionInst.a := 1
-unionInst.b := 2
+unionInst := UNION(2, 1)
 
 Assert(!(unionInst.Size != 4 || unionInst.a != 2), A_LineNumber)
 
@@ -244,11 +248,11 @@ ptrHolder := PTR_HOLDER()
 
 Assert(!(PropIsSet(ptrHolder, "pt")), A_LineNumber)
 
-ptrHolder.pt := pt
+ptrHolder.__New(pt)
 
 Assert(!(!(ptrHolder.pt is POINT) || ptrHolder.pt.Ptr != pt.Ptr), A_LineNumber)
 
-ptrHolder.pt := unset
+ptrHolder.__New(unset)
 
 Assert(!(PropIsSet(ptrHolder, "pt")), A_LineNumber)
 
@@ -263,10 +267,7 @@ dynPoint := DynPoint()
 dynPoint.x := 10
 dynPoint.y := 20
 
-dynChild := DynChild()
-dynChild.x := 1
-dynChild.y := 2
-dynChild.z := 3
+dynChild := DynChild(1, 2, 3)
 
 Assert(!(dynPoint.Size != 8
     || dynPoint.x != 10
@@ -275,6 +276,16 @@ Assert(!(dynPoint.Size != 8
     || dynChild.x != 1
     || dynChild.y != 2
     || dynChild.z != 3), A_LineNumber)
+
+continuedInitializers := {Count: 0}
+continueInitializer := (error, mode) => (continuedInitializers.Count++, -1)
+OnError(continueInitializer)
+dynChild.__New(10, "invalid", 30)
+OnError(continueInitializer, 0)
+AssertEq(continuedInitializers.Count, 1, A_LineNumber)
+AssertEq(dynChild.x, 1, A_LineNumber)
+AssertEq(dynChild.y, 2, A_LineNumber)
+AssertEq(dynChild.z, 30, A_LineNumber)
 
 buf := Buffer(4)
 atLock := POINT.At(buf.Ptr)
@@ -307,11 +318,11 @@ fwdBox.pt.y := 20
 Assert(!(fwdBox.Size != 8 || fwdBox.pt.x != 10 || fwdBox.pt.y != 20), A_LineNumber)
 
 initChild := INIT_CHILD()
+AssertEq(INIT_CHILD(70).x, 70, A_LineNumber)
 
 Assert(!(initChild.Ptr == 0 || initChild.Size != 4 || initChild.x != 42), A_LineNumber)
 
-myInt := MY_INT()
-myInt.__Value := 123
+myInt := MY_INT(123)
 
 Assert(!(myInt.Ptr == 0 || myInt.Size != 4 || myInt.__Value != 123), A_LineNumber)
 

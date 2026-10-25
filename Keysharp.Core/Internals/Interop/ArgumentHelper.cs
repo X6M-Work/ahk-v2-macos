@@ -244,12 +244,55 @@ namespace Keysharp.Internals.Interop
 					args[n] = ReadStructValueArg(p, structType);
 					return true;
 				}
+
+				//An instance passes the bits it stores at the class's width, so a float keeps its exact pattern.
+				if (p is Any)
+				{
+					if (!Struct.IsStructInstance(p, structType))
+					{
+						_ = Errors.TypeErrorOccurred(p, structType);
+						return false;
+					}
+
+					var address = (void*)((Struct)p).Ptr;
+
+					if (address == null)
+						return Errors.ErrorOccurred(new Error("Struct storage has not been initialized."), false);
+
+					args[n] = code switch
+					{
+						NativeTypeCode.Char => Unsafe.ReadUnaligned<sbyte>(address),
+						NativeTypeCode.UChar => Unsafe.ReadUnaligned<byte>(address),
+						NativeTypeCode.Short => Unsafe.ReadUnaligned<short>(address),
+						NativeTypeCode.UShort => Unsafe.ReadUnaligned<ushort>(address),
+						NativeTypeCode.Int => Unsafe.ReadUnaligned<int>(address),
+						NativeTypeCode.UInt or NativeTypeCode.Float => Unsafe.ReadUnaligned<uint>(address),
+						NativeTypeCode.Ptr or NativeTypeCode.UPtr => Unsafe.ReadUnaligned<nint>(address).ToInt64(),
+						_ => Unsafe.ReadUnaligned<long>(address)
+					};
+
+					if (NativeType.IsFloating(code))
+						floatingTypeMask |= 1UL << n;
+
+					return true;
+				}
 			}
 
 			if (code is NativeTypeCode.Invalid or NativeTypeCode.Void)
 			{
 				_ = Errors.ValueErrorOccurred($"Arg or return type of {rawTag} is invalid.");
 				return false;
+			}
+
+			if (p == null)
+			{
+				if (hasPtrSuffix || code is NativeTypeCode.Str or NativeTypeCode.WStr or NativeTypeCode.AStr)
+				{
+					args[n] = 0;
+					return true;
+				}
+
+				return Errors.ErrorOccurred(new ArgumentError(), false);
 			}
 
 			if (hasPtrSuffix)
@@ -261,7 +304,7 @@ namespace Keysharp.Internals.Interop
 				//value back through that property; a reference, a VarRef first as in AutoHotkey, is unwrapped
 				//to the value it holds, so an in/out parameter starts from the script's value.
 				if (p is VarRef reference)
-					p = Refs.GetValueOrNull(reference) ?? "";
+					p = Refs.GetValueOrNull(reference);
 				else if (p is Any kso)
 				{
 					object kptr;
@@ -273,7 +316,7 @@ namespace Keysharp.Internals.Interop
 						p = kptr;
 					}
 					else if (Refs.DeclaresValue(kso))
-						p = Refs.GetValueOrNull(kso) ?? "";
+						p = Refs.GetValueOrNull(kso);
 				}
 
 				//The argument's own slot holds the value, seeded with whatever came in so that an in/out
@@ -486,14 +529,6 @@ namespace Keysharp.Internals.Interop
 						return false;
 
 					break;
-
-				case null:
-					Error err;
-
-					if (Errors.ErrorOccurred(err = new ArgumentError()))
-						throw err;
-
-					return false;
 #if WINDOWS
 
 				case var com when Marshal.IsComObject(com):

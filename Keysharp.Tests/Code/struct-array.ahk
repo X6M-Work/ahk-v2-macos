@@ -82,6 +82,18 @@ Assert(outputArray is Int32[10], A_LineNumber)
 AssertEq(outputArray[1], 42, A_LineNumber)
 CallbackFree(writeArrayCb)
 
+; Callback array parameters share the caller's storage and preserve array subclasses of every size.
+arraySubtype := Class("ArraySubtype", Int32[2])
+for arrayType in [Float32[2], Int32[10], arraySubtype] {
+    callbackArray := arrayType()
+    callbackArray[1] := 12
+    arrayCb := CallbackCreate(values => values is arrayType ? (values[1] := values[1] + 1, values.Ptr) : 0, "Fast", [arrayType, IntPtr])
+    AssertEq(DllCall(arrayCb, "Ptr", callbackArray.Ptr, "Ptr"), callbackArray.Ptr, A_LineNumber)
+    AssertEq(callbackArray[1], 13, A_LineNumber)
+    CallbackFree(arrayCb)
+}
+Throws(() => CallbackCreate(() => callbackArray, "Fast", [arraySubtype]), A_LineNumber, ValueError)
+
 ; An array of exactly the pointer's target class decays to the address of its first element, both in a typed
 ; property, which then reads back as the same array, and in a DllCall argument. [v2.1-alpha.34+]
 struct BytePointer {

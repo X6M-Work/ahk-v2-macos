@@ -496,13 +496,11 @@ namespace Keysharp.Runtime
 			}
 			else if (obj is Any kso)
 			{
-				if (kso.op != null && kso.op.TryGetValue("__Enum", out var map))
-				{
-					if (map.Call != null && map.Call is KeysharpFunc ifocall)
-					{
-						return NormalizeEnumerator(ifocall.Call(obj, count), obj, ct);
-					}
-				}
+				// Resolved as a call of __Enum is, so a getter supplies the method when no Call is defined.
+				var (self, target) = Script.GetMethodOrProperty(kso, "__Enum", 1, throwIfMissing: false, invokeMeta: false);
+
+				if (target != null)
+					return NormalizeEnumerator(Script.InvokeOrNull(target, null, self, count), obj, ct);
 			}
 
 #if WINDOWS

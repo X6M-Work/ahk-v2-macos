@@ -130,11 +130,11 @@ multi := "A" Chr(0) "B"
 AssertEq(DllCall("msvcrt\wcslen", "Str", multi, "CDecl Int"), 1, A_LineNumber)
 AssertEq(StrLen(multi), 1, A_LineNumber)
 
-; An unset variable is passed as the unset value it is, not filled in by the call: DllCall finds no string, and
-; StrPtr no argument.
-UnsetLength(value?) => DllCall("msvcrt\wcslen", "Str", value, "CDecl Int")
+; An unset variable is passed as the unset value it is, not filled in by the call: DllCall passes a null pointer, as
+; AutoHotkey does, and StrPtr finds no argument.
+UnsetLength(value?) => DllCall("lstrlenW", "Str", value, "Int")
 UnsetPtr(value?) => StrPtr(value)
-Throws(() => UnsetLength(), A_LineNumber, TypeError)
+AssertEq(UnsetLength(), 0, A_LineNumber)
 Throws(() => UnsetPtr(), A_LineNumber, ArgumentError)
 Throws(() => StrPtr(5), A_LineNumber, TypeError)
 

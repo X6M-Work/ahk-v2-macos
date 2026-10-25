@@ -32,6 +32,9 @@ namespace Keysharp.Builtins
 		private sealed class StructInfo
 		{
 			public readonly List<StructFieldInfo> Fields = new();
+			// The fields a constructor's arguments fill, inherited ones first, as AutoHotkey chains them; a numeric
+			// class contributes its __Value.
+			public StructFieldInfo[] ConstructorFields;
 			public StructPrimitiveKind PrimitiveKind;
 			public long Size;
 			public long Alignment = 1;
@@ -97,6 +100,23 @@ namespace Keysharp.Builtins
 
 		public long Ptr => owned != 0 ? owned : borrowedPtr;
 		internal bool IsPointerView => isPointerView;
+
+		// As AutoHotkey's StructNew: one value per field, so that X(Y) cannot act as a cast, assigned from the last field
+		// back and stopping at the first that fails.
+		public override object __New(params object[] FieldValues)
+		{
+			if (FieldValues.Length == 0)
+				return DefaultObject;
+
+			var fields = GetCurrentLayoutInfo(true).ConstructorFields;
+
+			if (fields.Length != FieldValues.Length)
+				return Errors.ErrorOccurred("Invalid number of parameters.");
+
+			for (var i = fields.Length - 1; i >= 0 && SetFieldValue(fields[i], FieldValues[i]); --i) { }
+
+			return DefaultObject;
+		}
 
 		// Only ObjCreateWithDataPtr enables __Delete on a view of other memory.
 		internal override bool HasDeleteCall => (!isPointerView || callDeleteOnPointerView)
@@ -496,24 +516,22 @@ namespace Keysharp.Builtins
 			return nested;
 		}
 
-		internal object SetFieldValue(StructFieldInfo field, object value)
+		internal bool SetFieldValue(StructFieldInfo field, object value)
 		{
 			if (field.PointerTarget is Type targetType)
 				return SetPointerValue(GetDataPointer() + field.Offset, value, targetType, field.FieldType, field.Name);
 
 			if (field.Kind != StructPrimitiveKind.None)
-			{
-				if (IsStructInstance(value) && ((Struct)value).GetCurrentLayoutInfo().IsPrimitive)
-					value = ((Struct)value).GetPrimitiveValue();
-
-				WritePrimitive(field.Kind, GetDataPointer() + field.Offset, value);
-				return value;
-			}
+				return WritePrimitive(field.Kind, GetDataPointer() + field.Offset, value);
 
 			if (GetFieldValue(field) is Struct nested && HasCustomValueProperty(nested, Script.OwnPropsMapType.Set))
-				return Refs.SetValue(nested, value);
+			{
+				_ = Refs.SetValue(nested, value);
+				return true;
+			}
 
-			return Errors.ErrorOccurred("Assignment to struct is not supported.");
+			_ = Errors.ErrorOccurred("Assignment to struct is not supported.");
+			return false;
 		}
 
 		internal static Struct CreateInstance(Type structType)
@@ -562,9 +580,8 @@ namespace Keysharp.Builtins
 		internal static bool IsPrimitive(Type structType) => GetLayoutInfo(structType, true).IsPrimitive;
 
 		// The built-in DllCall type a numeric type class is equivalent to, or Invalid if structType is not one.
-		// Used as a DllCall type, such a class "is not instantiated" and converts directly, so it can simply be
-		// handled as the built-in type it mirrors. Pointer classes are primitive too, but must keep their own
-		// dereferencing behaviour, so they are excluded. [v2.1-alpha.23+]
+		// Scalars convert as the built-in type; struct instances supply the stored numeric value. Pointer classes
+		// are primitive too, but keep their own dereferencing behaviour, so they are excluded. [v2.1-alpha.23+]
 		internal static NativeTypeCode GetPrimitiveTypeCode(Type structType)
 		{
 			var info = GetLayoutInfo(structType, true);
@@ -631,10 +648,11 @@ namespace Keysharp.Builtins
 		/// misread there. Expressing exact widths would push signatures that need no code generation today onto
 		/// the emitted path, so this is left as a documented limitation.
 		/// </summary>
-		internal readonly struct CallbackConversion(StructPrimitiveKind kind, Type aggregate)
+		internal readonly struct CallbackConversion(StructPrimitiveKind kind, Type aggregate, bool isArray = false)
 		{
 			internal readonly StructPrimitiveKind Kind = kind;   // None for an aggregate.
 			internal readonly Type Aggregate = aggregate;        // Non-null only when Kind is None.
+			internal readonly bool IsArray = isArray;            // An array arrives as the address of the caller's elements.
 
 			// Which register file the value travels in, and so whether it needs a native signature of its own.
 			internal CallbackSlot Slot => Kind switch
@@ -651,6 +669,20 @@ namespace Keysharp.Builtins
 		{
 			var info = GetLayoutInfo(structType, true);
 			error = null;
+
+			if (info.IsArray)
+			{
+				conversion = default;
+
+				if (isReturn)
+				{
+					error = "An array type cannot be a callback return type.";
+					return false;
+				}
+
+				conversion = new(StructPrimitiveKind.None, structType, true);
+				return true;
+			}
 
 			if (info.IsPrimitive)
 			{
@@ -733,6 +765,9 @@ namespace Keysharp.Builtins
 				case StructPrimitiveKind.Int64:
 				case StructPrimitiveKind.Ptr: return slot;// Already the whole slot.
 			}
+
+			if (conversion.IsArray)
+				return GetOutputValue(CreatePointerView(conversion.Aggregate, Script.TheScript.Vars.Prototypes[conversion.Aggregate], slot));
 
 			// An aggregate, which TryGetCallbackConversion has restricted to a single integer slot.
 			var result = CreateInstance(conversion.Aggregate);
@@ -853,14 +888,12 @@ namespace Keysharp.Builtins
 		internal object SetPrimitiveValue(object value)
 		{
 			if (pointerTargets.TryGetValue(StructType, out var targetType))
-				return SetPointerValue(GetDataPointer(), value, targetType, null, "__Value");
-
-			var info = GetCurrentLayoutInfo();
-
-			if (!info.IsPrimitive)
+				_ = SetPointerValue(GetDataPointer(), value, targetType, null, "__Value");
+			else if (GetCurrentLayoutInfo() is { IsPrimitive: true } info)
+				_ = WritePrimitive(info.PrimitiveKind, GetDataPointer(), value);
+			else
 				return Errors.PropertyErrorOccurred("This struct does not define __Value.");
 
-			WritePrimitive(info.PrimitiveKind, GetDataPointer(), value);
 			return value;
 		}
 
@@ -989,6 +1022,7 @@ namespace Keysharp.Builtins
 			info.Size = PrimitiveSize(kind);
 			info.Alignment = info.Size == 0 ? 1 : info.Size;
 			info.Fields.Clear();
+			info.ConstructorFields = [new StructFieldInfo("__Value", type, 0, 0, false) { Kind = kind }];
 			info.SizeAligned = true;
 			info.FieldsLocked = true;
 		}
@@ -1055,7 +1089,7 @@ namespace Keysharp.Builtins
 		private static object CreatePointerValue(Type targetType, long ptr) =>
 			ptr == 0 ? null : CreatePointerView(targetType, Script.TheScript.Vars.Prototypes[targetType], ptr);
 
-		private object SetPointerValue(long address, object value, Type targetType, Type pointerType, string key)
+		private bool SetPointerValue(long address, object value, Type targetType, Type pointerType, string key)
 		{
 			Struct pointed = null;
 
@@ -1066,7 +1100,10 @@ namespace Keysharp.Builtins
 			else if (IsStructInstance(value, targetType) || IsArrayOf(value, targetType))
 				WritePrimitive(StructPrimitiveKind.Ptr, address, (pointed = (Struct)value).Ptr);
 			else
-				return Errors.TypeErrorOccurred(value, targetType);
+			{
+				_ = Errors.TypeErrorOccurred(value, targetType);
+				return false;
+			}
 
 			// The object stored is kept, and any earlier one released, so the pointer keeps alive only what it points to.
 			if (pointed != null)
@@ -1074,7 +1111,7 @@ namespace Keysharp.Builtins
 			else
 				_ = nestedViews?.Remove(key);
 
-			return value;
+			return true;
 		}
 
 		// Whether value is a structured array whose element class is exactly elementType. Such an array decays to the
@@ -1107,33 +1144,33 @@ namespace Keysharp.Builtins
 
 		private static void UpdateLayout(Type type, StructInfo info, bool lockFields)
 		{
-			if (info.IsArray)
-			{
-				if (info.SizeAligned)
-					return;
-
-				// A structured array's size/alignment derive entirely from its element type and length.
-				var elemInfo = GetLayoutInfo(info.ArrayElementType, true);
-				info.Size = elemInfo.Size * info.ArrayLength;
-				info.Alignment = elemInfo.Alignment;
-				info.SizeAligned = true;
-				info.FieldsLocked = true;
-				return;
-			}
-
 			if (!info.SizeAligned || (lockFields && !info.FieldsLocked))
 			{
 				var size = 0L;
 				var alignment = 1L;
 				var primitiveKind = StructPrimitiveKind.None;
 				var baseType = GetBaseStructType(type);
+				StructInfo baseInfo = null;
 
 				if (IsStructType(baseType))
 				{
-					var baseInfo = GetLayoutInfo(baseType, lockFields);
+					baseInfo = GetLayoutInfo(baseType, lockFields);
 					size = baseInfo.Size;
 					alignment = baseInfo.Alignment;
 					primitiveKind = baseInfo.PrimitiveKind;
+
+					if (baseInfo.IsArray)
+					{
+						info.ArrayElementType = baseInfo.ArrayElementType;
+						info.ArrayLength = baseInfo.ArrayLength;
+					}
+				}
+
+				if (info.IsArray && baseInfo?.IsArray != true)
+				{
+					var elemInfo = GetLayoutInfo(info.ArrayElementType, true);
+					size = elemInfo.Size * info.ArrayLength;
+					alignment = elemInfo.Alignment;
 				}
 
 				foreach (var field in info.Fields)
@@ -1154,6 +1191,7 @@ namespace Keysharp.Builtins
 				info.Size = AlignUp(size, alignment);
 				info.Alignment = alignment;
 				info.PrimitiveKind = info.Fields.Count == 0 ? primitiveKind : StructPrimitiveKind.None;
+				info.ConstructorFields = [.. baseInfo?.ConstructorFields ?? [], .. info.Fields];
 			}
 
 			info.SizeAligned = true;
@@ -1259,54 +1297,57 @@ namespace Keysharp.Builtins
 			};
 		}
 
-		private static unsafe void WritePrimitive(StructPrimitiveKind kind, long address, object value)
+		// As AutoHotkey's SetValueOfTypeAtPtr, a typed number takes a number only: an object or unset is a TypeError.
+		private static unsafe bool WritePrimitive(StructPrimitiveKind kind, long address, object value)
 		{
+			if (value is null or Any)
+			{
+				_ = Errors.TypeErrorOccurred(value, typeof(double));
+				return false;
+			}
+
 			var ptr = (void*)address;
-			long l;
-			double d;
+
+			if (kind is StructPrimitiveKind.Float32 or StructPrimitiveKind.Float64)
+			{
+				if (!value.CoerceDouble(out var d))
+					return false;
+
+				if (kind == StructPrimitiveKind.Float32)
+					Unsafe.WriteUnaligned(ptr, (float)d);
+				else
+					Unsafe.WriteUnaligned(ptr, d);
+
+				return true;
+			}
+
+			if (!value.CoerceLong(out var l))
+				return false;
 
 			switch (kind)
 			{
-				case StructPrimitiveKind.Int8:
-					if (value.CoerceLong(out l)) Unsafe.WriteUnaligned(ptr, unchecked((sbyte)l));
+				case StructPrimitiveKind.Int8 or StructPrimitiveKind.UInt8:
+					Unsafe.WriteUnaligned(ptr, unchecked((byte)l));
 					break;
 
-				case StructPrimitiveKind.UInt8:
-					if (value.CoerceLong(out l)) Unsafe.WriteUnaligned(ptr, unchecked((byte)l));
+				case StructPrimitiveKind.Int16 or StructPrimitiveKind.UInt16:
+					Unsafe.WriteUnaligned(ptr, unchecked((ushort)l));
 					break;
 
-				case StructPrimitiveKind.Int16:
-					if (value.CoerceLong(out l)) Unsafe.WriteUnaligned(ptr, unchecked((short)l));
-					break;
-
-				case StructPrimitiveKind.UInt16:
-					if (value.CoerceLong(out l)) Unsafe.WriteUnaligned(ptr, unchecked((ushort)l));
-					break;
-
-				case StructPrimitiveKind.Int32:
-					if (value.CoerceLong(out l)) Unsafe.WriteUnaligned(ptr, unchecked((int)l));
-					break;
-
-				case StructPrimitiveKind.UInt32:
-					if (value.CoerceLong(out l)) Unsafe.WriteUnaligned(ptr, unchecked((uint)l));
+				case StructPrimitiveKind.Int32 or StructPrimitiveKind.UInt32:
+					Unsafe.WriteUnaligned(ptr, unchecked((uint)l));
 					break;
 
 				case StructPrimitiveKind.Int64:
-					if (value.CoerceLong(out l)) Unsafe.WriteUnaligned(ptr, l);
+					Unsafe.WriteUnaligned(ptr, l);
 					break;
 
 				case StructPrimitiveKind.Ptr:
-					if (value.CoerceLong(out l)) Unsafe.WriteUnaligned(ptr, (nint)l);
-					break;
-
-				case StructPrimitiveKind.Float32:
-					if (value.CoerceDouble(out d)) Unsafe.WriteUnaligned(ptr, (float)d);
-					break;
-
-				case StructPrimitiveKind.Float64:
-					if (value.CoerceDouble(out d)) Unsafe.WriteUnaligned(ptr, d);
+					Unsafe.WriteUnaligned(ptr, (nint)l);
 					break;
 			}
+
+			return true;
 		}
 
 		private static unsafe void CopyBytes(long sourcePtr, long destPtr, long size)

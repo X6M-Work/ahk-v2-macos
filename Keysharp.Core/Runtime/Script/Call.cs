@@ -56,27 +56,33 @@ namespace Keysharp.Runtime
 			}
         }
 
+		internal static bool TryGetGettableProp(Any baseObj, string key, out OwnPropsDesc opm) =>
+			TryResolveMember(baseObj, key, false, out opm);
+
 		/// <summary>
-		/// The descriptor a property READ resolves to, in AutoHotkey's order (script_object.cpp, Object::GetProperty):
-		/// the nearest descriptor holding a value or a getter wins, one that can only be set is walked past, and a
-		/// Call-only one is used only once nothing above it has yielded a value. One walk, so a method read as a value
-		/// (<c>cb := obj.Handler</c>) does not pay for a second.
+		/// The descriptor a read or a call of a member resolves to. Each kind of accessor is inherited separately: a
+		/// read takes the nearest value or getter and a call the nearest Call, each falling back to the nearest of the
+		/// other kind, and a setter-only descriptor is walked past. A value is a whole member, so it ends a call's
+		/// search too.
 		/// </summary>
-		internal static bool TryGetGettableProp(Any baseObj, string key, out OwnPropsDesc opm)
+		private static bool TryResolveMember(Any baseObj, string key, bool forCall, out OwnPropsDesc opm, bool searchBase = true)
 		{
-			OwnPropsDesc method = null;
+			OwnPropsDesc fallback = null;
 
 			for (var cur = baseObj; ; cur = cur.Base)
 			{
-				var ownProps = cur.op;
-
-				if (ownProps != null && ownProps.TryGetValue(key, out opm))
+				if (cur.op != null && cur.op.TryGetValue(key, out opm))
 				{
-					if (opm.Type == OwnPropsMapType.None || (opm.Type & (OwnPropsMapType.Value | OwnPropsMapType.Get)) != 0)
+					var readable = opm.Type == OwnPropsMapType.None || (opm.Type & (OwnPropsMapType.Value | OwnPropsMapType.Get)) != 0;
+
+					if (forCall ? opm.Call != null : readable)
 						return true;
 
-					if (method == null && (opm.Type & OwnPropsMapType.Call) != 0)
-						method = opm;
+					if (forCall ? readable : opm.Call != null)
+						fallback ??= opm;
+
+					if (forCall && opm.Get == null && readable)
+						break;
 				}
 
 				// `base` is the object's own, so it is answered before the chain is walked — and regardless of what
@@ -87,12 +93,12 @@ namespace Keysharp.Runtime
 					return true;
 				}
 
-				if (cur.Base == null)
+				if (!searchBase || cur.Base == null)
 					break;
 			}
 
-			opm = method;
-			return method != null;
+			opm = fallback;
+			return fallback != null;
 		}
 
 		public static bool TryGetProps(Any baseObj, out Dictionary<string, OwnPropsDesc> props, bool searchBase = true, OwnPropsMapType type = 0)
@@ -158,13 +164,10 @@ namespace Keysharp.Runtime
 			// ---------- Keysharp object (Any) path ----------
 			if (kso != null)
 			{
-				// Own props: prefer Call > Get > Value. A setter is never a method, so a setter-only descriptor
-				// does not end the search — the method may still be defined further up the chain.
-				if (TryGetOwnPropsMap(kso, key, out var opm, searchBase: checkBase,
-									  type: OwnPropsMapType.Call | OwnPropsMapType.Get | OwnPropsMapType.Value))
+				if (TryResolveMember(kso, key, true, out var opm, checkBase))
 				{
 					if (opm.Call != null) return (item, opm.Call); // (this, …)
-					if (opm.Get != null) return (item, Invoke(opm.Get, null, item)); // getter call, no params
+					if (opm.Get != null) return (item, InvokeOrNull(opm.Get, null, item) ?? UnsetResultErrorOccurred(item, key));
 					if (opm.Value != null) return (item, opm.Value);
 
 					if (throwIfMissing)
@@ -326,7 +329,7 @@ namespace Keysharp.Runtime
 
 					if (opm.Call != null)
 					{
-						return opm.Call; // expose function object
+						return args.Length > 0 ? GetIndexOrNull(opm.Call, args) : opm.Call;
 					}
 
 					return args.Length > 0 ? UnsetResultErrorOccurred(item, namestr) : null;
@@ -774,7 +777,9 @@ namespace Keysharp.Runtime
 					{
 						if (item is not Struct setStruct || setStruct.Ptr == 0 && !setStruct.HasCachedEmbeddedField(field.StructField))
 							return Errors.ErrorOccurred("Property invalid for object with null data.", null, namestr);
-						return argCount > 1 ? SetPropertyResultIndex(setStruct.GetFieldValue(field.StructField)) : setStruct.SetFieldValue(field.StructField, value);
+						if (argCount > 1) return SetPropertyResultIndex(setStruct.GetFieldValue(field.StructField));
+						_ = setStruct.SetFieldValue(field.StructField, value);
+						return value;
 					}
 					if (argCount > 1)
 						return SetPropertyResultIndex(field.Get is KeysharpFunc getter ? getter.Call(item)

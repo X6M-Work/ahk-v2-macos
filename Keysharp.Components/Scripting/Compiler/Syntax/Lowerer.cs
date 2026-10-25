@@ -4423,10 +4423,10 @@ namespace Keysharp.Compilation.Syntax
 		private static readonly Dictionary<string, string> ArrowOrNull = new(System.StringComparer.Ordinal)
 		{ { "Invoke", "InvokeOrNull" } };
 
-		// Explicit ? follows a chain's result; IsSet and ?? leave its final access strict.
+		// Groups and sequences preserve the final result; only explicit ? crosses an optional chain's conditional.
 		private static ExpressionSyntax RewriteToOrNull(ExpressionSyntax e, Dictionary<string, string> map = null, bool throughChain = false)
 		{
-			if (throughChain && e is ParenthesizedExpressionSyntax paren)
+			if (e is ParenthesizedExpressionSyntax paren)
 				return paren.WithExpression(RewriteToOrNull(paren.Expression, map, throughChain));
 			if (throughChain && e is ConditionalExpressionSyntax conditional)
 				return conditional.WithWhenTrue(RewriteToOrNull(conditional.WhenTrue, map, true))
@@ -4435,12 +4435,12 @@ namespace Keysharp.Compilation.Syntax
 				return e;
 			if ((map ?? IsSetOrNull).TryGetValue(ma.Name.Identifier.Text, out var orNull))
 				return inv.WithExpression(ma.WithName(SyntaxFactory.IdentifierName(orNull)));
-			if (throughChain && ma.Name.Identifier.Text == "MultiStatement" && inv.ArgumentList.Arguments.Count > 0)
+			if (ma.Name.Identifier.Text == "MultiStatement" && inv.ArgumentList.Arguments.Count > 0)
 			{
 				var args = inv.ArgumentList.Arguments;
 				var result = args[^1];
 				return inv.WithArgumentList(inv.ArgumentList.WithArguments(
-					args.Replace(result, result.WithExpression(RewriteToOrNull(result.Expression, map, true)))));
+					args.Replace(result, result.WithExpression(RewriteToOrNull(result.Expression, map, throughChain)))));
 			}
 			return e;
 		}

@@ -193,6 +193,12 @@ class OptHolder
 OptNoValue() => unset
 
 holder := OptHolder()
+Assert(!IsSet((OptNoValue())), A_LineNumber)
+Assert(!IsSet((holder[1])), A_LineNumber)
+Assert(!IsSet((holder.Items[1])), A_LineNumber)
+Assert(!IsSet((holder.NoValue(), holder.Prop)), A_LineNumber)
+Assert(!IsSet(holder.Present.Missing), A_LineNumber)
+Throws(() => IsSet(holder.Missing.Inner), A_LineNumber, PropertyError)
 holder?.NoValue()
 optVal := holder.Prop?.Inner
 Assert(!IsSet(optVal), A_LineNumber)
@@ -249,6 +255,8 @@ Throws(() => holder?.Missing, A_LineNumber, PropertyError)
 Throws(() => holder?.Prop, A_LineNumber, UnsetError)
 Throws(() => holder?.Items[1], A_LineNumber, UnsetError)
 Throws(() => IsSet(holder?.Prop), A_LineNumber, UnsetError)
+Throws(() => IsSet((holder?.Prop)), A_LineNumber, UnsetError)
+Throws(() => IsSet(holder.Present?.Missing), A_LineNumber, PropertyError)
 Throws(() => holder?.Prop ?? 12, A_LineNumber, UnsetError)
 Throws(() => holder.Failure?.Inner, A_LineNumber, ValueError)
 

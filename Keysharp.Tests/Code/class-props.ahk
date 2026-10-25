@@ -325,6 +325,7 @@ AssertEq(unsetHolder.Missing ?? "missing", "missing", A_LineNumber)
 Throws(() => unsetHolder.Missing[1] ?? "missing", A_LineNumber, PropertyError)
 AssertError(() => unsetHolder.Data[1], "UnsetError: No value was returned. [Data]", A_LineNumber)
 AssertError(() => unsetHolder.Data[1] ?? 0, "UnsetError: No value was returned. [Data]", A_LineNumber)
+AssertError(() => unsetHolder.Data() ?? 0, "UnsetError: No value was returned. [Data]", A_LineNumber)
 AssertError(() => unsetHolder.Data[1] := 2, "UnsetError: No value was returned. [Data]", A_LineNumber)
 AssertError(() => unsetHolder.Writable[1] := 2, "UnsetError: No value was returned. [Writable]", A_LineNumber)
 ownUnsetHolder := {}
@@ -436,6 +437,33 @@ class PropsDerived extends PropsBase {
 	X() => 2
 }
 AssertEq(PropNames(PropsDerived()), "X,", A_LineNumber)
+; Each kind of accessor is inherited separately: a read takes the nearest getter and a call the nearest method.
+methodHolder := PropsDerived()
+AssertEq(methodHolder.X, 1, A_LineNumber)
+AssertEq(methodHolder.X(), 2, A_LineNumber)
+class PropsGetterOverMethod extends PropsDerived {
+	X => 3
+}
+getterHolder := PropsGetterOverMethod()
+AssertEq(getterHolder.X, 3, A_LineNumber)
+AssertEq(getterHolder.X(), 2, A_LineNumber)
+class PropsIndexedBase {
+	Y[Index] => Index * 10
+}
+class PropsMethodOverIndexed extends PropsIndexedBase {
+	Y() => 5
+}
+indexedHolder := PropsMethodOverIndexed()
+AssertEq(indexedHolder.Y[2], 20, A_LineNumber)
+AssertEq(indexedHolder.Y(), 5, A_LineNumber)
+; With no getter anywhere, a read yields the method's function object, which any index then applies to.
+onlyCall := (This) => 9
+methodHolder.DefineProp("OnlyCall", {Call: onlyCall})
+Assert(methodHolder.OnlyCall is Func, A_LineNumber)
+Throws(() => methodHolder.OnlyCall[1], A_LineNumber, PropertyError)
+onlyCall.DefineProp("__Item", {Get: (This, Index) => Index * 2})
+AssertEq(methodHolder.OnlyCall[3], 6, A_LineNumber)
+AssertEq(methodHolder.OnlyCall(), 9, A_LineNumber)
 struct HiddenField {
 	Shown : Int32
 }

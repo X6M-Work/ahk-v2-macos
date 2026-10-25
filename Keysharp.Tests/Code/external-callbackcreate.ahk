@@ -127,11 +127,17 @@ SumPair(pair) => pair.a + pair.b
 
 typedCb := CallbackCreate(AddTyped, "Fast", [Float32, Float32, Float32])
 AssertEq(DllCall(typedCb, "float", 1.5, "float", 2.25, "float"), 3.75, A_LineNumber)
+AssertEq(DllCall(typedCb, Float32, Float32(1.5), Float32, Float32(2.25), Float32), 3.75, A_LineNumber)
 CallbackFree(typedCb)
 
 ; An integer parameter type must arrive as an Integer, not a Float.
 intCb := CallbackCreate(v => Type(v) = "Integer" ? v : -1, "Fast", [Int32, Int32])
 AssertEq(DllCall(intCb, Int32, 30, Int32), 30, A_LineNumber)
+AssertEq(DllCall(intCb, Int32, Int32(42), Int32), 42, A_LineNumber)
+struct CB_EXTENDED_INT extends Int32 {
+	Extra : Int64
+}
+AssertEq(DllCall(intCb, Int32, CB_EXTENDED_INT(-42, 7), Int32), -42, A_LineNumber)
 CallbackFree(intCb)
 
 ; A narrow signed type round-trips with its sign intact.
@@ -291,6 +297,7 @@ CheckWorkerCoordModeAffinity() {
 AddTwo(a, b) => a + b
 doubleCb := CallbackCreate(AddTwo, "Fast", [Float64, Float64, Float64])
 AssertEq(DllCall(doubleCb, "double", 1.5, "double", 2.25, "double"), 3.75, A_LineNumber)
+AssertEq(DllCall(doubleCb, Float64, Float64(1.5), Float64, Float64(2.25), Float64), 3.75, A_LineNumber)
 CallbackFree(doubleCb)
 
 ; More than four floating-point arguments: the first four are duplicated into general purpose registers
@@ -333,5 +340,20 @@ CallbackFree(addrCb)
 Throws(() => CallbackFree(addrCb), A_LineNumber, ValueError)
 Throws(() => CallbackFree(0), A_LineNumber, ValueError)
 Throws(() => CallbackFree({}), A_LineNumber, TypeError)
+
+identityCb := CallbackCreate(value => value, "Fast", 1)
+for nativeType in ["Str", "WStr", "AStr", "Int*", "DoubleP"]
+	AssertEq(DllCall(identityCb, nativeType, unset, "Ptr"), 0, A_LineNumber)
+AssertEq(DllCall(identityCb, IntPtr, IntPtr(42), "Ptr"), 42, A_LineNumber)
+#if WINDOWS && X64
+nanFloat := Float32()
+NumPut("UInt", 0x7FC12345, nanFloat)
+AssertEq(DllCall(identityCb, Float32, nanFloat, "UInt"), 0x7FC12345, A_LineNumber)
+#endif
+Throws(() => DllCall(identityCb, IntPtr, Buffer(8)), A_LineNumber, TypeError)
+Throws(() => DllCall(identityCb, "Int", unset), A_LineNumber, ArgumentError)
+DllCall(identityCb, "Int*", &unsetOutput := unset)
+AssertEq(unsetOutput, 0, A_LineNumber)
+CallbackFree(identityCb)
 
 FileAppend "pass", "*"

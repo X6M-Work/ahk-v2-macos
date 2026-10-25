@@ -66,23 +66,19 @@ GetEnum(this) {
     enumReads++
     return OverrideEnum
 }
-GetNativeEnum(this) {
-    global enumReads, nativeEnum
-    enumReads++
-    this[1] := 88
-    return nativeEnum
-}
+; An own getter does not hide Array's __Enum method from a call, so the array spreads its own items.
 custom := [1, 2]
 custom.DefineProp("__Enum", {Get: GetEnum})
 result := Collect(custom*)
+AssertEq(enumReads, 0, A_LineNumber)
+AssertEq(result.Length, 2, A_LineNumber)
+; With no __Enum method anywhere, the getter supplies the enumerator and is read once.
+enumerable := {}
+enumerable.DefineProp("__Enum", {Get: GetEnum})
+result := Collect(enumerable*)
 AssertEq(enumReads, 1, A_LineNumber)
 AssertEq(result.Length, 1, A_LineNumber)
 AssertEq(result[1], 77, A_LineNumber)
-custom.DefineProp("__Enum", {Get: GetNativeEnum})
-result := Collect(custom*)
-AssertEq(enumReads, 2, A_LineNumber)
-AssertEq(result[1], 88, A_LineNumber)
-AssertEq(result.Length, 2, A_LineNumber)
 
 savedEnum := Array.Prototype.GetOwnPropDesc("__Enum")
 try {

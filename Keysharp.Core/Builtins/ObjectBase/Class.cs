@@ -49,6 +49,13 @@ namespace Keysharp.Builtins
 			staticInst.DefinePropInternal("Prototype", new OwnPropsDesc(proto));
 			staticInst.InstancePrototype = proto;
 
+			// A struct class has a type of its own, by which its fields, DllCall and callbacks create its instances.
+			if (isStruct)
+			{
+				vars.Prototypes[userType] = proto;
+				vars.Statics[userType] = staticInst;
+			}
+
 			_ = Script.InvokeMeta(staticInst, "__New", args);
 
 			return staticInst;
