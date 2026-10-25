@@ -113,8 +113,8 @@ namespace Keysharp.Builtins
 			// Per-operation setup dominates simple draws, so stable bitmaps reuse their Graphics, brushes and
 			// pens. Every lease resets the accumulated transform before applying drawScale.
 			private Graphics liveGraphics;
-			private Bitmap liveGraphicsFor;
 #if WINDOWS || OSX
+			private Bitmap liveGraphicsFor;
 			private bool liveHighQuality;
 #endif
 			private Dictionary<int, SolidBrush> brushCache;
@@ -281,7 +281,9 @@ namespace Keysharp.Builtins
 				catch { }
 
 				liveGraphics = null;
+#if WINDOWS || OSX
 				liveGraphicsFor = null;
+#endif
 			}
 
 			// Brushes and pens are colour-keyed and outlive any one bitmap, so only the Graphics is tied to the
