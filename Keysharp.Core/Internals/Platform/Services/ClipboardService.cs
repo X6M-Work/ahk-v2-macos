@@ -1226,9 +1226,9 @@ namespace Keysharp.Internals
 
 #if WINDOWS
 	/// <summary>
-	/// The Windows clipboard. Text, files, formats and ClipboardAll go through raw Win32 as AutoHotkey's do: each open
-	/// honors A_ClipboardTimeout, a write fires WM_CLIPBOARDUPDATE once, and the presence checks leave the clipboard
-	/// closed. Images go through the typed WinForms Clipboard API.
+	/// The Windows clipboard. Reads and writes go through raw Win32 as AutoHotkey's do: each open honors
+	/// A_ClipboardTimeout, a write fires WM_CLIPBOARDUPDATE once, and the presence checks leave the clipboard closed.
+	/// Only a lone image is written through the typed WinForms Clipboard API (see SetImage).
 	/// </summary>
 	internal sealed class WindowsClipboard : ClipboardBase
 	{
@@ -1427,18 +1427,36 @@ namespace Keysharp.Internals
 			return buffer;
 		}
 
+		// Windows synthesizes CF_BITMAP from either DIB flavor when the writer closes the clipboard, so the presence check
+		// takes any image format and the timed open waits for a writer still at work.
 		public override Bitmap GetImage()
 		{
-			try
+			if (!HasKind(ClipboardKind.Image))
+				return null;
+
+			Bitmap image;
+
+			using (Open(forWriting: false))
 			{
-				// A private copy, detached from the clipboard's object.
-				using var image = System.Windows.Forms.Clipboard.GetImage();
-				return image == null ? null : new Bitmap(image);
+				// The clipboard keeps owning the handle. FromHbitmap copies the pixels, so the clipboard is closed before
+				// the copy below, and a handle GDI+ cannot read gives no image, as an unreadable text handle gives no text.
+				var handle = WindowsAPI.GetClipboardData(WindowsAPI.CF_BITMAP);
+
+				try
+				{
+					image = handle == 0 ? null : System.Drawing.Image.FromHbitmap(handle);
+				}
+				catch (Exception ex) when (ex is ArgumentException or ExternalException)
+				{
+					image = null;
+				}
 			}
-			catch (ExternalException ex) when (ex.HResult == ClipboardCantOpen)
-			{
-				throw new ClipboardOperationException("Can't open clipboard for reading.");
-			}
+
+			if (image == null)
+				return null;
+
+			using (image)
+				return ImageHelper.CopyBitmap(image);
 		}
 
 		// Not routed through SetAll: the toolkit publishes a richer format set for a lone image (CF_BITMAP and both

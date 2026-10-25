@@ -87,6 +87,43 @@ AssertEq(img.Width, 20, A_LineNumber)
 #if WINDOWS
 ; The kinds are answered by presence checks that see every DIB flavor.
 Assert(Clipboard.Has("Image") && !Clipboard.Has("Text") && !Clipboard.Has("Files") && !Clipboard.IsEmpty, A_LineNumber)
+
+; An image published as a DIB and PNG reads back through the bitmap Windows synthesizes from the DIB.
+Clipboard.Set({ Image: img })
+back := Clipboard.Image
+Assert(back is Image && back.Width == 20 && back.Height == 10 && back.GetPixel(0, 0) == 0xFFFF0000, A_LineNumber)
+
+; A read waits for a program still writing the clipboard, which lists only the DIB it set until it closes the
+; clipboard and Windows synthesizes the bitmap. The writer opens with a window, since an open without one does not
+; keep out a reader that passes none either, and reports through an object, which reaches it whether this script
+; runs as is or wrapped in a function.
+writer := { State: 0, Window: A_ScriptHwnd, Dib: Clipboard.GetData("8") }
+writing := RealThread(WriteDibSlowly)
+start := A_TickCount
+while !writer.State && A_TickCount - start < 2000
+	Sleep 10
+if writer.State == 1
+{
+	back := Clipboard.Image
+	Assert(back is Image && back.Width == 20 && back.Height == 10, A_LineNumber)
+}
+Assert(writing.Task.Wait(5000), A_LineNumber)
+
+WriteDibSlowly()
+{
+	; Another program can have the clipboard open at this moment, which leaves nothing to test.
+	if !DllCall("OpenClipboard", "Ptr", writer.Window)
+		return writer.State := -1
+	DllCall("EmptyClipboard")
+	size := writer.Dib.Size
+	memory := DllCall("GlobalAlloc", "UInt", 2, "UPtr", size, "Ptr")   ; GMEM_MOVEABLE
+	DllCall("RtlMoveMemory", "Ptr", DllCall("GlobalLock", "Ptr", memory, "Ptr"), "Ptr", writer.Dib.Ptr, "UPtr", size)
+	DllCall("GlobalUnlock", "Ptr", memory)
+	DllCall("SetClipboardData", "UInt", 8, "Ptr", memory)   ; CF_DIB, which the clipboard owns from here
+	writer.State := 1
+	DllCall("Sleep", "UInt", 300)
+	DllCall("CloseClipboard")
+}
 #endif
 
 ; Image.FromClipboard is an alias of the same getter.
