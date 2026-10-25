@@ -3289,13 +3289,13 @@ namespace Keysharp.Builtins
 				(maxx, maxy) = FixStatusStrip(ss);
 			}
 
+			//The autosize is not exact, but as close as a generic calculation gets. The status strip is docked, so its
+			//height has to be added.
+			var size = auto || firstShow ? new Size(maxx + form.Margin.Left, maxy + ssHeight + form.Margin.Bottom) : form.GuiClientSize;
+
 			//As in AHK, the first Show autosizes the dimensions it is not given and a later one keeps them.
 			if (placeable && (auto || firstShow || explicitSize))
 			{
-				//The autosize is not exact, but as close as a generic calculation gets. The status strip is docked, so its
-				//height has to be added.
-				var size = auto || firstShow ? new Size(maxx + form.Margin.Left, maxy + ssHeight + form.Margin.Bottom) : form.GuiClientSize;
-
 				if (!auto && requestedSize.Width != int.MinValue)
 					size.Width = (int)Math.Ceiling(requestedSize.Width * dpiscale);
 

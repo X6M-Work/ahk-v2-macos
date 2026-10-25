@@ -117,6 +117,8 @@ buildDotnetModule rec {
     "Keyview/Keyview.csproj"
   ];
   nugetDeps = ./deps.json;
+  # The profiling target resolves dotnet-pgo from the primary NuGet cache.
+  linkNugetPackages = true;
   dotnet-sdk = dotnetCorePackages.sdk_10_0;
   dotnet-runtime = dotnet-sdk.runtime;
 
