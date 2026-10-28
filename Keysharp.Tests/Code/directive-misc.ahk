@@ -68,9 +68,13 @@ try
 {
 	Hotkey("F5", , "T2 P1 S")
 	Hotkey("F5", , "B")
+	Hotkey("F5", , "T2P-3B0S1I0")
 }
 catch
 	Assert(false, A_LineNumber)
+
+for invalid in ["P2Z", "T0", "T256", "T-1", "T", "I101", "I-1", "B2", "S2", "O", "On1", "P0x01B", "P+", "`n", "ſ"]
+	Throws(() => Hotkey("F5", , invalid), A_LineNumber, ValueError)
 
 FileAppend "pass", "*"
 

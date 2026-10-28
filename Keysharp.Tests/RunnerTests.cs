@@ -27,6 +27,20 @@ public class RunnerTests : TestRunner
 	}
 
 	[TestCase(true), TestCase(false), Category("Internal"), Category("Curated")]
+	public void CapturedScriptErrorsAreCapturedAndWritersRestored(bool runtimeError)
+	{
+		var previousOutput = Console.Out;
+		var previousError = Console.Error;
+		var body = runtimeError ? "throw Error('runner error diagnostic')" : "FileAppend 'runner error diagnostic', '**'";
+		var output = RunScript("#NoTrayIcon\n#ErrorStdOut\n#Warn All, StdOut\n" + body,
+			"runner-error-diagnostic", true, false);
+		Assert.That(CapturedScriptError, Does.Contain("runner error diagnostic"));
+		Assert.That(HasPassed(output), Is.False);
+		Assert.That(Console.Out, Is.SameAs(previousOutput));
+		Assert.That(Console.Error, Is.SameAs(previousError));
+	}
+
+	[TestCase(true), TestCase(false), Category("Internal"), Category("Curated")]
 	public void CompilationContextLifetime(bool execute)
 	{
 		Script compilationContext = null;

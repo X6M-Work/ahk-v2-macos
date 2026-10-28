@@ -71,6 +71,8 @@ Test fixtures and assets are resolved from the checkout containing `Keysharp.sln
 
 Scripts that read shared test data include `<testpaths>` and use `_TestFixturePath(...)`. The helper resolves against its included file, so it also works when the main script is compiled from text inside a function wrapper. Relative scratch destinations remain under the test working directory.
 
+`RunScript` returns stdout and preserves stderr for tests that intercept expected errors. Failed `TestScript` assertions include the captured stderr diagnostic. A test that changes `CurrentCompatibilityVersion` must restore it in `finally`; it is thread-local state shared across test instances.
+
 `Code/Gui/guitest.ks` is interactive and skips operations the compositor reports as unsupported. Run native tray checks in a separate, self-terminating process; the test host does not publish icons.
 
 For nested Wayland tests, point both Keysharp and keysharp-desktop at the nested display. Verify with `keysharp-desktop probe`, then restore the outer desktop's service afterwards.

@@ -53,7 +53,7 @@ Golden files must first pass the official AHK v2 reference run. They are reviewa
 | `phase15-enumerators` | 9 | Native metadata, arity, real VarRefs, binding and OwnProps getters |
 | `phase15-native-windows` | 1 | Native Float return/output widening; Windows-only DLL requirement |
 | `phase15-reload/run_reload.py` | 1 | Process replacement, OnExit and fresh timers |
-| `phase15-runtime` | 8 | Timers, Critical, Pause and OnExit |
+| `phase15-runtime` | 9 | Timers, Critical, Pause, OnExit and hotkey option parsing/atomicity |
 | `phase15-architecture` | 5 | Strict destruction/resource lifetime; unresolved GC mismatch |
 | `phase15-runtime/run_processes.py` | 3 | Expected nonzero exit codes, OnError and continuation |
 

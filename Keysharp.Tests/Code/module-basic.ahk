@@ -110,39 +110,43 @@ AssertEq(reopened.ReadRaw(), 7, A_LineNumber)
 Assert(reopened.__Ref("cOuNt") == &ReopenedCount, A_LineNumber)
 
 #Warn LocalSameAsGlobal, Off
-#Import õ as UnicodeModule { ς as SigmaValue }
-#Import ς as SigmaModule { Value as ÕAlias }
+#Import Õ as UnicodeModule { Σ as SigmaValue }
+#Import Σ as SigmaModule { Value as ÕAlias }
+#Import σ as LowerSigmaModule
 #Import 🙂 as SymbolModule
 #Import __KSPath_D83D_DE42 as LiteralPrefixModule
 
 õ := 1
-Õ += 1
+Õ := 2
 σ := 3
-ς += 1
+ς := 4
+Σ := 5
 k := 5
 K := 6
 S := 7
 ſ := 8
 claſs := 9
-AssertEq(Õ "," Σ "," k "," K "," s "," ſ "," claſs, "2,4,5,6,7,8,9", A_LineNumber)
+AssertEq(Õ "," σ "," ς "," Σ "," k "," K "," s "," ſ "," claſs, "2,3,4,5,5,6,7,8,9", A_LineNumber)
 AssertEq(%"Õ"% "," %"ς"%, "2,4", A_LineNumber)
-Assert(&õ == &Õ && &σ == &%"ς"% && &k != &K && &s != &ſ, A_LineNumber)
+Assert(&õ != &Õ && &σ != &%"ς"% && &Σ != &σ && &k != &K && &s != &ſ, A_LineNumber)
 
 LocalNames() {
-	local Õ
+    local Õ := 20
     õ := 10
     Õ += 1
-    Assert(&õ == &%"Õ"%, A_LineNumber)
+    Assert(&õ != &%"Õ"%, A_LineNumber)
     Captured() => Õ
     return Captured
 }
-AssertEq(LocalNames()(), 11, A_LineNumber)
+AssertEq(LocalNames()(), 21, A_LineNumber)
 CacheΣ() {
-    static õ := 0
-    Assert(&õ == &%"Õ"%, A_LineNumber)
+    static õ := 10, Õ := 0
+    Assert(&õ != &%"Õ"%, A_LineNumber)
     return ++Õ
 }
-AssertEq(Cacheς() "," %"cacheσ"%(), "1,2", A_LineNumber)
+Cacheς() => 30
+Cacheσ() => 31
+AssertEq(CacheΣ() "," %"cacheΣ"%() "," Cacheς() "," Cacheσ(), "1,2,30,31", A_LineNumber)
 
 class Ω {
     Θ := 12
@@ -153,14 +157,18 @@ class Ω {
         Value => 16
     }
 }
-upper := ω()
+class ω {
+    Value => 25
+}
+upper := Ω()
 upper.θ := 17
-AssertEq(upper.Θ "," upper.ς "," upper.Mσ() "," ω.Sς() "," Ω.õ().Value, "17,13,14,15,16", A_LineNumber)
+AssertEq(upper.Θ "," upper.θ "," upper.Σ "," upper.mΣ() "," Ω.sΣ() "," Ω.Õ().Value, "12,17,13,14,15,16", A_LineNumber)
 AssertEq(Type(upper), "Ω", A_LineNumber)
-Assert(upper is ω, A_LineNumber)
-own := {Σ: 18, ſ: 19, S: 20, k: 21, K: 22}
-AssertEq(own.ς "," own.ſ "," own.s "," own.k "," own.K, "18,19,20,21,22", A_LineNumber)
-AssertEq(ObjOwnPropCount(own), 5, A_LineNumber)
+Assert(upper is Ω && !(upper is ω), A_LineNumber)
+AssertEq(ω().Value, 25, A_LineNumber)
+own := {Σ: 18, ſ: 19, S: 20, k: 21, K: 22, σ: 23, ς: 24}
+AssertEq(own.Σ "," own.σ "," own.ς "," own.ſ "," own.s "," own.k "," own.K, "18,23,24,19,20,21,22", A_LineNumber)
+AssertEq(ObjOwnPropCount(own), 7, A_LineNumber)
 
 class 🚀 {
     #CSharp
@@ -179,9 +187,9 @@ AssertEq(🚀().InlineValue(), 41, A_LineNumber)
 AssertEq(Type(🚀()), "🚀", A_LineNumber)
 AssertEq(__KSType_D83D_DE80().Value, 43, A_LineNumber)
 AssertEq(X‍Y().InlineValue(), 45, A_LineNumber)
-AssertEq(SigmaValue "," õAlias, "35,37", A_LineNumber)
-Assert(UnicodeModule.__Ref("σ") == &SigmaValue, A_LineNumber)
-Assert(SigmaModule.__Ref("vALuE") == &%"õAlias"%, A_LineNumber)
+AssertEq(SigmaValue "," ÕAlias "," LowerSigmaModule.Value, "35,36,37", A_LineNumber)
+Assert(UnicodeModule.__Ref("Σ") == &SigmaValue, A_LineNumber)
+Assert(SigmaModule.__Ref("vALuE") == &%"ÕAlias"%, A_LineNumber)
 AssertEq(SymbolModule.InlineValue(), 42, A_LineNumber)
 AssertEq(LiteralPrefixModule.Value, 44, A_LineNumber)
 FileAppend "pass", "*"
@@ -191,7 +199,7 @@ FileAppend "pass", "*"
 #Module Σ
 Value := 36
 #Module σ
-Value += 1
+Value := 37
 #Module 🙂
 #CSharp
 public static object InlineValue() => 42L;

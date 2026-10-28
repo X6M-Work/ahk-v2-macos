@@ -339,6 +339,11 @@ public class FunctionTests : TestRunner
 			"class Ω {\n}\nclass ω {\n}\n",
 			"class C {\n MΣ() => 1\n Mς() => 2\n}\n",
 			"class C {\n Σ => 1\n ς => 2\n}\n",
+		})
+			Assert.IsEmpty(LoweringDiagnostics.Diagnostics(source), source);
+
+		foreach (var source in new[]
+		{
 			"class C {\n M(This) => 1\n}\n",
 			"class C {\n P[Value] {\n set => 1\n }\n}\n"
 		})

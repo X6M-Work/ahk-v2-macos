@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "cases": [
+    {"id":"hotkey-options","category":"input-options","script":"hotkey-options.ahk","expected_stdout":"golden/hotkey-options.txt"},
     {"id":"timer-once","category":"scheduler","script":"timer-once.ahk","expected_stdout":"golden/timer-once.txt"},
     {"id":"timer-cancellation","category":"scheduler","script":"timer-cancellation.ahk","expected_stdout":"golden/timer-cancellation.txt"},
     {"id":"timer-overrun","category":"scheduler","script":"timer-overrun.ahk","expected_stdout":"golden/timer-overrun.txt"},

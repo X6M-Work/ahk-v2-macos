@@ -132,29 +132,29 @@ Assert(A_DetectHiddenText, A_LineNumber)
 
 DetectHiddenText 0 ; Reset it back for the function version of this test.
 
-FileEncoding "utf-8"
+FileEncoding "UTF-8"
 
-AssertEq(A_FileEncoding, "utf-8", A_LineNumber)
+AssertEq(A_FileEncoding, "UTF-8", A_LineNumber)
 	
-FileEncoding "utf-8-raw"
+FileEncoding "UTF-8-RAW"
 
-AssertEq(A_FileEncoding, "utf-8-raw", A_LineNumber)
+AssertEq(A_FileEncoding, "UTF-8-RAW", A_LineNumber)
 
 FileEncoding "unicode"
 
-AssertEq(A_FileEncoding, "utf-16", A_LineNumber)
+AssertEq(A_FileEncoding, "UTF-16", A_LineNumber)
 
-FileEncoding "utf-16"
+FileEncoding "UTF-16"
 
-AssertEq(A_FileEncoding, "utf-16", A_LineNumber)
+AssertEq(A_FileEncoding, "UTF-16", A_LineNumber)
 
-FileEncoding "utf-16-raw"
+FileEncoding "UTF-16-RAW"
 
-AssertEq(A_FileEncoding, "utf-16-raw", A_LineNumber)
+AssertEq(A_FileEncoding, "UTF-16-RAW", A_LineNumber)
 
 FileEncoding "ascii"
 
-AssertEq(A_FileEncoding, "us-ascii", A_LineNumber)
+AssertEq(A_FileEncoding, "CP20127", A_LineNumber)
 
 ; A name which cannot be resolved raises, as it does in AutoHotkey, and leaves the setting alone.
 threw := 0
@@ -164,7 +164,22 @@ try
 catch ValueError
 	threw := 1
 
-Assert(threw && A_FileEncoding == "us-ascii", A_LineNumber)
+Assert(threw && A_FileEncoding == "CP20127", A_LineNumber)
+CheckV21Encoding() {
+	#Requires AutoHotkey v2.1-alpha
+	FileEncoding "utf-8"
+	AssertEq(A_FileEncoding, "utf-8", A_LineNumber)
+	FileEncoding "utf-8-raw"
+	AssertEq(A_FileEncoding, "utf-8-raw", A_LineNumber)
+	FileEncoding "utf-16"
+	AssertEq(A_FileEncoding, "utf-16", A_LineNumber)
+	FileEncoding "utf-16-raw"
+	AssertEq(A_FileEncoding, "utf-16-raw", A_LineNumber)
+	FileEncoding "ascii"
+	AssertEq(A_FileEncoding, "us-ascii", A_LineNumber)
+}
+CheckV21Encoding()
+AssertEq(A_FileEncoding, "CP20127", A_LineNumber)
 
 AssertEq(A_SendLevel, 0, A_LineNumber)
 

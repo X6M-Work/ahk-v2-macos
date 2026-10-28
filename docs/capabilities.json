@@ -6743,8 +6743,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The Hotkey function creates, modifies, enables, or disables a hotkey while the script is running.",
-                     "tested-by":  "ControlTests/EncodeHTML.ahk"
+                     "notes":  "Creates, modifies, enables, or disables hotkeys. Options may be adjacent; invalid options raise ValueError before creation or mutation. Action overrides On/Off options. Native delivery still depends on the platform backend and permissions.",
+                     "tested-by":  "DirectiveTests/Misc; HotkeyOptionsInternalsTests; compat/phase15-runtime/hotkey-options.ahk"
                  },
                  {
                      "category":  "Automation",

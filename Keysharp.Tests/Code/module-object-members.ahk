@@ -37,9 +37,15 @@ Throws(() => Members.NoSuch, A_LineNumber, PropertyError)
 Throws(() => Members[1], A_LineNumber, PropertyError)
 Throws(() => Members.NoSuch(), A_LineNumber, MethodError)
 Throws(() => String(Members), A_LineNumber, MethodError)
-; Where a string is expected, a module is what its ToString function returns, and one without that function a TypeError.
+; v2.0 requires explicit conversion even when a module defines ToString.
 Throws(() => "" Members, A_LineNumber, TypeError)
-AssertEq("<" Printable ">", "<printable>", A_LineNumber)
+Throws(() => "" Printable, A_LineNumber, TypeError)
+AssertEq("<" String(Printable) ">", "<printable>", A_LineNumber)
+CheckV21ModuleConversion() {
+    #Requires AutoHotkey v2.1-alpha
+    AssertEq("<" Printable ">", "<printable>", A_LineNumber)
+}
+CheckV21ModuleConversion()
 AssertError(() => Members.Unassigned, "UnsetError: This global variable has not been assigned a value. [Unassigned]", A_LineNumber)
 AssertError(() => Members.UNASSIGNED, "UnsetError: This global variable has not been assigned a value. [Unassigned]", A_LineNumber)
 AssertError(() => Members.F := 1, "Error: This Func cannot be assigned a value. [F]", A_LineNumber)

@@ -1,4 +1,6 @@
 #NoTrayIcon
+#ErrorStdOut
+#Warn All, StdOut
 ; Named arguments: `f(Name: value)`. The script deliberately misspells names in the error cases below, so the
 ; build-time check is turned off here -- those cases assert the RUNTIME binder rejects them.
 #Warn NamedArg, Off
@@ -266,10 +268,13 @@ bsnapf := bsnap.Bind(bsrc)
 bsrc["t"] := 99
 AssertEq(bsnapf(0), 1, A_LineNumber)
 
-; A variadic built-in absorbs an undeclared name the same way a script variadic does: as DATA. Format prints
-; the container's string form, Push stores it, Max fails converting it to a number -- there is no special
-; rejection, because there is no special type of tail.
-AssertEq(Format("{1}", bogus: 5), "bogus: 5", A_LineNumber)
+; Variadic built-ins receive the container as data; v2.0 rejects its implicit string conversion.
+Throws(() => Format("{1}", bogus: 5), A_LineNumber, TypeError)
+CheckV21NamedConversion() {
+    #Requires AutoHotkey v2.1-alpha
+    AssertEq(Format("{1}", bogus: 5), "bogus: 5", A_LineNumber)
+}
+CheckV21NamedConversion()
 pushProbe := [1, 2]
 pushProbe.Push(x: 3)
 Assert(pushProbe.Length == 3 && pushProbe[3] is NamedArgs && pushProbe[3]["x"] == 3, A_LineNumber)
@@ -374,15 +379,14 @@ catch as e
 AssertEq(reqErr, "ArgumentError: Missing a required parameter. [a]", A_LineNumber)
 
 ; ---------------------------------------------------------------- non-ASCII identifiers
-; The emitted C# parameter is lower-cased and matched case-insensitively, which works for identifiers
-; whose case folds symmetrically. U+1E9E folds to U+00DF, which OrdinalIgnoreCase does not match back --
-; and which characters behave this way depends on the runtime's Unicode tables. The declared spelling is
-; carried on the parameter so the name written in the script always binds.
+; Identifier matching folds ASCII letters only and preserves the declared non-ASCII spelling.
 sharpS(ẞ := "-") => ẞ
 AssertEq(sharpS(ẞ: "v"), "v", A_LineNumber)
 uni(Ω := "-", naïve := "-", 日本語 := "-") => Ω . naïve . 日本語
 AssertEq(uni(Ω: "a", 日本語: "c"), "a-c", A_LineNumber)
-AssertEq(uni(ω: "a", NAÏVE: "b"), "ab-", A_LineNumber)  ; case-insensitive where the fold is symmetric
+AssertEq(uni(Ω: "a", NAïVE: "b"), "ab-", A_LineNumber)
+Throws(() => uni(ω: "a"), A_LineNumber, ValueError)
+Throws(() => uni(NAÏVE: "b"), A_LineNumber, ValueError)
 kw(class := "-", params := "-") => class . params  ; C# keywords: the '@' escape must not leak into the name
 AssertEq(kw(class: "x", params: "y"), "xy", A_LineNumber)
 

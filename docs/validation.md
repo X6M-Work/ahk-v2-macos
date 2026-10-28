@@ -63,3 +63,13 @@ The [25 October run](https://github.com/X6M-Work/ahk-v2-macos/actions/runs/40222
 Each Mac NUnit run recorded 610 passed, 287 failed and 20 skipped out of 917. Of the failures, 264 parsed an absolute fixture path as source and reported `1:1: unexpected '/'`. Other failures include missing fixture files, icons and libraries, plus independent conversion and compatibility expectations. The Windows NUnit run also has 13 failures; the 287 Mac failures must not be counted as 287 distinct macOS language incompatibilities.
 
 The test harness must locate the source checkout independently of the runtime-specific output depth. A build in `bin/Release/net10.0/osx-arm64` cannot use the same fixed three-parent traversal as a build without a runtime identifier. Regression checks cover both layouts and missing-fixture diagnostics. These harness changes do not resolve the five object-lifetime differences or validate interactive desktop automation.
+
+## Runtime regression repair, 28 October
+
+The [path-corrected CI run](https://github.com/X6M-Work/ahk-v2-macos/actions/runs/40713719909), commit `5c4cf6dd`, recorded 892 passed, 11 failed and 20 skipped on each Mac, and 834 passed, 13 failed and one skipped on Windows. The original 14-case corpus still passed everywhere. All remaining Mac failures also occurred on Windows.
+
+`Hotkey` options now parse before mutation, accept adjacent options and reject invalid values atomically. The action overrides On/Off options. A new standalone fixture passed on official AHK 2.0.31 and Keysharp Windows without differences. Internal tests inspect priority, buffering, suspension exemption, thread limits, input level and callback preservation without registering input hooks.
+
+Test expectations now distinguish v2.0 strict object conversion, canonical encoding names and exact Float32 widening from v2.1 behavior. Unicode identifiers remain distinct outside ASCII case folding, including modules and named arguments. Failed script assertions include stderr while direct runner calls retain their stdout contract and tests can still intercept expected errors.
+
+Local final regression selection: 53 passed. Python harness: 34 passed. A broader local selection exposed five unrelated executable-generation failures caused by a hard-coded Windows SDK location; these are not macOS results. Native revalidation of the runtime repairs is pending. The sibling KeysharpDocs site is absent.

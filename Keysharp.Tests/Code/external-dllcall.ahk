@@ -39,7 +39,7 @@ Assert(str == "0000000432" && str == fmtstr, A_LineNumber)
 
 str := StringBuffer()
 DllCall("wsprintf", "Ptr", str, "Str", "%010d", "Int", 432, "Cdecl")
-fmtstr := Format(str, "0:D10")
+fmtstr := Format(str.ToString(), "0:D10")
 
 Assert(str == "0000000432" && str == fmtstr, A_LineNumber)
 
@@ -108,15 +108,15 @@ AssertEq(output, "Cthulhu", A_LineNumber)
 
 bufferedOutput := StringBuffer("0000000000")
 DllCall("msvcrt\wcscpy", "Str", bufferedOutput, "Str", "Cthulhu")
-AssertEq(StrLen(bufferedOutput), 10, A_LineNumber)
+AssertEq(StrLen(bufferedOutput.ToString()), 10, A_LineNumber)
 bufferedOutput.Seek(-1)
 AssertEq(bufferedOutput, "Cthulhu", A_LineNumber)
-AssertEq(bufferedOutput "123", "Cthulhu123", A_LineNumber)
+AssertEq(bufferedOutput.ToString() "123", "Cthulhu123", A_LineNumber)
 
 embeddedNull := "A" Chr(0) "B"
 embeddedBuffer := StringBuffer(embeddedNull)
 AssertEq(DllCall("msvcrt\wcslen", "Str", embeddedBuffer, "Ptr"), 1, A_LineNumber)
-AssertEq(StrLen(embeddedBuffer), 3, A_LineNumber)
+AssertEq(StrLen(embeddedBuffer.ToString()), 3, A_LineNumber)
 
 DllCall("msvcrt\strcpy", "AStr", ansiOutput := "0000000000", "AStr", "Cthulhu")
 AssertEq(ansiOutput, "0000000000", A_LineNumber)  ; AStr is input only, as in AutoHotkey

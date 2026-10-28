@@ -142,7 +142,16 @@ OnError(soundHandler, 0)
 AssertEq(soundErrors.Length, 7, A_LineNumber)
 for soundError in soundErrors
     Assert(soundError is TypeError, A_LineNumber)
-AssertEq(soundComponent.Calls, 4, A_LineNumber)
+AssertEq(soundComponent.Calls, 0, A_LineNumber)
+CheckV21SoundConversion(component, invalid, iid) {
+    #Requires AutoHotkey v2.1-alpha
+    Throws(() => SoundGetInterface(iid, component, invalid), A_LineNumber, TypeError)
+    Throws(() => SoundGetName(component, invalid), A_LineNumber, TypeError)
+    Throws(() => SoundSetVolume(50, component, invalid), A_LineNumber, TypeError)
+    Throws(() => SoundSetMute(1, component, invalid), A_LineNumber, TypeError)
+    AssertEq(component.Calls, 4, A_LineNumber)
+}
+CheckV21SoundConversion(soundComponent, soundInvalid, soundIid)
 #endif
 
 for bad in ["Nromal", "Nonsense", "Normal,High", "", 1]

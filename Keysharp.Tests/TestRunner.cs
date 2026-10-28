@@ -42,6 +42,7 @@ public abstract class TestRunner
 	protected string path = Path.Combine(RepositoryRoot, "Keysharp.Tests", "Code") + Path.DirectorySeparatorChar;
 	private const string ext = ".ahk";
 	protected Script s;
+	protected string CapturedScriptError { get; private set; } = "";
 	private int wrapOffset;
 	internal HotstringManager hsm;
 
@@ -150,6 +151,7 @@ public abstract class TestRunner
 
 	protected string RunScript(string source, string name, bool execute, bool exeout, int? exitCode = null)
 	{
+		CapturedScriptError = "";
 		ResetScriptState();
 		s.SetName(name);
 		var ch = new CompilerHelper();
@@ -180,7 +182,9 @@ public abstract class TestRunner
 		if (execute)
 		{
 			using var writer = new StringWriter(buffer);
+			using var errorWriter = new StringWriter();
 			var previousOutput = Console.Out;
+			var previousError = Console.Error;
 
 			try
 			{
@@ -188,6 +192,7 @@ public abstract class TestRunner
 				InvokeCompiledScript(() =>
 				{
 					Console.SetOut(writer);
+					Console.SetError(errorWriter);
 					// Don't let finalizers queued by the previous run's teardown overlap this one.
 					GC.WaitForPendingFinalizers();
 
@@ -241,6 +246,9 @@ public abstract class TestRunner
 				writer.Flush();
 				output = buffer.ToString();
 				Console.SetOut(previousOutput);
+				Console.SetError(previousError);
+				CapturedScriptError = errorWriter.ToString();
+				previousError.Write(CapturedScriptError);
 			}
 		}
 
@@ -279,13 +287,13 @@ public abstract class TestRunner
 
 	// Fails with what the script actually wrote, so the tag Assert emitted names the line instead of the test
 	// reporting "expected True". The wrapped run compiles two extra lines ahead of the body, shifting its tags.
-	private static void Verify(string scriptPath, string output, int lineOffset)
+	private void Verify(string scriptPath, string output, int lineOffset)
 	{
 		if (HasPassed(output))
 			return;
 
 		var shift = lineOffset != 0 ? $" (wrapped in TestFunc: subtract {lineOffset} from each line)" : "";
-		Assert.Fail($"{scriptPath}{shift}\n{(string.IsNullOrWhiteSpace(output) ? "<no output: the run ended before the final pass>" : output.Trim())}");
+		Assert.Fail($"{scriptPath}{shift}\n{(string.IsNullOrWhiteSpace(output) ? "<no output: the run ended before the final pass>" : output.Trim())}\n{CapturedScriptError.Trim()}");
 	}
 
 	// Keep module-member blocks outside the function wrapper.
