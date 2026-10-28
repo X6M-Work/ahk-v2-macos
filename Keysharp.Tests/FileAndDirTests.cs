@@ -3,6 +3,9 @@ namespace Keysharp.Tests;
 public class FileAndDirTests : TestRunner
 {
 	[Test, Category("FileAndDir")]
+	public void FileLocalLifetime() => Assert.IsTrue(TestScript("file-local-lifetime", false));
+
+	[Test, Category("FileAndDir")]
 	public void DirCopy() => Assert.IsTrue(TestScript("file-dircopy", false));
 
 	[Test, Category("FileAndDir")]

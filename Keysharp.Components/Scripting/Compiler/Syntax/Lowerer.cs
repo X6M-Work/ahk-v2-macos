@@ -4598,7 +4598,8 @@ namespace Keysharp.Compilation.Syntax
 			if (c.Callee is MemberExpr m) args = Cons2(LowerExpr(m.Target), Str(m.Name), CallArgs());
 			else if (c.Callee is DynMemberExpr dm) args = Cons2(LowerExpr(dm.Target), LowerExpr(dm.NameExpr), CallArgs());
 			else args = Cons2(LowerExpr(c.Callee), Null, CallArgs());
-			return Op(statement ? "InvokeOrNull" : "Invoke", args);
+			var result = Op(statement ? "InvokeOrNull" : "Invoke", args);
+			return _localFileCalls?.Contains(c) == true ? Inv(Member(Id(_localFileScopeName), "Track"), result) : result;
 		}
 
 		// AutoHotkey hands DllCall and ComCall a naked variable itself where a Str or WStr type precedes it, and StrPtr
@@ -6344,6 +6345,12 @@ namespace Keysharp.Compilation.Syntax
 			callableScope = scope;
 			var savedScope = _scope;
 			_scope = scope;
+			var savedLocalFileCalls = _localFileCalls;
+			var savedLocalFileScopeName = _localFileScopeName;
+			_localFileCalls = FindLocalFiles(bodyBlock, scope);
+			_localFileScopeName = "KS_localFiles";
+			while (_localFileCalls != null && scope.Visible().Any(variable => AhkIdentifierComparer.Instance.Equals(variable.Key, _localFileScopeName)))
+				_localFileScopeName += "_";
 			var savedSettlement = _settlement;
 			if (scope.Parent == null) _settlement = _scratchLowerCallableBodySettlements.Get();
 
@@ -6433,6 +6440,7 @@ namespace Keysharp.Compilation.Syntax
 			execStart += _pendingScopeClosureInits.Count; execEnd += _pendingScopeClosureInits.Count;
 			declared.AddRange(paramLowers.Select(scope.Find));
 			WrapBodyWithKeepAlive(body, declared, _scopeKeptTemps, execStart, execEnd);
+			if (_localFileCalls != null) WrapLocalFiles(body, execStart, execStart + 1);
 			InitializeParameters(body, paramLowers.Select(scope.Find));
 			if (_inMethod && !capturing) InitializeParameters(body, [Receiver()]);
 			if (_stamped) body.Insert(0, LocationDecl);
@@ -6447,6 +6455,8 @@ namespace Keysharp.Compilation.Syntax
 			_derefScope = savedDeref;
 			_derefReferences = savedDerefReferences;
 			_scope = savedScope;
+			_localFileCalls = savedLocalFileCalls;
+			_localFileScopeName = savedLocalFileScopeName;
 			_scratchListStatements.Return(_pendingScopeClosureInits);
 			_scratchListStatements.Return(_pendingScopeFuncs);
 			_scratchListStrings.Return(_scopeKeptTemps);

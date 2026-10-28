@@ -777,6 +777,7 @@ namespace Keysharp.Internals.Invoke
 			object NormalInvoke(object instance, object[] args)
 			{
 				args ??= System.Array.Empty<object>();
+				Keysharp.Runtime.LocalFileScope.ObserveCall(mph.mi?.DeclaringType, instance, args);
 
 				// ---- fold named arguments into positional slots ----
 				// This has to happen BEFORE the count validation below: that trims trailing nulls to work out how many

@@ -962,8 +962,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Destruction uses managed GC and the destructor pump. Immediate destruction on last alias, scope exit, temporary release and resurrection differ from AHK 2.0.31; deterministic file cleanup is also unresolved.",
-                     "tested-by":  "class-special-funcs.ahk; compat/phase15-architecture/"
+                     "notes":  "Destruction uses managed GC and the destructor pump. Immediate destruction on last alias, scope exit, temporary release and resurrection differ from AHK 2.0.31. FileOpen files proven confined to a callable receive scoped cleanup; general file ownership and cleanup of escaped files remain unresolved.",
+                     "tested-by":  "class-special-funcs.ahk; compat/phase15-architecture/; FileAndDirTests.FileLocalLifetime"
                  },
                  {
                      "category":  "Core Language",
@@ -5378,8 +5378,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Platform statuses inherited from curated \u0027File and directory operations\u0027; per-function validation pending. An encoding name which cannot be resolved raises a ValueError rather than falling back to another encoding.",
-                     "tested-by":  "external-com.ahk"
+                     "notes":  "Platform statuses inherited from curated \u0027File and directory operations\u0027. Invalid encodings raise ValueError. Proven nonescaping path-backed FileOpen locals close on callable exit without requesting GC. Returns, containers, callbacks, closures, VarRef, dynamic access and custom destructors conservatively retain managed lifetime. Local cleanup and escape preservation verified on Windows; native revalidation pending. This is not general deterministic file ownership.",
+                     "tested-by":  "external-com.ahk; FileAndDirTests.FileLocalLifetime; compat/phase15-architecture/file-scope-close.ahk"
                  },
                  {
                      "category":  "FileSystem",
@@ -9983,8 +9983,8 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
-                     "notes":  "Compiles a replacement, then asks the old process to exit via WM_CLOSE on Windows or SIGTERM on Linux/macOS. Successful self-reload, OnExit reason and timer reset verified on Windows. Noninteractive ErrorStdOut/headless replacement waits at most 15 seconds for the predecessor, then reports failure on stderr without prompting; interactive waits retain the 2-second retry prompt. macOS nested-pump shutdown repair awaits native revalidation.",
+                     "macos":  "partial",
+                     "notes":  "Compiles a replacement, then asks the old process to exit via WM_CLOSE on Windows or SIGTERM on Linux/macOS. Self-reload, OnExit reason and timer reset verified on Windows, Apple Silicon and Intel (CI 40761878577). Noninteractive ErrorStdOut/headless replacement waits at most 15 seconds for the predecessor, then reports failure on stderr without prompting; interactive waits retain the 2-second retry prompt. Argument and initial-directory preservation remain unverified.",
                      "tested-by":  "Gui/guitest.ks; compat/phase15-reload/run_reload.py"
                  },
                  {

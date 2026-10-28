@@ -2,7 +2,7 @@
 
 ## Verdict
 
-**La fidélité stricte à AHK 2.0.31 est bloquée par la gestion actuelle de la durée de vie des objets.** Le backend macOS ne corrige pas ce problème commun au moteur. Les cinq contre-exemples exécutables de `compat/phase15-architecture` passent avec AutoHotkey officiel 2.0.31 et échouent avec le binaire Keysharp Windows reconstruit. Aucune modification du runtime de destruction n'est revendiquée ici.
+**La fidélité stricte à AHK 2.0.31 est bloquée par la gestion actuelle de la durée de vie des objets.** Le backend macOS ne corrige pas ce problème commun au moteur. Les cinq contre-exemples exécutables de `compat/phase15-architecture` passent avec AutoHotkey officiel 2.0.31. Le correctif ciblé de fichiers locaux fait passer `file-scope-close` sur Windows ; les quatre fixtures de destructeurs restent en échec. Le comptage global des références script reste à construire.
 
 | Contrat observable | AutoHotkey 2.0.31 | Keysharp observé |
 |---|---|---|
@@ -10,9 +10,13 @@
 | Variable locale en fin de fonction | `__Delete` avant le retour à l'appelant | Aucun appel à cet instant |
 | Argument temporaire libéré | `__Delete` avant l'instruction suivante | Aucun appel à cet instant |
 | Objet ressuscité puis libéré à nouveau | Deux appels à `__Delete` | Zéro appel aux deux points observés |
-| Fichier local en fin de fonction | Données lisibles, handle libéré | Fichier encore verrouillé sur Windows |
+| Fichier local en fin de fonction | Données lisibles, handle libéré | Passe sur Windows pour le cas prouvé local ; revalidation Mac en attente |
 
-Sources de preuve actualisées : ahk-v2-macos-validation/current-official/phase15-architecture.json et current-windows/phase15-architecture.json, livrés à côté du checkout. Les rapports incluent les empreintes des assemblages reconstruits, les sources, les sorties et les délais. Les cinq échecs sont confirmés sur Windows et sur les deux architectures Mac par la CI étendue, consignée dans `validation.md`.
+Les anciens rapports ahk-v2-macos-validation/current-official/phase15-architecture.json et current-windows/phase15-architecture.json, livrés à côté du checkout, décrivent les cinq échecs avant le correctif de portée. La CI `40761878577` les confirme sur Windows et les deux architectures Mac avant ce correctif. Le rapport local `compat/reports/file-lifetime/architecture.json` conserve quatre échecs et un succès, avec les sources et goldens inchangés. Les rapports incluent les empreintes des assemblages, les sorties et les délais.
+
+`Lowerer.LocalFiles.cs` applique une analyse d'échappement conservatrice aux fichiers ouverts dans une fonction avec corps de bloc. Un groupe d'alias locaux n'est éligible que si tous ses usages sont des affectations locales ou des appels aux méthodes de fichier autorisées. Chaque alias est affecté une seule fois, hors boucle, ce qui évite de prolonger la rétention des anciennes valeurs ; les écritures implicites par `for`, `catch` et les parcours avec `goto` sont exclus. Retours, conteneurs, captures, VarRef, accès dynamiques ou prises de handle excluent la fonction de cette optimisation. `LocalFileScope` conserve les fichiers éligibles et les dispose après le `finally` utilisateur et l'épilogue KeepAlive, y compris lors d'un retour anticipé ou d'une exception. Un appel utilisateur invalide les portées actives ; les fichiers avec `__Delete` et les flux standard restent gérés par le mécanisme existant. Aucun GC forcé ni délai n'est ajouté.
+
+Ce correctif ne résout pas la fermeture immédiate à chaque écrasement d'alias, la libération des fichiers exportés ni leur destruction dans les conteneurs. Ces cas restent dépendants de la migration de références ci-dessous. Le fixture NUnit `file-local-lifetime.ahk`, également exécuté avec AHK officiel, vérifie le nettoyage local, les alias, retours anticipés, exceptions, `finally`, plusieurs fichiers, et la conservation des fichiers retournés, exportés ou capturés.
 
 ## Cause et décision
 
@@ -40,6 +44,6 @@ Trois processus séparés vérifient aussi le code de sortie 17 transmis à OnEx
 
 Ces scénarios passent avec AutoHotkey 2.0.31. Les rapports actualisés confirment neuf scénarios et trois processus réussis sur Keysharp Windows. Un échec intermittent distinct du test NUnit `FlowTryInterrupt` reste à caractériser ; il n'est pas compté comme une correction acquise du scheduler.
 
-`compat/phase15-reload/run_reload.py` ajoute un processus contrôleur qui reste vivant pendant un Reload réel. Le cas vérifie OnExit avec la raison Reload, le renouvellement de l'état, la fin du processus précédent, un timer dans son remplaçant, puis sa sortie effective. Il passe avec AutoHotkey 2.0.31 et le moteur Keysharp reconstruit sur Windows. Tous les descendants restent dans le Job Object ; l'entrée standard est fermée et le délai total est borné. Cela ne valide pas la conservation des arguments ni du répertoire de travail initial.
+`compat/phase15-reload/run_reload.py` ajoute un processus contrôleur qui reste vivant pendant un Reload réel. Le cas vérifie OnExit avec la raison Reload, le renouvellement de l'état, la fin du processus précédent, un timer dans son remplaçant, puis sa sortie effective. Il passe avec AutoHotkey 2.0.31 et Keysharp Windows, puis sur Intel et Apple Silicon dans la CI `40761878577`. Les descendants sont contenus par un Job Object sur Windows ou un groupe de processus POSIX ; l'entrée standard est fermée et le délai total est borné. Cela ne valide pas la conservation des arguments ni du répertoire de travail initial.
 
-La phase 5 demeure partielle : les neuf scénarios runtime et trois processus passent sur les deux architectures Mac, mais Reload natif macOS échoue encore dans les runs audités. Le correctif de sortie de boucle AppKit attend sa revalidation native. Interruption sous charge, menus, hotkeys et nettoyage déterministe des ressources ne sont pas entièrement validés. La fermeture automatique d'un File local dépend directement du gate de durée de vie ci-dessus. Les corrections de bibliothèque standard et les résultats de leurs corpus sont suivis séparément.
+La phase 5 demeure partielle : les neuf scénarios runtime, trois processus et Reload passent sur les deux architectures Mac. Interruption sous charge, menus, hotkeys et nettoyage déterministe des ressources ne sont pas entièrement validés. La fermeture de fichiers prouvés locaux passe sur Windows et attend sa revalidation native ; la gestion générale des fichiers exportés dépend encore du gate de durée de vie ci-dessus. Les corrections de bibliothèque standard et les résultats de leurs corpus sont suivis séparément.

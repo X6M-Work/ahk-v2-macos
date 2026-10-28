@@ -56,6 +56,8 @@ namespace Keysharp.Builtins
 
 			public override void Write(ReadOnlySpan<char> value)
 			{
+				if (value.IsEmpty)
+					return;
 				var encoding = Encoding;
 
 				if (!ReferenceEquals(activeEncoding, encoding))
@@ -76,7 +78,14 @@ namespace Keysharp.Builtins
 				do
 				{
 					encoder.Convert(value, bytes, flush, out var charsUsed, out var bytesUsed, out completed);
-					stream.Write(bytes[..bytesUsed]);
+					if (charsUsed == 0 && bytesUsed == 0)
+					{
+						if (!value.IsEmpty)
+							throw new InvalidOperationException("The standard-stream encoder made no progress.");
+						break;
+					}
+					if (bytesUsed != 0)
+						stream.Write(bytes[..bytesUsed]);
 					value = value[charsUsed..];
 				}
 				while (!completed);
@@ -84,6 +93,8 @@ namespace Keysharp.Builtins
 
 			internal void WriteEncoded(string value, Encoding encoding)
 			{
+				if (value.Length == 0)
+					return;
 				if (encoding.CodePage == 1200)
 					stream.Write(MemoryMarshal.AsBytes(value.AsSpan()));
 				else
