@@ -1181,7 +1181,7 @@ namespace Keysharp.Compilation.Syntax
 			// Inner marks a fat arrow or nested function, lowered to the C# local function Impl. It Captures when it or a
 			// callable within it reads an enclosing callable's frame, which makes it a closure; otherwise its function
 			// object is kept in the static Field.
-			public bool Inner, Captures;
+			public bool Inner, Captures, CapturesReceiver;
 			public string Impl, Field;
 			// The scopes of the nested functions it declares, by name.
 			public Dictionary<string, FunctionScope> Functions;
@@ -1570,7 +1570,9 @@ namespace Keysharp.Compilation.Syntax
 			{
 				var target = NameRef(lower, writing);
 				var member = ResolvedReferenceTarget(lower, binding);
-				return new(target, value => member != null ? MemberWrite(member, value) : Assign(target, value));
+				return new(target, value => member != null ? MemberWrite(member, value)
+					: binding.Kind is NameKind.BuiltinProperty or NameKind.ScopedImport ? Assign(target, EscapingValue(value))
+					: WriteVariable(v, target, value));
 			}
 
 			if (maybe)
@@ -1642,7 +1644,7 @@ namespace Keysharp.Compilation.Syntax
 		private void CaptureThis()
 		{
 			for (var s = _scope; s is { Inner: true }; s = s.Parent)
-				s.Captures = true;
+				s.Captures = s.CapturesReceiver = true;
 		}
 
 		// A function an enclosing callable declares is read from that callable's frame only if it is a closure; otherwise it
@@ -1739,7 +1741,17 @@ namespace Keysharp.Compilation.Syntax
 		private ExpressionSyntax FunctionObject(FunctionScope scope, bool declare = true)
 		{
 			if (scope.Captures)
-				return ClosureBind(scope.Impl, scope.Params);
+			{
+				var captures = new List<ExpressionSyntax>();
+				if (scope.Parent != null && scope.UpVars != null)
+					foreach (var name in scope.UpVars)
+						if (scope.Parent.Find(name) is { Storage: VarStorage.Local or VarStorage.ByRef } variable)
+							captures.Add(EscapingValue(LocalValue(variable)));
+				if (scope.CapturesReceiver)
+					captures.Add(EscapingValue(LocalValue(new("this", VarStorage.Local, scope.Root))));
+				captures.Add(ClosureBind(scope.Impl, scope.Params));
+				return captures.Count == 1 ? captures[0] : Op("MultiStatement", captures.ToArray());
+			}
 
 			if (declare)
 				DeclareFunctionField(scope);
@@ -3899,7 +3911,7 @@ namespace Keysharp.Compilation.Syntax
 
 		// ---- expressions ----
 
-		private ExpressionSyntax LowerName(NameExpr n, string lower)
+		private ExpressionSyntax LowerName(NameExpr n, string lower, bool owned = false)
 		{
 			// AHK reserves true/false/unset as value keywords (booleans, and the no-value sentinel null).
 			// The booleans lower to real C# booleans rather than 1/0: everything downstream reads one as the
@@ -3927,7 +3939,7 @@ namespace Keysharp.Compilation.Syntax
 					return Str(_loweringParamDefault ? "" : _currentThisFuncName ?? "");
 			}
 
-			return NameRef(lower);
+			return owned ? NameRef(lower) : Inv(Access("Keysharp.Runtime.Lifetime.Borrow"), NameRef(lower));
 		}
 
 		private ExpressionSyntax AssemblyLineFile(string file)
@@ -3956,7 +3968,7 @@ namespace Keysharp.Compilation.Syntax
 				case SequenceExpr seq:
 					return Op("MultiStatement", seq.Items.Select((item, i) =>
 						i == seq.Items.Count - 1 ? LowerExpr(item) : LowerAllowingUnset(item)).ToArray());
-				case AssignExpr a: return LowerAssign(a);
+				case AssignExpr a: return EscapingValue(LowerAssign(a));
 				case BinaryExpr b:
 					// && / and and || / or short-circuit and yield an operand (not a bool), so they can't be plain calls.
 					if (b.Op == "&&" || AhkIdentifierComparer.Instance.Equals(b.Op, "and")) return LowerShortCircuit(b, andOp: true);
@@ -4029,10 +4041,10 @@ namespace Keysharp.Compilation.Syntax
 				case ObjectExpr o: return LowerObject(o);
 				case FatArrowExpr fa: return LowerFatArrow(fa);
 				case DerefExpr dr:   // %name% read -> DerefGet(name); the maybe forms rewrite it to DerefGetOrNull
-					return MayYieldUnset(dr.Name)
+					return EscapingValue(MayYieldUnset(dr.Name)
 						? NullCondWrap(dr.Name, name => Op("DerefGetOrNull", DerefScope, name))
-						: DerefGet(dr.Name);
-				case CallExpr c: return LowerCall(c, statement: false);
+						: DerefGet(dr.Name));
+				case CallExpr c: return EscapingValue(LowerCall(c, statement: false));
 				default: Diag($"expression not yet lowerable: {e.GetType().Name}"); return Str("");
 			}
 		}
@@ -4208,7 +4220,7 @@ namespace Keysharp.Compilation.Syntax
 			if (target.Write == null)
 				return target.Read;
 
-			var value = a.Op == ":=" ? LowerExpr(a.Value) : CompoundValue(a.Op[..^1], target.Read, LowerExpr(a.Value));
+			var value = a.Op == ":=" ? LowerOwnedValue(a.Value) : CompoundValue(a.Op[..^1], target.Read, LowerExpr(a.Value));
 			if (value == null) { Diag($"compound assignment '{a.Op}' not yet lowerable"); return Str(""); }
 			return target.Write(value);
 		}
@@ -4229,7 +4241,7 @@ namespace Keysharp.Compilation.Syntax
 					var value = item is AssignExpr sa && sa.Op == ":=" ? sa.Value : null;
 					// A static without an initializer stays unset.
 					if (value != null)
-						stmts.Add(ExprStmt(Assign(Id(field), LowerExpr(value))));
+						stmts.Add(ExprStmt(ReplaceValue(Id(field), LowerOwnedValue(value))));
 				}
 				// A declaration item may also be an executable operation (`global x := 1`, `global x += 1`,
 				// `global log .= "x"`, `global x++`): the name is declared and the operation runs.
@@ -4426,6 +4438,9 @@ namespace Keysharp.Compilation.Syntax
 		// Groups and sequences preserve the final result; only explicit ? crosses an optional chain's conditional.
 		private static ExpressionSyntax RewriteToOrNull(ExpressionSyntax e, Dictionary<string, string> map = null, bool throughChain = false)
 		{
+			if (e is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "Escape" or "Borrow" }, ArgumentList.Arguments.Count: 1 } escape)
+				return escape.WithArgumentList(SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(
+					escape.ArgumentList.Arguments[0].WithExpression(RewriteToOrNull(escape.ArgumentList.Arguments[0].Expression, map, throughChain)))));
 			if (e is ParenthesizedExpressionSyntax paren)
 				return paren.WithExpression(RewriteToOrNull(paren.Expression, map, throughChain));
 			if (throughChain && e is ConditionalExpressionSyntax conditional)
@@ -5714,6 +5729,8 @@ namespace Keysharp.Compilation.Syntax
 
 			if (HasInlineCSharp(c))
 				decl = decl.AddModifiers(PartialTok);
+			else
+				decl = decl.AddAttributeLists(Attr("Keysharp.Runtime.ReferenceCounted"));
 			// Preserve the user's original spelling so the runtime can resolve the class by name (and display it).
 			if (!string.Equals(typeName, c.Name, System.StringComparison.Ordinal))
 				decl = decl.AddAttributeLists(Attr("Keysharp.Runtime.UserDeclaredName", Str(c.Name)));

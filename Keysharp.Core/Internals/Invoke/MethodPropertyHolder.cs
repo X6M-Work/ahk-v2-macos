@@ -16,7 +16,24 @@ namespace Keysharp.Internals.Invoke
 		// Isolate the GUI lambda's closure so a cached lookup does not allocate it.
 		private Func<object, object[], object> CreateCallFunc()
 		{
-			var del = DelegateFactory.CreateDelegate(this);
+			var invoke = DelegateFactory.CreateDelegate(this);
+			var initializes = AhkIdentifierComparer.Instance.Equals(mi?.Name, "__Init") || AhkIdentifierComparer.Instance.Equals(mi?.Name, "__New");
+			var deletes = AhkIdentifierComparer.Instance.Equals(mi?.Name, "__Delete");
+			var constructs = mi?.DeclaringType == typeof(Class) && mi.Name == "Call"
+				|| mi?.DeclaringType == typeof(KeysharpObject) && mi.Name == "staticCall";
+			object ReferencedInvoke(object instance, object[] args)
+			{
+				var receiver = instance ?? (args is { Length: > 0 } ? args[0] : null);
+				var lifecycle = receiver is Any a && (a.ReferenceState == ReferenceLifeState.Constructing && initializes
+					|| a.ReferenceState == ReferenceLifeState.Deleting && deletes);
+				if (!lifecycle) Lifetime.Escape(instance);
+				if (args != null)
+					for (var i = 0; i < args.Length; i++)
+						if (!lifecycle || i != 0 || !ReferenceEquals(args[i], receiver)) Lifetime.Escape(args[i]);
+				var result = invoke(instance, args);
+				return lifecycle || constructs ? result : Lifetime.Escape(result);
+			}
+			Func<object, object[], object> del = ReferencedInvoke;
 			if (!isGuiType) return del;
 
 			return (inst, args) =>
@@ -688,7 +705,9 @@ namespace Keysharp.Internals.Invoke
 				assignExpr = Expression.Assign(Expression.Field(null, fi), coercedVal);
 			else
 				assignExpr = Expression.Assign(Expression.Field(Expression.Convert(instParam, fi.DeclaringType), fi), coercedVal);
-			return Expression.Lambda<Action<object, object>>(steps?.Wrap(assignExpr) ?? assignExpr, instParam, valParam).Compile();
+			var store = steps?.Wrap(assignExpr) ?? assignExpr;
+			var escape = Expression.Call(typeof(Lifetime).GetMethod(nameof(Lifetime.Escape)), valParam);
+			return Expression.Lambda<Action<object, object>>(Expression.Block(escape, store), instParam, valParam).Compile();
 		}
 
 		// Allow creating a "fake" MPH for ObjBindMethod: it names a member to resolve on the receiver at call time,

@@ -510,7 +510,8 @@ namespace Keysharp.Builtins
 		// MapComparer ranks object keys alike, so the entry found must be checked to be this key.
 		private void Insert(object key, object value)
 		{
-			key = NormalizeKey(key);
+			key = NormalizeKey(Keysharp.Runtime.Lifetime.Escape(key));
+			value = Keysharp.Runtime.Lifetime.Escape(value);
 			ref var slot = ref CollectionsMarshal.GetValueRefOrAddDefault(map, key, out var existed);
 			slot = value;
 

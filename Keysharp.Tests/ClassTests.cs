@@ -3,6 +3,9 @@ namespace Keysharp.Tests;
 public class ClassTests : TestRunner
 {
 	[Test, Category("Class")]
+	public void DestructorAliases() => Assert.IsTrue(TestScript("class-destructor-aliases", false));
+
+	[Test, Category("Class")]
 	public void BuiltInTypeVisibility() => Assert.IsTrue(TestScript("class-builtin-visibility", false));
 
 	[Test, Category("Class")]

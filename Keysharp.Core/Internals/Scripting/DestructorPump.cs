@@ -113,7 +113,7 @@ namespace Keysharp.Internals.Scripting
 				// Outside-in (parents before children), and each object's __Delete only the first time it is collected.
 				foreach (var any in anyDelete ? OrderOutsideIn([.. batch.Where(entry => !entry.Again).Select(entry => entry.Owner)]) : [])
 				{
-					if (!any.HasDeleteCall)
+					if (!any.HasDeleteCall || !any.AllowsCollectedCleanup)
 						continue;
 
 					deleted = true;
@@ -132,6 +132,7 @@ namespace Keysharp.Internals.Scripting
 				// batch is disposed once it is collected again, unless the script is exiting.
 				foreach (var (any, again) in batch)
 				{
+					if (!any.AllowsCollectedCleanup) continue;
 					if (deleted && !again && !exiting && any is IDisposable)
 						any.ArmAgain();
 					else
@@ -178,6 +179,7 @@ namespace Keysharp.Internals.Scripting
 
 		private static void DisposeNative(Any obj)
 		{
+			if (obj.ReferenceState is ReferenceLifeState.Deleting or ReferenceLifeState.Released) return;
 			try
 			{
 				if (obj is IDisposable disposable)

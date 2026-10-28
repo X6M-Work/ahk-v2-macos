@@ -962,8 +962,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Destruction uses managed GC and the destructor pump. Immediate destruction on last alias, scope exit, temporary release and resurrection differ from AHK 2.0.31. FileOpen files proven confined to a callable receive scoped cleanup; general file ownership and cleanup of escaped files remain unresolved.",
-                     "tested-by":  "class-special-funcs.ahk; compat/phase15-architecture/; FileAndDirTests.FileLocalLifetime"
+                     "notes":  "Named-variable ownership transfers of newly compiler-instrumented Object-rooted user instances use Retain/Release/Replace. Last-alias destruction, self-assignment and reentrant __Delete are verified on Windows; native revalidation pending. Any has constructing, alive, deleting, resurrected and released states. Borrowed reads, calls, returns and unconverted storage conservatively fall back to managed GC; old/uninstrumented classes and native base classes retain their existing roots. General scope exits, temporaries, containers and resurrection remain partial. Scoped FileOpen cleanup passed Windows and both Mac architectures in CI 40774644855.",
+                     "tested-by":  "class-special-funcs.ahk; class-destructor-aliases.ahk; ReferenceLifetimeTests; compat/phase15-architecture/; FileAndDirTests.FileLocalLifetime"
                  },
                  {
                      "category":  "Core Language",
@@ -5378,7 +5378,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Platform statuses inherited from curated \u0027File and directory operations\u0027. Invalid encodings raise ValueError. Proven nonescaping path-backed FileOpen locals close on callable exit without requesting GC. Returns, containers, callbacks, closures, VarRef, dynamic access and custom destructors conservatively retain managed lifetime. Local cleanup and escape preservation verified on Windows; native revalidation pending. This is not general deterministic file ownership.",
+                     "notes":  "Platform statuses inherited from curated \u0027File and directory operations\u0027. Invalid encodings raise ValueError. Proven nonescaping path-backed FileOpen locals close on callable exit without requesting GC. Returns, containers, callbacks, closures, VarRef, dynamic access and custom destructors conservatively retain managed lifetime. Local cleanup and escape preservation verified on Windows and both Mac architectures in CI 40774644855. This is not general deterministic file ownership.",
                      "tested-by":  "external-com.ahk; FileAndDirTests.FileLocalLifetime; compat/phase15-architecture/file-scope-close.ahk"
                  },
                  {

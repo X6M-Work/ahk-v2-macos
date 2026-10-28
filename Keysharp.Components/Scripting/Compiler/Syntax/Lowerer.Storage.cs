@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
 using Keysharp.Internals.ExtensionMethods;
+using Keysharp.Parsing.Syntax;
 
 namespace Keysharp.Compilation.Syntax
 {
@@ -25,6 +26,30 @@ namespace Keysharp.Compilation.Syntax
 		private ExpressionSyntax LocalValue(ScopeVar variable) => Storage(variable).Read(this, variable.Key);
 		private ScopeVar Receiver() => _scope.Find("this") is { Storage: not VarStorage.None } parameter
 			? parameter : new("this", VarStorage.Local, _scope.Root);
+
+		private static ExpressionSyntax EscapingValue(ExpressionSyntax value) => Inv(Access("Keysharp.Runtime.Lifetime.Escape"), value);
+		private static ExpressionSyntax ReplaceValue(ExpressionSyntax target, ExpressionSyntax value) =>
+			SyntaxFactory.InvocationExpression(Access("Keysharp.Runtime.Lifetime.Replace"), SyntaxFactory.ArgumentList(
+				SyntaxFactory.SeparatedList(new[] { Arg(target).WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.RefKeyword)), Arg(value) })));
+
+		private ExpressionSyntax WriteVariable(ScopeVar variable, ExpressionSyntax target, ExpressionSyntax value)
+		{
+			if (variable.Storage != VarStorage.Local) return ReplaceValue(target, value);
+			var storage = Storage(variable);
+			ExpressionSyntax BoxedWrite(ExpressionSyntax input) => Inv(Access("Keysharp.Runtime.Lifetime.Replace"), Id(storage.Box), input);
+			return storage.Box != null ? BoxedWrite(value)
+				: Unsettled(ReplaceValue(target, value), () => storage.Box != null, node =>
+					BoxedWrite(((InvocationExpressionSyntax)node).ArgumentList.Arguments[1].Expression));
+		}
+
+		private ExpressionSyntax LowerOwnedValue(Expr value) => value switch
+		{
+			NameExpr name => LowerName(name, name.Name, owned: true),
+			GroupExpr group => SyntaxFactory.ParenthesizedExpression(LowerOwnedValue(group.Inner)),
+			AssignExpr assignment => LowerAssign(assignment),
+			CallExpr call => LowerCall(call, statement: false),
+			_ => LowerExpr(value)
+		};
 
 		private ExpressionSyntax LocalBox(ScopeVar variable)
 		{

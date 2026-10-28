@@ -12,7 +12,7 @@ namespace Keysharp.Builtins
 	[ProgId("Keysharp.Script")]
 	public partial class Any
 #else
-	public class Any
+	public partial class Any
 #endif
 	{
 		internal System.Type type;
@@ -33,6 +33,7 @@ namespace Keysharp.Builtins
 			get => sentinel != null;
 			set
 			{
+				if (value && ReferenceState == ReferenceLifeState.Released) return;
 				if (value)
 				{
 					if (sentinel == null)
@@ -61,7 +62,10 @@ namespace Keysharp.Builtins
 		internal void Collected(GCCleanupSentinel collected)
 		{
 			if (Interlocked.CompareExchange(ref sentinel, null, collected) == collected)
-				TheScript?.DestructorPump.Enqueue(this, collected.Again);
+			{
+				if (PrepareCollectedCleanup())
+					TheScript?.DestructorPump.Enqueue(this, collected.Again);
+			}
 		}
 
 		// A __Delete ran while the object was being collected and may have kept it, so it is disposed only once it is
@@ -81,6 +85,7 @@ namespace Keysharp.Builtins
 		{
 			var copy = (Any)base.MemberwiseClone();
 			copy.sentinel = null;
+			copy.ResetReferenceLifetime();
 			copy.children = null;
 			copy.isPrototype = false;
 
@@ -214,7 +219,7 @@ namespace Keysharp.Builtins
 		{
 			Any prevBase = _base;
 			if (prevBase == newBase) return;
-			_base = newBase;
+			_base = (Any)Keysharp.Runtime.Lifetime.Escape(newBase);
 			newBase.ActivatePrototype();
 
 			if (isPrototype)

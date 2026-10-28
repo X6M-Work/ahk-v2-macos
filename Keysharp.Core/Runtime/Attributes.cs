@@ -1,5 +1,8 @@
 namespace Keysharp.Runtime
 {
+	[PublicHiddenFromUser, AttributeUsage(AttributeTargets.Class, Inherited = false)]
+	public sealed class ReferenceCountedAttribute : Attribute { }
+
 	[AttributeUsage(AttributeTargets.Assembly)]
 	public sealed class AssemblyBuildVersionAttribute : Attribute
 	{

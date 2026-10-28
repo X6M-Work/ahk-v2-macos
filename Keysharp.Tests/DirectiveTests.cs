@@ -845,20 +845,31 @@ public class DirectiveTests : TestRunner
 						   + "#HotIf MyFlag\n*F14::return\n#HotIf\n"
 						   + "#HotIf IsOn()\n*F15::return\n#HotIf\n"
 						   + "IsOn() => 1\n");
+		var calls = Microsoft.CodeAnalysis.CSharp.SyntaxFactory.ParseCompilationUnit(code).DescendantNodes().OfType<InvocationExpressionSyntax>().ToArray();
+		static ExpressionSyntax Receiver(ExpressionSyntax expression)
+		{
+			while (expression is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "Escape" or "Borrow" }, ArgumentList.Arguments.Count: 1 } escape)
+				expression = escape.ArgumentList.Arguments[0].Expression;
+			return expression;
+		}
+		bool Calls(string method, string receiver, string member = null) => calls.Any(call =>
+			call.Expression is MemberAccessExpressionSyntax access && access.Name.Identifier.Text == method
+			&& call.ArgumentList.Arguments.Count >= 2 && Receiver(call.ArgumentList.Arguments[0].Expression).ToString() == receiver
+			&& (member == null || call.ArgumentList.Arguments[1].Expression.ToString() == "\"" + member + "\""));
 
 		// A class static is read, not invoked.
-		Assert.IsTrue(code.Contains("GetPropertyValue(probe, \"Running\")"),
+		Assert.IsTrue(Calls("GetPropertyValue", "probe", "Running"),
 					  "a `Class.Prop` criterion must read the property; generated:\n" + code);
-		Assert.That(code.Contains("Invoke(probe, \"Running\")"),
+		Assert.That(Calls("Invoke", "probe", "Running") || Calls("InvokeOrNull", "probe", "Running"),
 					   Is.False,
 					   "a `Class.Prop` criterion must not be invoked as a method; generated:\n" + code);
 		// A plain variable is its own value, not something to call. A call lowers to the call form, which
 		// names no member (see Script.InvokeOrNull).
-		Assert.That(code.Contains("Invoke(myflag, null)"),
+		Assert.That(Calls("Invoke", "myflag") || Calls("InvokeOrNull", "myflag"),
 					   Is.False,
 					   "a bare-variable criterion must not be called; generated:\n" + code);
 		// A criterion that really is a call still is one.
-		Assert.IsTrue(code.Contains("Invoke(ison, null)"),
+		Assert.IsTrue(Calls("Invoke", "ison"),
 					  "a `Func()` criterion must still be called; generated:\n" + code);
 	}
 

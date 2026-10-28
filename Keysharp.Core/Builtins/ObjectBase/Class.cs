@@ -81,8 +81,13 @@ namespace Keysharp.Builtins
 			if (kso is Struct st)
 				st.InitializeStructStorage();
 
-			Script.InvokeMeta(kso, "__Init");
-			Script.InvokeMeta(kso, "__New", args);
+			kso.BeginReferenceConstruction();
+			try
+			{
+				Script.InvokeMeta(kso, "__Init");
+				Script.InvokeMeta(kso, "__New", args);
+			}
+			finally { kso.CompleteReferenceConstruction(); }
             return kso;
 		}
 

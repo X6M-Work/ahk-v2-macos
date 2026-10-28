@@ -112,7 +112,10 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 		arr.array.Capacity = Math.Max(arr.capacity, items?.Length ?? 0);
 
 		if (items != null)
+		{
+			foreach (var item in items) Keysharp.Runtime.Lifetime.Escape(item);
 			arr.array.AddRange(items);
+		}
 
 		return arr;
 	}
@@ -825,7 +828,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 		set
 		{
 			if (TryConvertIndex(index, out var i, what: "Array.Prototype.__Item.Set"))
-				array[i] = value;
+				array[i] = Keysharp.Runtime.Lifetime.Escape(value);
 		}
 	}
 

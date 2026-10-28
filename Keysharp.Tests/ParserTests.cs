@@ -551,10 +551,16 @@ public class ParserTests : TestRunner
 		try
 		{
 			File.WriteAllText(Path.Combine(dir, "Cont.ks"), "+ 2\ny := 10\n");
-			var (Bytes, Text) = EmitWithInclude("x := 1\n#include \"Cont.ks\"\n+ 3\n", dir);
-			Assert.That(Bytes, Is.Not.Null, Text);
-			Assert.That(Text, Does.Contain("x = 1L;"));
-			Assert.That(Text, Does.Contain("y = 10L;"));
+			var output = RunScript($$"""
+				#NoTrayIcon
+				#ErrorStdOut
+				#Warn All, StdOut
+				x := 1
+				#include "{{Path.Combine(dir, "Cont.ks")}}"
+				+ 3
+				FileAppend(x == 1 && y == 10 ? "pass" : "fail", "*")
+				""", "include-file-boundary", true, false, 0);
+			Assert.That(output, Is.EqualTo("pass"));
 		}
 		finally
 		{

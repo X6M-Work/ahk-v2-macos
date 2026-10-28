@@ -103,7 +103,7 @@ namespace Keysharp.Builtins
 			get => _value;
 			internal set
 			{
-				_value = value;
+				_value = Keysharp.Runtime.Lifetime.Escape(value);
 				_get = null;
 				_set = null;
 				_call = null;
@@ -117,7 +117,7 @@ namespace Keysharp.Builtins
 			get => _get;
 			internal set
 			{
-				_get = value;
+				_get = Keysharp.Runtime.Lifetime.Escape(value);
 
 				if (value != null)
 				{
@@ -139,7 +139,7 @@ namespace Keysharp.Builtins
 			get => _set;
 			internal set
 			{
-				_set = value;
+				_set = Keysharp.Runtime.Lifetime.Escape(value);
 
 				if (value != null)
 				{
@@ -208,7 +208,7 @@ namespace Keysharp.Builtins
 			get => _call;
 			internal set
 			{
-				_call = value;
+				_call = Keysharp.Runtime.Lifetime.Escape(value);
 
 				if (value != null)
 				{
@@ -245,7 +245,7 @@ namespace Keysharp.Builtins
 		// A value property, the state the constructor above reaches for one, without running each accessor's setter.
 		internal OwnPropsDesc(object value)
 		{
-			_value = value;
+			_value = Keysharp.Runtime.Lifetime.Escape(value);
 			Type = value != null ? OwnPropsMapType.Value : OwnPropsMapType.None;
 		}
 

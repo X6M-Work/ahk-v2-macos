@@ -717,6 +717,8 @@ namespace Keysharp.Runtime
 			if (item is VarRef vr && vr.IsPlain && AhkIdentifierComparer.Instance.Equals(namestr, "__Value"))
 				return argCount > 1 ? SetPropertyResultIndex(vr.__Value) : vr.__Value = value;
 
+			value = Lifetime.Escape(value);
+
 			if (item is Any a2)
 			{
 				kso = a2;

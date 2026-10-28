@@ -5,6 +5,7 @@ namespace Keysharp.Builtins
 		// The value of a reference without a getter, such as a compiled local's, which lives in its reference.
 		private object stored;
 		private readonly bool variable;
+		private bool valueEscaped, exposingValue;
 		// The memory the variable keeps for native code, on the variable's one reference (see StringMemory.Of).
 		internal StringMemory Memory;
 		protected Func<object> Get;
@@ -17,7 +18,7 @@ namespace Keysharp.Builtins
 
 		public VarRef(object x) : base(null)
 		{
-			stored = x;
+			stored = Keysharp.Runtime.Lifetime.Retain(x);
 			variable = true;
 		}
 
@@ -37,14 +38,33 @@ namespace Keysharp.Builtins
 
 		public object __Value
 		{
-			get => Get == null ? stored : Get();
+			get
+			{
+				var value = Get == null ? stored : Get();
+				return valueEscaped && !ReferenceEquals(value, this) ? Keysharp.Runtime.Lifetime.Escape(value) : value;
+			}
 			set
 			{
-				if (Get == null)
-					stored = value;
-				else
-					Set(value);
+				if (Get == null) ReplaceValue(value);
+				else Set(Keysharp.Runtime.Lifetime.Escape(value));
 			}
+		}
+
+		internal object ReplaceValue(object value)
+		{
+			if (Get == null)
+				return Keysharp.Runtime.Lifetime.Replace(ref stored, valueEscaped ? Keysharp.Runtime.Lifetime.Escape(value) : value);
+			Set(Keysharp.Runtime.Lifetime.Escape(value));
+			return __Value;
+		}
+
+		internal void EscapeValue()
+		{
+			if (!IsVariable || exposingValue) return;
+			exposingValue = true;
+			valueEscaped = true;
+			try { Keysharp.Runtime.Lifetime.Escape(Get == null ? stored : Get()); }
+			finally { exposingValue = false; }
 		}
 
 		/// <summary>

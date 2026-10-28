@@ -34,8 +34,8 @@ namespace Keysharp.Compilation.Syntax
 			: target.Builtin != null ? BindMember(target.Builtin) : Access(target.Owner + "." + target.Member);
 
 		private ExpressionSyntax MemberWrite(MemberBinding target, ExpressionSyntax value) => target.Inline
-			? Inv(Access("Keysharp.Builtins.Misc.MemberSet"), BindingOwner(target), target.Member == null ? Null : Str(target.Member), BindingKind(target.Storage), value)
-			: Assign(MemberRead(target), value);
+			? Inv(Access("Keysharp.Builtins.Misc.MemberSet"), BindingOwner(target), target.Member == null ? Null : Str(target.Member), BindingKind(target.Storage), EscapingValue(value))
+			: target.Storage == ModuleBindingKind.Field ? ReplaceValue(MemberRead(target), value) : Assign(MemberRead(target), EscapingValue(value));
 
 		private ExpressionSyntax MemberReference(MemberBinding target, bool naked = false)
 		{

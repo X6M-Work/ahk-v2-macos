@@ -6,6 +6,42 @@ namespace Keysharp.Runtime
 	[PublicHiddenFromUser]
 	public static class Lifetime
 	{
+		public static object Retain(object value)
+		{
+			if (value is Keysharp.Builtins.Any owned) owned.RetainReference();
+			return value;
+		}
+
+		public static void Release(object value)
+		{
+			if (value is Keysharp.Builtins.Any owned) owned.ReleaseReference();
+		}
+
+		public static object Replace(ref object slot, object value)
+		{
+			if (ReferenceEquals(slot, value)) return value;
+			Retain(value);
+			Retain(value); // Protect the incoming value while the previous value's __Delete runs.
+			var previous = slot;
+			slot = value;
+			try { Release(previous); }
+			finally { Release(value); }
+			return slot;
+		}
+
+		public static object Replace(Keysharp.Builtins.VarRef slot, object value) => slot.ReplaceValue(value);
+
+		public static object Escape(object value)
+		{
+			if (value is Keysharp.Builtins.Any owned) owned.EscapeReferences();
+			if (value is Keysharp.Builtins.VarRef reference) reference.EscapeValue();
+			return value;
+		}
+
+		public static object Borrow(object value) => value is Keysharp.Builtins.Any owned
+			&& owned.ReferenceState is Keysharp.Builtins.ReferenceLifeState.Constructing or Keysharp.Builtins.ReferenceLifeState.Deleting
+			? value : Escape(value);
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void KeepAlive(object a, object b) { GC.KeepAlive(a); GC.KeepAlive(b); }
 
