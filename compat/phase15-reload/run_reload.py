@@ -46,6 +46,24 @@ def process_alive(pid):
         api.CloseHandle(handle)
 
 
+def failure_diagnostics(process, directory=Path('.')):
+    details = [f'Initial worker status: {process.poll()}']
+    try:
+        stdout, stderr = process.communicate(timeout=0.2)
+    except subprocess.TimeoutExpired as error:
+        stdout, stderr = error.output or b'', error.stderr or b''
+    except OSError as error:
+        stdout, stderr = b'', str(error).encode('utf-8')
+    for name, data in [('worker stdout', stdout), ('worker stderr', stderr)]:
+        if data:
+            details.append(name + ':\n' + normalize_output(data))
+    for name in ('trace.txt', 'predecessor.txt', 'done.txt', 'failed.txt'):
+        path = directory / name
+        if path.is_file():
+            details.append(name + ':\n' + normalize_output(path.read_bytes()))
+    return '\n'.join(details)
+
+
 def controller(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--engine", required=True, choices=("ahk", "keysharp"))
@@ -87,6 +105,7 @@ def controller(argv):
         return 0
     except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired) as error:
         print(str(error), file=sys.stderr, flush=True)
+        print(failure_diagnostics(process), file=sys.stderr, flush=True)
         return 1
     finally:
         if process.poll() is None:

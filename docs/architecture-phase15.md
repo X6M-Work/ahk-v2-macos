@@ -12,7 +12,7 @@
 | Objet ressuscité puis libéré à nouveau | Deux appels à `__Delete` | Zéro appel aux deux points observés |
 | Fichier local en fin de fonction | Données lisibles, handle libéré | Fichier encore verrouillé sur Windows |
 
-Sources de preuve actualisées : ahk-v2-macos-validation/current-official/phase15-architecture.json et current-windows/phase15-architecture.json, livrés à côté du checkout. Les rapports incluent les empreintes des assemblages reconstruits, les sources, les sorties et les délais. Les cinq échecs sont confirmés sur Windows après les autres corrections. Le corpus complet natif reste à exécuter ; la CI Mac du corpus initial et des tests NUnit est consignée dans `validation.md`.
+Sources de preuve actualisées : ahk-v2-macos-validation/current-official/phase15-architecture.json et current-windows/phase15-architecture.json, livrés à côté du checkout. Les rapports incluent les empreintes des assemblages reconstruits, les sources, les sorties et les délais. Les cinq échecs sont confirmés sur Windows et sur les deux architectures Mac par la CI étendue, consignée dans `validation.md`.
 
 ## Cause et décision
 
@@ -26,7 +26,7 @@ Critère de passage : les cinq fixtures stricts passent inchangés, puis des tes
 
 ## Appels natifs macOS
 
-`compat/phase15-architecture/macos` contient quatre prototypes locaux : `getpid`, `strlen` ASCII, `qsort` avec callback script et retour Float32 de `sqrtf`. Ils utilisent explicitement `/usr/lib/libSystem.B.dylib`. Les résultats attendus décrivent les contrats C ; ils n'ont pas été confirmés sur Mac. Ils ne chargent aucune DLL Windows et n'assimilent pas les conventions Windows aux conventions ARM64 Darwin.
+`compat/phase15-architecture/macos` contient quatre prototypes : `getpid`, `strlen` ASCII, `qsort` avec callback script et retour Float32 de `sqrtf`. Ils utilisent explicitement `/usr/lib/libSystem.B.dylib`. Les quatre passent sur Apple Silicon (run `40726271080`) et Intel (run `40729614239`). Les résultats attendus décrivent les contrats C. Ils ne chargent aucune DLL Windows et n'assimilent pas les conventions Windows aux conventions ARM64 Darwin.
 
 Les vérifications à réaliser sur Intel et Apple Silicon comprennent les callbacks, tailles `size_t`/pointeurs, flottants, agrégats, erreurs de chargement, durée de validité des chaînes et pointeurs, et appels réentrants. Les prototypes limités ne prouvent pas une ABI complète. Les tests Windows de `StrPtr`, encodages et `NumGet`/`NumPut` appartiennent à un autre corpus ; ils ne remplacent pas ces essais natifs.
 
@@ -42,4 +42,4 @@ Ces scénarios passent avec AutoHotkey 2.0.31. Les rapports actualisés confirme
 
 `compat/phase15-reload/run_reload.py` ajoute un processus contrôleur qui reste vivant pendant un Reload réel. Le cas vérifie OnExit avec la raison Reload, le renouvellement de l'état, la fin du processus précédent, un timer dans son remplaçant, puis sa sortie effective. Il passe avec AutoHotkey 2.0.31 et le moteur Keysharp reconstruit sur Windows. Tous les descendants restent dans le Job Object ; l'entrée standard est fermée et le délai total est borné. Cela ne valide pas la conservation des arguments ni du répertoire de travail initial.
 
-La phase 5 demeure partielle : exécution Mac, Reload natif macOS, interruption sous charge, menus, hotkeys et nettoyage déterministe des ressources ne sont pas entièrement validés. La fermeture automatique d'un File local dépend directement du gate de durée de vie ci-dessus. Les corrections de bibliothèque standard et les résultats de leurs corpus sont suivis séparément.
+La phase 5 demeure partielle : les neuf scénarios runtime et trois processus passent sur les deux architectures Mac, mais Reload natif macOS échoue encore dans les runs audités. Le correctif de sortie de boucle AppKit attend sa revalidation native. Interruption sous charge, menus, hotkeys et nettoyage déterministe des ressources ne sont pas entièrement validés. La fermeture automatique d'un File local dépend directement du gate de durée de vie ci-dessus. Les corrections de bibliothèque standard et les résultats de leurs corpus sont suivis séparément.

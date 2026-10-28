@@ -1511,9 +1511,8 @@ namespace Keysharp.Runtime
 			Keysharp.Internals.Window.Linux.X11Server.InstallTestLoopXErrorHandler();
 #endif
 
-			app.AsyncInvoke(() => InitializeUnixMainWindow(app, title, userInit, _persistent));
-
 			InstallTerminationSignal();
+			app.AsyncInvoke(() => InitializeUnixMainWindow(app, title, userInit, _persistent));
 			app.Run();
 #endif
 		}
@@ -1536,7 +1535,22 @@ namespace Keysharp.Runtime
 			// the window, and leave the first visible Show() to an explicit user request.
 			mainWindow.InitializeHidden();
 
-			app.AsyncInvoke(() => RunAutoExecSection(userInit));
+			app.AsyncInvoke(() =>
+			{
+#if OSX
+				try
+				{
+					RunAutoExecSection(userInit);
+				}
+				finally
+				{
+					if (hasExited)
+						app.Quit();
+				}
+#else
+				RunAutoExecSection(userInit);
+#endif
+			});
 			StartDeferredTray();
 		}
 #endif

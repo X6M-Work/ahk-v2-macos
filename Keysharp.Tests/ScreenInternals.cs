@@ -22,20 +22,28 @@ public partial class ScreenTests
 		using var canvas = TestSurface(1, 1);
 		var backing = new BlockingOverlayBacking();
 		var service = new TestOverlayService(() => backing);
-		var showing = Task.Run(() => service.TryPresentImageOverlay(3, canvas,
+		var showing = StartDedicatedTask(() => service.TryPresentImageOverlay(3, canvas,
 			new ScreenRect(0, 0, 1, 1), 255, true));
 
-		Assert.IsTrue(backing.FirstShowEntered.Wait(TimeSpan.FromSeconds(2)));
 		using var hideStarted = new ManualResetEventSlim();
-		var hiding = Task.Run(() =>
+		Task<bool> hiding = null;
+		try
 		{
-			hideStarted.Set();
-			return service.DisposeAllImageOverlays();
-		});
-		Assert.IsTrue(hideStarted.Wait(TimeSpan.FromSeconds(2)));
-		Assert.IsTrue(SpinWait.SpinUntil(() => !IsOverlayRegistered(service, 3), TimeSpan.FromSeconds(2)),
-			"HideAll must clear registration before waiting for an in-progress Show");
-		backing.ReleaseShows.Set();
+			Assert.IsTrue(backing.FirstShowEntered.Wait(OverlaySyncTimeout));
+			hiding = StartDedicatedTask(() =>
+			{
+				hideStarted.Set();
+				return service.DisposeAllImageOverlays();
+			});
+			Assert.IsTrue(hideStarted.Wait(OverlaySyncTimeout));
+			Assert.IsTrue(SpinWait.SpinUntil(() => !IsOverlayRegistered(service, 3), OverlaySyncTimeout),
+				"HideAll must clear registration before waiting for an in-progress Show");
+		}
+		finally
+		{
+			backing.ReleaseShows.Set();
+			Assert.IsTrue(Task.WaitAll(hiding == null ? [showing] : [showing, hiding], OverlaySyncTimeout));
+		}
 
 		Assert.That(showing.GetAwaiter().GetResult(), Is.False);
 		Assert.IsTrue(hiding.GetAwaiter().GetResult());
@@ -184,18 +192,25 @@ public partial class ScreenTests
 		var backing = new BlockingOverlayBacking();
 		var service = new TestOverlayService(() => backing);
 		var bounds = new ScreenRect(0, 0, 1, 1);
-		var first = Task.Run(() => service.TryPresentImageOverlay(1, canvas, bounds, 255, true));
+		var first = StartDedicatedTask(() => service.TryPresentImageOverlay(1, canvas, bounds, 255, true));
 
-		Assert.IsTrue(backing.FirstShowEntered.Wait(TimeSpan.FromSeconds(2)));
 		using var secondStarted = new ManualResetEventSlim();
-		var second = Task.Run(() =>
+		Task<bool> second = null;
+		try
 		{
-			secondStarted.Set();
-			return service.TryPresentImageOverlay(1, canvas, bounds, 255, true);
-		});
-		Assert.IsTrue(secondStarted.Wait(TimeSpan.FromSeconds(2)));
-
-		backing.ReleaseShows.Set();
+			Assert.IsTrue(backing.FirstShowEntered.Wait(OverlaySyncTimeout));
+			second = StartDedicatedTask(() =>
+			{
+				secondStarted.Set();
+				return service.TryPresentImageOverlay(1, canvas, bounds, 255, true);
+			});
+			Assert.IsTrue(secondStarted.Wait(OverlaySyncTimeout));
+		}
+		finally
+		{
+			backing.ReleaseShows.Set();
+			Assert.IsTrue(Task.WaitAll(second == null ? [first] : [first, second], OverlaySyncTimeout));
+		}
 		Assert.IsTrue(first.GetAwaiter().GetResult());
 		Assert.IsTrue(second.GetAwaiter().GetResult());
 		Assert.That(backing.MaxConcurrentCalls, Is.EqualTo(1));
@@ -253,6 +268,11 @@ public partial class ScreenTests
 		return bitmap;
 	}
 
+	private static readonly TimeSpan OverlaySyncTimeout = TimeSpan.FromSeconds(10);
+
+	private static Task<T> StartDedicatedTask<T>(Func<T> action)
+		=> Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
 	private static OverlaySurface TestSurface(int w, int h)
 		=> new(SolidBitmap(w, h, unchecked((int)0xFFFFFFFF)), new PixelSize(w, h), false);
 
@@ -297,7 +317,8 @@ public partial class ScreenTests
 			var active = Interlocked.Increment(ref activeCalls);
 			InterlockedExtensions.Max(ref maxConcurrentCalls, active);
 			FirstShowEntered.Set();
-			_ = ReleaseShows.Wait(TimeSpan.FromSeconds(2));
+			if (!ReleaseShows.Wait(OverlaySyncTimeout))
+				throw new TimeoutException("Test did not release the blocked overlay present.");
 			_ = Interlocked.Decrement(ref activeCalls);
 			return ShowResult;
 		}

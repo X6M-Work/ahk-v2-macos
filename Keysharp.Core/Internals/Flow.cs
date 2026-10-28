@@ -400,6 +400,17 @@ namespace Keysharp.Internals
 					{
 #if WINDOWS
 						Application.DoEvents();
+#elif OSX
+						try
+						{
+							Application.Instance?.RunIteration();
+						}
+						finally
+						{
+							// Eto's nested pump can consume NSApplication.Stop's wake event.
+							if (script.hasExited)
+								Application.Instance?.Quit();
+						}
 #else
 						Application.Instance?.RunIteration();
 #endif

@@ -9984,7 +9984,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "unknown",
-                     "notes":  "Compiles a replacement, then asks the old process to exit via WM_CLOSE on Windows or SIGTERM on Linux/macOS. Successful self-reload, OnExit reason and timer reset verified on Windows. Noninteractive ErrorStdOut/headless replacement refuses a blocked predecessor without prompting.",
+                     "notes":  "Compiles a replacement, then asks the old process to exit via WM_CLOSE on Windows or SIGTERM on Linux/macOS. Successful self-reload, OnExit reason and timer reset verified on Windows. Noninteractive ErrorStdOut/headless replacement waits at most 15 seconds for the predecessor, then reports failure on stderr without prompting; interactive waits retain the 2-second retry prompt. macOS nested-pump shutdown repair awaits native revalidation.",
                      "tested-by":  "Gui/guitest.ks; compat/phase15-reload/run_reload.py"
                  },
                  {

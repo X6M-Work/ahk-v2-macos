@@ -6,6 +6,7 @@ namespace Keysharp.Internals.Scripting
 	{
 		internal const string PredecessorVar = "KEYSHARP_RELOAD_PREDECESSOR";
 		private const int WaitMs = 2000;
+		private const int NonInteractiveWaitMs = 15000;
 #if WINDOWS
 		private const string PredecessorWindowVar = "KEYSHARP_RELOAD_PREDECESSOR_WINDOW";
 		internal const nint ExitByReload = 0x4B53_0001;
@@ -15,6 +16,21 @@ namespace Keysharp.Internals.Scripting
 
 		[DllImport("libc", EntryPoint = "getppid")]
 		private static extern int PosixParentId();
+
+		private static bool WaitForPredecessorExit(int pid, int timeoutMs)
+		{
+			var deadline = Environment.TickCount64 + timeoutMs;
+
+			while (PosixParentId() == pid)
+			{
+				if (Environment.TickCount64 >= deadline)
+					return PosixParentId() != pid;
+
+				Thread.Sleep(15);
+			}
+
+			return true;
+		}
 #endif
 
 		internal static Process Start(Script script)
@@ -86,14 +102,20 @@ namespace Keysharp.Internals.Scripting
 					return false;
 				}
 
+				var nonInteractive = Script.IsHeadless || Script.TheScript.ErrorStdOut || Env.FindCommandLineArg("errorstdout") != null;
+				var waitMs = nonInteractive ? NonInteractiveWaitMs : WaitMs;
+
 #if WINDOWS
-				while (!predecessor.WaitForExit(WaitMs))
+				while (!predecessor.WaitForExit(waitMs))
 #else
-				while (!SpinWait.SpinUntil(() => PosixParentId() != pid, WaitMs))
+				while (!WaitForPredecessorExit(pid, waitMs))
 #endif
 				{
-					if (Script.IsHeadless || Script.TheScript.ErrorStdOut || Env.FindCommandLineArg("errorstdout") != null)
+					if (nonInteractive)
+					{
+						Console.Error.WriteLine($"Keysharp: timed out after {waitMs} ms waiting for predecessor PID {pid} to exit during Reload.");
 						return false;
+					}
 
 #if !WINDOWS
 					_ = Script.EnsureEtoApplication();
