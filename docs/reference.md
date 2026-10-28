@@ -405,6 +405,7 @@ Some general notes about Keysharp's implementation of the [AutoHotkey v2 specifi
 	+ The executable is ran in memory as a new process.
 	+ Optionally output the generated C# code to a .cs file for debugging purposes with the `--transpile` option, without running the script. The output leaves out the location stamps the compiler adds before each statement for `Error.Stack` and the `global::` that roots framework names; Keyview's Full code view shows the code exactly as compiled.
 	+ Optionally output the generated executable to an .exe file for running standalone in the future with the `--compile exe` option, without running the script.
+	+ Executable generation finds a matching .NET apphost in the running runtime's installation, `DOTNET_ROOT_<ARCH>`, `DOTNET_ROOT`, or standard installation directories. Portable Windows SDKs are supported. SDK templates and host packs must match .NET's current major version.
 
 * Keysharp supports `.ahk` and `.ks` source files and `.cks` compiled scripts. Installers associate supported files with Keysharp and provide an editing action through Keyview where supported.
 
