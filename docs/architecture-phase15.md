@@ -12,7 +12,7 @@
 | Objet ressuscité puis libéré à nouveau | Deux appels à `__Delete` | Zéro appel aux deux points observés |
 | Fichier local en fin de fonction | Données lisibles, handle libéré | Fichier encore verrouillé sur Windows |
 
-Sources de preuve finales : ahk-v2-macos-validation/official/phase15-architecture.json et windows/phase15-architecture.json, livrés à côté du checkout. Les rapports incluent les empreintes des assemblages reconstruits, les sources, les sorties et les délais. Les cinq échecs sont confirmés après les autres corrections. Aucun Mac disponible pour une exécution native.
+Sources de preuve actualisées : ahk-v2-macos-validation/current-official/phase15-architecture.json et current-windows/phase15-architecture.json, livrés à côté du checkout. Les rapports incluent les empreintes des assemblages reconstruits, les sources, les sorties et les délais. Les cinq échecs sont confirmés sur Windows après les autres corrections. Le corpus complet natif reste à exécuter ; la CI Mac du corpus initial et des tests NUnit est consignée dans `validation.md`.
 
 ## Cause et décision
 
@@ -34,11 +34,11 @@ Les vérifications à réaliser sur Intel et Apple Silicon comprennent les callb
 
 ## Phase 5 : ce qui est prouvé
 
-`compat/phase15-runtime` caractérise huit scénarios publics : timer unique ; suppression avant lancement ; arrêt d'un timer répétitif ; absence de réentrance pendant un dépassement ; report d'un timer pendant Critical ; Pause du thread sous-jacent ; Pause sans thread sous-jacent ; ordre, retrait et veto des handlers OnExit. Les délais servent de garde-fou ; aucune fréquence exacte n'est promise.
+`compat/phase15-runtime` caractérise neuf scénarios publics : timer unique ; suppression avant lancement ; arrêt d'un timer répétitif ; absence de réentrance pendant un dépassement ; report d'un timer pendant Critical ; Pause du thread sous-jacent ; Pause sans thread sous-jacent ; ordre, retrait et veto des handlers OnExit ; options Hotkey et validation avant mutation. Les délais servent de garde-fou ; aucune fréquence exacte n'est promise.
 
 Trois processus séparés vérifient aussi le code de sortie 17 transmis à OnExit, un handler OnError avec stderr et code 23, et la continuation d'une TypeError. Leur runner réutilise la création d'un processus isolé, le timeout et la fermeture de tous ses descendants. Tous les scripts installent un handler de sécurité ou le handler explicitement testé. Ils ne demandent aucune entrée utilisateur.
 
-Ces scénarios passent avec AutoHotkey 2.0.31. Les tests déjà exécutés sur Keysharp ne justifient aucune correction du scheduler dans ce lot. Les rapports finaux confirment huit scénarios et trois processus réussis sur Windows après reconstruction.
+Ces scénarios passent avec AutoHotkey 2.0.31. Les rapports actualisés confirment neuf scénarios et trois processus réussis sur Keysharp Windows. Un échec intermittent distinct du test NUnit `FlowTryInterrupt` reste à caractériser ; il n'est pas compté comme une correction acquise du scheduler.
 
 `compat/phase15-reload/run_reload.py` ajoute un processus contrôleur qui reste vivant pendant un Reload réel. Le cas vérifie OnExit avec la raison Reload, le renouvellement de l'état, la fin du processus précédent, un timer dans son remplaçant, puis sa sortie effective. Il passe avec AutoHotkey 2.0.31 et le moteur Keysharp reconstruit sur Windows. Tous les descendants restent dans le Job Object ; l'entrée standard est fermée et le délai total est borné. Cela ne valide pas la conservation des arguments ni du répertoire de travail initial.
 

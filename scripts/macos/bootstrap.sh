@@ -2,6 +2,17 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
+retry_git() {
+  local attempt=1 result
+  while true; do
+    if git "$@"; then return 0; else result=$?; fi
+    (( attempt < 3 )) || return "${result}"
+    printf 'Git network operation failed (attempt %s/3); retrying.\n' "${attempt}" >&2
+    sleep "$((attempt * 2))"
+    attempt=$((attempt + 1))
+  done
+}
+
 eto_root="${EtoRoot:-${KEYSHARP_ROOT}/.deps/Eto}"
 while (($#)); do
   case "$1" in
@@ -28,9 +39,9 @@ fi
 [[ -z "$(git -C "${eto_root}" status --porcelain --untracked-files=all --ignore-submodules=none)" ]] || die "Eto checkout has local changes; nothing was overwritten: ${eto_root}"
 head_commit="$(git -C "${eto_root}" rev-parse --verify HEAD 2>/dev/null || true)"
 if [[ "${head_commit}" != "${ETO_COMMIT}" ]]; then
-  git -C "${eto_root}" fetch --depth 1 "${ETO_REPOSITORY}" "${ETO_COMMIT}"
+  retry_git -C "${eto_root}" fetch --depth 1 "${ETO_REPOSITORY}" "${ETO_COMMIT}"
   git -C "${eto_root}" checkout --detach "${ETO_COMMIT}"
 fi
-git -C "${eto_root}" submodule update --init --recursive
+retry_git -C "${eto_root}" submodule update --init --recursive
 [[ "$(git -C "${eto_root}" rev-parse HEAD)" == "${ETO_COMMIT}" ]] || die 'Eto revision verification failed.'
 printf 'Eto ready: %s (%s)\n' "${eto_root}" "${ETO_COMMIT}"

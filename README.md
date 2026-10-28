@@ -28,10 +28,10 @@ The launcher also supports `validate your-script.ahk`. Input automation requires
 - GitHub Actions for native Apple Silicon/Intel builds, selected upstream tests, and compatibility reports.
 - A manual packaging workflow producing unsigned `.app` bundles inside `.pkg` and `.dmg` artifacts, with SHA-256 checksums.
 
-Workflows are provided for execution in your repository. Their presence does not establish that macOS builds or interactive automation have been tested. Passing the included corpus demonstrates only those cases.
+The [native CI run for `68dd8bd4`](https://github.com/X6M-Work/ahk-v2-macos/actions/runs/40722552703) built and executed on Apple Silicon and Intel: each Mac passed 931 NUnit tests, skipped 20, and matched all 14 initial differential cases. Desktop interaction and permission prompts still require manual validation.
 
 See [publishing to GitHub](docs/publish-to-github.md) for the commands to publish this source fork.
-The [local validation record](docs/validation.md) distinguishes executed Windows checks from pending macOS verification.
+The [validation record](docs/validation.md) separates Windows comparisons, native CI execution and pending desktop checks.
 
 For local macOS validation, transfer the Windows reference reports, then run:
 

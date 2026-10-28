@@ -11,7 +11,7 @@ Les scripts dépendant de DLL Windows, COM, registre, messages et contrôles Win
 | Étape | Critère de validation |
 |---|---|
 | 1. Contrat | Version, périmètre et règles de preuve figés ici et dans le JSON |
-| 2. macOS natif | Compilation et exécution locales sur Intel puis Apple Silicon, rapports avec architecture et empreintes |
+| 2. macOS natif | Compilation et exécution natives sur Intel et Apple Silicon, rapports avec architecture et empreintes |
 | 3. Architecture | Destruction immédiate, alias/résurrection, fermeture des ressources ; mémoire UTF-16 ; ABI, appels et callbacks natifs |
 | 4. Langage | Même source et sorties vérifiées avec l'exécutable officiel et le candidat |
 | 5. Bibliothèque et exécution | Fichiers/encodages, processus, timers, Sleep/Pause/Critical, OnExit et arrêt, puis tests de régression |
@@ -22,4 +22,4 @@ Les corpus ne couvrent qu'une sélection de comportements. Le nombre de lignes d
 
 Chaque test de conformité exige le même script, une attente revue et validée par AHK officiel, un délai maximal, une capture UTF-8 sans altération autre que CRLF → LF, et un nettoyage du processus. Les erreurs runtime des fixtures utilisent `OnError` pour quitter sans dialogue. Les erreurs attendues sont capturées dans le script ; les tests de codes de sortie ont un runner distinct.
 
-Tout reste local. Aucun dépôt GitHub ni exécution distante ne sont nécessaires. Le build et les tests macOS seront marqués « non exécutés » tant qu'aucun Mac local n'aura fourni de rapport. Les instructions et rapports se trouvent dans `docs/validation.md` et `compat/README.md`.
+Les exécutions locales et GitHub Actions sont consignées séparément. La CI a compilé et exécuté le moteur sur Intel et Apple Silicon ; ses résultats ne valident pas les interactions avec un bureau Mac ni ses autorisations. Chaque affirmation doit citer le commit, le rapport, la plateforme et le périmètre réellement exécutés. Les instructions et rapports se trouvent dans `docs/validation.md` et `compat/README.md`.

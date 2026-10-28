@@ -33,8 +33,9 @@
     },
     {
       "id": "native-macos",
-      "status": "pending",
-      "reason": "No local Mac available; Windows execution is not native macOS evidence."
+      "status": "in-progress",
+      "reason": "Commit 68dd8bd4 built and ran natively on Intel and Apple Silicon: 931 NUnit passes, 20 skips and 14 matching differential cases on each. Full conformance, native ABI and desktop validation remain separate gates.",
+      "evidence": "https://github.com/X6M-Work/ahk-v2-macos/actions/runs/40722552703"
     },
     {
       "id": "architecture",
