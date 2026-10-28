@@ -5,6 +5,11 @@ on:
     branches: [main, master]
   pull_request:
   workflow_dispatch:
+    inputs:
+      extended:
+        description: Run full conformance and native ABI audit, retaining known failures
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -62,11 +67,17 @@ jobs:
       - name: Run official reference corpus
         shell: pwsh
         run: python compat/run.py --engine ahk --engine-version 2.0.31 --timeout 60 --executable .deps/AutoHotkey/AutoHotkey64.exe --output compat/reports/ahk-windows.json
+      - name: Run extended official reference
+        if: ${{ inputs.extended }}
+        shell: pwsh
+        run: python compat/suite.py --engine ahk --engine-version 2.0.31 --timeout 60 --executable .deps/AutoHotkey/AutoHotkey64.exe --output-dir compat/reports/official-suite
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
           name: ahk-windows-reference
-          path: compat/reports/ahk-windows.json
+          path: |
+            compat/reports/ahk-windows.json
+            compat/reports/official-suite
           if-no-files-found: warn
 
   windows:
@@ -98,6 +109,10 @@ jobs:
         if: ${{ !cancelled() && steps.build_runtime.outcome == 'success' }}
         shell: pwsh
         run: python compat/run.py --engine keysharp --timeout 120 --executable bin/Release/net10.0-windows/Keysharp.exe --output compat/reports/keysharp-windows.json --baseline compat/reports/reference/ahk-windows.json
+      - name: Run extended Windows conformance audit
+        if: ${{ !cancelled() && inputs.extended && steps.build_runtime.outcome == 'success' }}
+        shell: pwsh
+        run: python compat/suite.py --engine keysharp --timeout 120 --executable bin/Release/net10.0-windows/Keysharp.exe --output-dir compat/reports/extended --baseline-dir compat/reports/reference/official-suite
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
@@ -164,6 +179,10 @@ jobs:
           if [[ ! -x "$engine" ]]; then engine="$PWD/bin/Release/net10.0/$TARGET_RID/Keysharp"; fi
           test -x "$engine"
           python compat/run.py --engine keysharp --timeout 120 --executable "$engine" --output compat/reports/keysharp-macos.json --baseline compat/reports/reference/ahk-windows.json
+      - name: Run extended native conformance and ABI audit
+        if: ${{ !cancelled() && inputs.extended && steps.build_runtime.outcome == 'success' }}
+        shell: bash
+        run: bash scripts/macos/verify-local.sh --skip-build --configuration Release --baseline-dir compat/reports/reference/official-suite --output-dir compat/reports/extended
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:

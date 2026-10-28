@@ -71,6 +71,8 @@ bash scripts/macos/verify-local.sh --baseline-dir /path/to/official
 
 Run separately on Intel and Apple Silicon. `--skip-build` reuses a built executable. `--output-dir` selects the report directory. The script refuses non-macOS hosts and Rosetta. It preserves known failures as failures, collects host/build evidence, and runs the four Mac-only `getpid`, `strlen` , `qsort`/callback and Float return prototypes. Their C ABI expectations are not an official Mac AHK baseline; native execution remains pending.
 
+The `macOS compatibility` workflow has an optional `extended` input for manual runs. It runs the full 62-case reference/comparison suite and the four Mac ABI prototypes, preserving reports as artifacts. Known object-lifetime failures still fail the audit; the Windows-only native fixture is reported unsupported on Mac. Normal push runs use the original 14-case corpus and curated NUnit tests. An extended run is expected to remain red until these gaps are resolved.
+
 The lifecycle runner validates its expected stdout/stderr/exit code and baseline identity; the ordinary corpus continues to require exit code zero. Managed engine reports include hashes of `Keysharp*.dll`, including scripting components, because the apphost hash alone cannot identify runtime changes. Windows evidence does not validate native macOS behavior.
 
 ```sh
