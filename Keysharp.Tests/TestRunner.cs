@@ -38,11 +38,22 @@ public abstract class TestRunner
 		}
 	}
 
-	protected string path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Keysharp.Tests", "Code")) + Path.DirectorySeparatorChar;
+	protected static string RepositoryRoot { get; } = FindRepositoryRoot(AppContext.BaseDirectory);
+	protected string path = Path.Combine(RepositoryRoot, "Keysharp.Tests", "Code") + Path.DirectorySeparatorChar;
 	private const string ext = ".ahk";
 	protected Script s;
 	private int wrapOffset;
 	internal HotstringManager hsm;
+
+	internal static string FindRepositoryRoot(string baseDirectory)
+	{
+		for (var directory = new DirectoryInfo(baseDirectory); directory != null; directory = directory.Parent)
+			if (File.Exists(Path.Combine(directory.FullName, "Keysharp.sln"))
+				&& File.Exists(Path.Combine(directory.FullName, "Keysharp.Tests", "Code", "Lib", "assert.ahk")))
+				return directory.FullName;
+
+		throw new DirectoryNotFoundException($"Keysharp test checkout not found above {baseDirectory}.");
+	}
 
 	[SetUp]
 	public void SetupBeforeEachTest() => ResetScriptState();
@@ -255,6 +266,9 @@ public abstract class TestRunner
 	protected bool TestScript(string source, bool testfunc, bool exeout = false)
 	{
 		var scriptPath = string.Concat(path, source, ext);
+		if (!File.Exists(scriptPath))
+			throw new FileNotFoundException("Test script fixture not found.", scriptPath);
+
 		Verify(scriptPath, RunScript(scriptPath, source, true, exeout), 0);
 
 		if (testfunc)

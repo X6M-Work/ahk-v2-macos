@@ -9,8 +9,8 @@
 | Official AHK reference | 61/61 passed |
 | Rebuilt Keysharp comparison | 56/61 passed; five failures retained |
 | NUnit selected tests | 132 distinct tests verified: 131 passed in the final selection, then NumPutNumGet passed after its version-specific expectations were clarified |
-| Native macOS | Not executed; four ABI prototypes remain unsupported on Windows |
-| GitHub Actions | Not executed in this local validation snapshot |
+| Native macOS in this local Windows session | Not executed; four ABI prototypes remain unsupported on Windows |
+| GitHub Actions | See the separate CI record below |
 
 | Candidate corpus | Passing cases |
 |---|---|
@@ -55,3 +55,11 @@ bash scripts/macos/verify-local.sh --baseline-dir /path/to/official
 Intel and Apple Silicon remain untested. The Windows DLL corpus is explicitly unsupported on Mac; four separate Mac ABI prototypes are pending. No permissions, GUI, hotkeys, screen capture, application control, signing or notarization have been validated here. No GitHub repository is required.
 
 Earlier checks: pinned Eto/MonoMac bootstrap, simulated launcher architecture/version/argument/exit behavior, actionlint 1.7.12 on unchanged workflows, and exact FileAppend stdout/stderr encoding regressions. The sibling KeysharpDocs site is absent and still needs corresponding updates.
+
+## GitHub Actions baseline
+
+The [25 October run](https://github.com/X6M-Work/ahk-v2-macos/actions/runs/40222089266) was inspected on 28 October 2026. Native builds succeeded on Apple Silicon and Intel, and the initial differential corpus passed 14/14 on each architecture with zero differences against official AHK. The Windows reference and Python tooling jobs succeeded.
+
+Each Mac NUnit run recorded 610 passed, 287 failed and 20 skipped out of 917. Of the failures, 264 parsed an absolute fixture path as source and reported `1:1: unexpected '/'`. Other failures include missing fixture files, icons and libraries, plus independent conversion and compatibility expectations. The Windows NUnit run also has 13 failures; the 287 Mac failures must not be counted as 287 distinct macOS language incompatibilities.
+
+The test harness must locate the source checkout independently of the runtime-specific output depth. A build in `bin/Release/net10.0/osx-arm64` cannot use the same fixed three-parent traversal as a build without a runtime identifier. Regression checks cover both layouts and missing-fixture diagnostics. These harness changes do not resolve the five object-lifetime differences or validate interactive desktop automation.

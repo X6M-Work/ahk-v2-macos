@@ -5,6 +5,27 @@ namespace Keysharp.Tests;
 
 public class RunnerTests : TestRunner
 {
+	[TestCase("Debug", "net10.0-windows", "")]
+	[TestCase("Release", "net10.0-windows", "win-x64")]
+	[TestCase("Release", "net10.0", "osx-arm64")]
+	[TestCase("Release", "net10.0", "osx-x64")]
+	[TestCase("Debug", "net10.0", "linux-x64")]
+	[Category("Internal"), Category("Curated")]
+	public void TestFixturesResolveFromRuntimeOutput(string configuration, string framework, string rid)
+	{
+		var output = Path.Combine(RepositoryRoot, "bin", configuration, framework, rid);
+		Assert.That(FindRepositoryRoot(output), Is.EqualTo(RepositoryRoot));
+		Assert.That(File.Exists(Path.Combine(path, "assign-int.ahk")), Is.True);
+	}
+
+	[Test, Category("Internal"), Category("Curated")]
+	public void MissingTestFixtureReportsItsPath()
+	{
+		var name = "missing-fixture-" + Guid.NewGuid().ToString("N");
+		var error = Assert.Throws<FileNotFoundException>(() => TestScript(name, false));
+		Assert.That(error.FileName, Is.EqualTo(Path.Combine(path, name + ".ahk")));
+	}
+
 	[TestCase(true), TestCase(false), Category("Internal"), Category("Curated")]
 	public void CompilationContextLifetime(bool execute)
 	{
