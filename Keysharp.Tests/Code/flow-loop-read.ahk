@@ -3,12 +3,13 @@
 #Warn All, StdOut
 #Warn LocalSameAsGlobal, Off
 #Include <assert>
+#Include <testpaths>
 
 x := ""
 
 ; MsgBox(A_WorkingDir)
 
-Loop Read "../../../Keysharp.Tests/Code/test-text-file.txt"
+Loop Read _TestFixturePath("test-text-file.txt")
 {
 	x .= A_LoopReadLine
 }
@@ -16,9 +17,9 @@ Loop Read "../../../Keysharp.Tests/Code/test-text-file.txt"
 AssertEq(x, "this is line 1another lineline 3", A_LineNumber)
 
 x := ""
-try FileDelete "../../../Keysharp.Tests/Code/test-text-file-out.txt"
+try FileDelete _TestFixturePath("test-text-file-out.txt")
 
-Loop Read "../../../Keysharp.Tests/Code/test-text-file.txt", "../../../Keysharp.Tests/Code/test-text-file-out.txt" ; this is a comment
+Loop Read _TestFixturePath("test-text-file.txt"), _TestFixturePath("test-text-file-out.txt") ; this is a comment
 {
 	y := Random()
 	x .= A_LoopReadLine
@@ -30,7 +31,7 @@ Loop Read "../../../Keysharp.Tests/Code/test-text-file.txt", "../../../Keysharp.
 
 z := ""
 
-Loop Read  "../../../Keysharp.Tests/Code/test-text-file-out.txt" ; another comment
+Loop Read  _TestFixturePath("test-text-file-out.txt") ; another comment
 {
 	z.= A_LoopReadLine
 }
@@ -38,10 +39,10 @@ Loop Read  "../../../Keysharp.Tests/Code/test-text-file-out.txt" ; another comme
 AssertEq(x, z, A_LineNumber)
 
 ; Leaving the loop early closes the file.
-Loop Read "../../../Keysharp.Tests/Code/test-text-file-out.txt"
+Loop Read _TestFixturePath("test-text-file-out.txt")
 	break
 
-FileDelete "../../../Keysharp.Tests/Code/test-text-file-out.txt"
+FileDelete _TestFixturePath("test-text-file-out.txt")
 
 ; A missing file raises OSError, unless an Else handles it.
 ReadMissing() {
@@ -60,7 +61,7 @@ else
 AssertEq(x, "else", A_LineNumber)
 
 ; An output file of * is standard output, which the loop leaves open.
-Loop Read "../../../Keysharp.Tests/Code/test-text-file.txt", "*"
+Loop Read _TestFixturePath("test-text-file.txt"), "*"
 	FileAppend ""
 
 FileAppend "pass", "*"

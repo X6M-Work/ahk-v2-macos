@@ -2,6 +2,7 @@
 
 #import KS { FileFullPath }
 #Include <assert>
+#Include <testpaths>
 ; #Include %A_ScriptDir%/header.ahk
 
 if (DirExist("./FileGetShortcut"))
@@ -43,9 +44,9 @@ if (FileExist("./testshortcut.lnk"))
 #endif
 
 #if WINDOWS
-	FileCreateShortcut("./FileGetShortcut/file1.txt", "./testshortcut.lnk", fullpath, "", "TestDescription", "../../../assets/Keysharp.ico", "")
+	FileCreateShortcut("./FileGetShortcut/file1.txt", "./testshortcut.lnk", fullpath, "", "TestDescription", _TestFixturePath("../../assets/Keysharp.ico"), "")
 #else
-	FileCreateShortcut("./FileGetShortcut/file1.txt", "./testshortcut.lnk", fullpath, "", "TestDescription", "../../../assets/Keysharp.ico", 2)
+	FileCreateShortcut("./FileGetShortcut/file1.txt", "./testshortcut.lnk", fullpath, "", "TestDescription", _TestFixturePath("../../assets/Keysharp.ico"), 2)
 #endif
 
 Assert(FileExist("./testshortcut.lnk"), A_LineNumber)
@@ -74,7 +75,7 @@ AssertEq("TestDescription", outDescription, A_LineNumber)
 
 AssertEq("", outArgs, A_LineNumber)
 
-expectedIcon := "../../../assets/Keysharp.ico"
+expectedIcon := _TestFixturePath("../../assets/Keysharp.ico")
 #if LINUX || OSX
 expectedIcon := FileFullPath(expectedIcon)
 #endif

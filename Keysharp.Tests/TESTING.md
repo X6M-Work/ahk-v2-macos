@@ -69,6 +69,8 @@ Do not assert token sequences, AST printer output, generated C# text, reflected 
 
 Test fixtures and assets are resolved from the checkout containing `Keysharp.sln` and `Keysharp.Tests/Code/Lib/assert.ahk`, walking up from the test assembly. The output directory may include a runtime identifier such as `osx-arm64` or `win-x64`. A missing script fixture fails with its file path before compilation; it must not be parsed as inline source.
 
+Scripts that read shared test data include `<testpaths>` and use `_TestFixturePath(...)`. The helper resolves against its included file, so it also works when the main script is compiled from text inside a function wrapper. Relative scratch destinations remain under the test working directory.
+
 `Code/Gui/guitest.ks` is interactive and skips operations the compositor reports as unsupported. Run native tray checks in a separate, self-terminating process; the test host does not publish icons.
 
 For nested Wayland tests, point both Keysharp and keysharp-desktop at the nested display. Verify with `keysharp-desktop probe`, then restore the outer desktop's service afterwards.

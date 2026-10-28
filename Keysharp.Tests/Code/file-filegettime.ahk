@@ -1,7 +1,8 @@
 #NoTrayIcon
 #Include <assert>
+#Include <testpaths>
 
-dir := "../../../Keysharp.Tests/Code/DirCopy/file1.txt"
+dir := _TestFixturePath("DirCopy/file1.txt")
 time := FileGetTime(dir)
 
 AssertEq(StrLen(time), 14, A_LineNumber)
