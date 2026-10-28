@@ -1,4 +1,6 @@
 #NoTrayIcon
+#ErrorStdOut
+#Warn All, StdOut
 #Include <assert>
 
 ; A thread which interrupts a try block starts outside it, as a new AutoHotkey thread does: an error nothing in that
@@ -10,6 +12,8 @@ class T {
 }
 
 Handler(exception, mode) {
+	if mode == "ExitApp"
+		FileAppend(exception.Message "`n", "**", "UTF-8-RAW")
 	T.Handled .= Type(exception) " " mode ";"
 	return 1
 }

@@ -592,7 +592,7 @@ public partial class FlowTests : TestRunner
 		}
 	}
 
-	[Test, Category("Flow"), NonParallelizable]
+	[Test, Repeat(20), Category("Flow"), NonParallelizable]
 	public void FlowTryInterrupt() => Assert.IsTrue(TestScript("flow-try-interrupt", false));
 
 	//Collections tests already test foreach in C#, so just test the script here.
