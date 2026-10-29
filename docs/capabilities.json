@@ -962,7 +962,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Instrumented Object-rooted user instances and compiler-prepared exact Object/Array/Map instances count variable, scope, expression, container and own-property owners. Descriptor Value/Get/Set/Call slots and native OwnProps enumerators retain their references. Map entries are released before ascending-name own properties; replacements publish before callbacks. Failed construction still registers its expression owner, and retained/resurrected instances keep their owners. All five strict fixtures and seven portable lifecycle regressions pass locally on Windows against AHK 2.0.31. Native revalidation is pending after GitHub account billing/spending-limit refusals. Unknown native calls, CLR dictionary aliases/exports, base/prototype pointers, callbacks/captures, legacy classes and native subclasses retain GC fallback. Named receiver evaluation when an argument changes its variable remains under investigation.",
+                     "notes":  "Instrumented Object-rooted user instances and compiler-prepared exact Object/Array/Map instances count variable, scope, expression, container and own-property owners. Descriptor Value/Get/Set/Call slots and native OwnProps enumerators retain their references. Map entries are released before ascending-name own properties; replacements publish before callbacks. Failed construction still registers its expression owner, and retained/resurrected instances keep their owners. All five strict fixtures and seven portable lifecycle regressions pass locally on Windows against AHK 2.0.31. Native revalidation is pending after GitHub account billing/spending-limit refusals. Unknown native calls, CLR dictionary aliases/exports, base/prototype pointers, callbacks/captures, legacy classes and native subclasses retain GC fallback. Compiled named receivers resolve after evaluated call/index/store arguments, and ordinary call variable arguments resolve after side effects. Bare variable keys changed by a setter RHS and mixed spread calls remain unresolved.",
                      "tested-by":  "class-special-funcs.ahk; class-destructor-aliases.ahk; class-destructor-scopes.ahk; class-destructor-temporaries.ahk; class-destructor-arrays.ahk; ReferenceLifetimeTests; compat/phase15-architecture/; FileAndDirTests.FileLocalLifetime; class-destructor-maps.ahk; class-destructor-construction.ahk; class-destructor-properties.ahk"
                  },
                  {
@@ -7921,12 +7921,12 @@
                      "category":  "Collections",
                      "feature":  "Map.__Item",
                      "syntax":  "",
-                     "windows":  "full",
-                     "linux_x11":  "full",
-                     "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "Key lookup uses the key mode captured when the Map was constructed; v2.0 Float keys become String keys, and cross-version callers preserve access to existing keys.",
-                     "tested-by":  "collections-map.ahk"
+                     "windows":  "partial",
+                     "linux_x11":  "partial",
+                     "linux_wayland":  "partial",
+                     "macos":  "partial",
+                     "notes":  "Key lookup uses the key mode captured when the Map was constructed; v2.0 Float keys become String keys, and cross-version callers preserve access to existing keys. Named receivers resolve after index/RHS evaluation; compounds and increment/decrement preserve separate read/write resolution. A bare variable key changed by a setter RHS is still captured too early, including compound setters; this compiler discrepancy remains open. Windows differential receiver regressions pass; native revalidation remains pending.",
+                     "tested-by":  "collections-map.ahk; class-destructor-maps.ahk"
                  },
                  {
                      "category":  "Collections",
@@ -7936,8 +7936,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Constructs a new Map object.",
-                     "tested-by":  "collections-map.ahk"
+                     "notes":  "Constructs a new Map object. Ordinary call variable arguments resolve after other argument expressions, including assignment expressions returning their variable. Windows differential regressions pass; native revalidation remains pending.",
+                     "tested-by":  "collections-map.ahk; class-destructor-maps.ahk"
                  },
                  {
                      "category":  "Collections",
@@ -8035,8 +8035,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Gets a value by key with optional fallback default.",
-                     "tested-by":  "collections-map.ahk"
+                     "notes":  "Gets a value by key with optional fallback default. Named receivers are resolved after argument evaluation; computed receivers are evaluated before their arguments. Grouped, assigned, local/byref, dynamic-name and spread receiver regressions pass against AHK 2.0.31 on Windows; native revalidation remains pending.",
+                     "tested-by":  "collections-map.ahk; class-destructor-maps.ahk"
                  },
                  {
                      "category":  "Collections",
@@ -8053,11 +8053,11 @@
                      "category":  "Collections",
                      "feature":  "Map.Set()",
                      "syntax":  "m.Set(k1, v1, k2, v2, k3, v3)",
-                     "windows":  "full",
-                     "linux_x11":  "full",
-                     "linux_wayland":  "full",
-                     "macos":  "full",
-                     "notes":  "v2.0 requires key/value pairs, rejects odd counts before mutation, skips pairs with unset keys or values and leaves the map unchanged for Set(). Replacements count value owners and preserve the stored key. v2.1 and Ks.HashMap retain collection-input extensions; adopting externally shared dictionary storage safely transfers entries to GC ownership.",
+                     "windows":  "partial",
+                     "linux_x11":  "partial",
+                     "linux_wayland":  "partial",
+                     "macos":  "partial",
+                     "notes":  "v2.0 requires key/value pairs, rejects odd counts before mutation, skips pairs with unset keys or values and leaves the map unchanged for Set(). Replacements count value owners and preserve the stored key. v2.1 and Ks.HashMap retain collection-input extensions; adopting externally shared dictionary storage safely transfers entries to GC ownership. Named receivers and ordinary variable call arguments resolve after side effects. Mixed spread calls still capture a bare key variable before later argument mutations; this compiler discrepancy remains open. Windows differential receiver regressions pass; native revalidation remains pending.",
                      "tested-by":  "collections-map.ahk; class-destructor-maps.ahk; class-destructor-map-extensions.ahk; ReferenceLifetimeTests"
                  },
                  {

@@ -207,5 +207,156 @@ Check(trace, "1|", "Map retains during __Delete")
 saved.Clear()
 Check(trace, "1|2|", "Map releases resurrected instance")
 saved := 0
+trace := ""
+ReplaceMapReceiver() {
+    global mapping
+    mapping := Map("x", MapValue("replacement"))
+    return "x"
+}
+ReplaceMapReceiverSpread() => [ReplaceMapReceiver()]
+ReadMapReceiver() {
+    global mapping
+    return mapping
+}
+mapping := Map("x", MapValue("original"))
+value := mapping.Get(ReplaceMapReceiver())
+Check(value.Label, "replacement", "method resolves named receiver after arguments")
+Check(trace, "original|", "argument mutation releases original receiver before call")
+mapping := 0
+value := 0
+Check(trace, "original|replacement|", "replacement result keeps independent owner")
+trace := ""
+mapping := Map("x", MapValue("grouped-original"))
+value := (mapping).Get(ReplaceMapReceiver())
+Check(value.Label, "replacement", "parentheses preserve named receiver resolution")
+mapping := 0
+value := 0
+Check(trace, "grouped-original|replacement|", "grouped receiver owners balance")
+trace := ""
+mapping := Map("x", MapValue("computed-original"))
+value := ReadMapReceiver().Get(ReplaceMapReceiver())
+Check(value.Label, "computed-original", "computed receiver is evaluated before arguments")
+mapping := 0
+value := 0
+Check(trace, "replacement|computed-original|", "computed receiver result owns its value")
+trace := ""
+mapping := Map("x", MapValue("spread-original"))
+value := mapping.Get(ReplaceMapReceiverSpread()*)
+Check(value.Label, "replacement", "spread evaluates before named receiver resolution")
+mapping := 0
+value := 0
+Check(trace, "spread-original|replacement|", "spread receiver owners balance")
+trace := ""
+ReceiverMethodName() {
+    global trace
+    trace .= "name|"
+    return "Get"
+}
+mapping := Map("x", MapValue("dynamic-original"))
+value := mapping.%ReceiverMethodName()%(ReplaceMapReceiver())
+Check(value.Label, "replacement", "computed method name preserves late receiver")
+Check(trace, "name|dynamic-original|", "method name evaluates before arguments")
+mapping := 0
+value := 0
+trace := ""
+method := "Get"
+ChangeReceiverMethod() {
+    global method
+    method := "Has"
+    return "x"
+}
+mapping := Map("x", 10)
+Check(mapping.%method%(ChangeReceiverMethod()), 1, "variable method name resolves after arguments")
+ChangeLocalReceiver(&target) {
+    target := Map("x", 20)
+    return "x"
+}
+ReadLocalReceiver() {
+    local target := Map("x", 10)
+    return target.Get(ChangeLocalReceiver(&target))
+}
+Check(ReadLocalReceiver(), 20, "local receiver resolves after byref argument mutation")
+ReadByRefReceiver(&target) => target.Get(ChangeLocalReceiver(&target))
+Check(ReadByRefReceiver(&mapping), 20, "byref receiver resolves after argument mutation")
+mapping := 0
+ReplaceNumberReceiver() {
+    global mapping
+    mapping := Map("x", 20)
+    return "x"
+}
+ReplaceNumberValue() {
+    ReplaceNumberReceiver()
+    return 1
+}
+mapping := Map("x", 10)
+Check(mapping[ReplaceNumberReceiver()], 20, "index resolves named receiver after arguments")
+mapping := Map("x", 10)
+Check((mapping)[ReplaceNumberReceiver()], 20, "grouped index receiver remains a variable")
+mapping := Map("x", 10)
+Check(ReadMapReceiver()[ReplaceNumberReceiver()], 10, "computed index receiver remains captured")
+holder := {Values: Map("x", 10)}
+ReplacePropertyMap() {
+    global holder
+    holder.Values := Map("x", 20)
+    return "x"
+}
+Check(holder.Values[ReplacePropertyMap()], 20, "indexed property resolves after its index arguments")
+mapping := Map("x", 10)
+mapping[ReplaceNumberReceiver()] := 30
+Check(mapping["x"], 30, "index setter resolves receiver after index arguments")
+mapping := Map("x", 10)
+mapping["x"] := ReplaceNumberValue()
+Check(mapping["x"], 1, "index setter resolves receiver after RHS")
+mapping := Map("x", 10)
+mapping.P := ReplaceNumberValue()
+Check(mapping.P, 1, "property setter resolves receiver after RHS")
+mapping := Map("x", 10)
+mapping["x"] += ReplaceNumberValue()
+Check(mapping["x"], 11, "compound index reads old value then resolves receiver for write")
+mapping := Map("x", 10)
+mapping.P := 10
+mapping.P += ReplaceNumberValue()
+Check(mapping.P, 11, "compound property resolves receiver again after RHS")
+mapping := 0
+holder := 0
+key := "old"
+ChangeMapKey() {
+    global key
+    key := "new"
+    return 40
+}
+mapping := Map()
+mapping.Set(key, ChangeMapKey())
+Check(mapping.Has("old"), 0, "bare key argument resolves after other arguments")
+Check(mapping["new"], 40, "bare key argument selects current key")
+key := "old"
+mapping := Map(key, ChangeMapKey())
+Check(mapping["new"], 40, "constructor resolves bare arguments after other arguments")
+key := "old"
+ReadMapReceiver().Set(key, ChangeMapKey())
+Check(mapping["new"], 40, "computed receiver preserves deferred variable arguments")
+mapping.Set("x", key := "first", "y", ChangeMapKey())
+Check(mapping["x"], "new", "assignment argument evaluates once then resolves its variable")
+Check((mapping := Map("x", 10)).Get(ReplaceNumberReceiver()), 20, "assignment receiver evaluates once then resolves its variable")
+mapping := Map("x", 10)
+Check(mapping[ReplaceNumberReceiver()]++, 20, "postfix reads receiver after index evaluation")
+Check(mapping["x"], 21, "postfix writes current receiver")
+mapping := Map("x", 10)
+Check(++mapping[ReplaceNumberReceiver()], 21, "prefix reads receiver after index evaluation")
+mapping := Map("x", 10)
+mapping[ReplaceNumberReceiver()] += 2
+Check(mapping["x"], 22, "compound index resolves receiver after index evaluation")
+mapping := Map("x", 10)
+mapping.P := 10
+name := "P"
+mapping.%name% += ReplaceNumberValue()
+Check(mapping.P, 11, "compound dynamic property resolves receiver after RHS")
+ReplaceNumberSpread() => [ReplaceNumberReceiver()]
+mapping := Map("x", 10)
+Check(mapping[ReplaceNumberSpread()*], 20, "spread index resolves receiver after argument expansion")
+mapping := Map("x", 10)
+mapping[ReplaceNumberSpread()*] := 30
+Check(mapping["x"], 30, "spread setter resolves receiver after argument expansion")
+mapping := 0
 FileAppend("pass`n", "*", "UTF-8-RAW")
 ExitApp()

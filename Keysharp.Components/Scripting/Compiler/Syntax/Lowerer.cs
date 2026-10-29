@@ -4018,7 +4018,7 @@ namespace Keysharp.Compilation.Syntax
 				case DynMemberExpr dmem:
 					return MayYieldUnset(dmem)
 						? DynMemberWrap(dmem, (tt, name) => Op("GetPropertyValue", tt, name))
-						: Op("GetPropertyValue", LowerExpr(dmem.Target), LowerExpr(dmem.NameExpr));
+						: LateReceiver(dmem.Target, Op("GetPropertyValue", LowerExpr(dmem.Target), LowerExpr(dmem.NameExpr)), 2, dynamicName: dmem.NameExpr);
 				case IndexExpr ix:
 					// `obj.member[args]` folds the index into the member access (`GetPropertyValue(obj, "member", args)`)
 					// so the runtime routes the args to an index-property getter (`Prop[i] { get }`) — or indexes the
@@ -4033,14 +4033,14 @@ namespace Keysharp.Compilation.Syntax
 					if (ix.Args.Count > 0 && !ix.NullConditional && ix.Target is MemberExpr im)
 						return im.NullConditional || MayYieldUnset(im.Target)
 							? NullCondWrap(im.Target, tt => Op("GetPropertyValue", [ tt, Str(im.Name), ..IdxArgs() ]), im.NullConditional)
-							: Op("GetPropertyValue", [ LowerExpr(im.Target), Str(im.Name), ..IdxArgs() ]);
+							: LateReceiver(im.Target, Op("GetPropertyValue", [ LowerExpr(im.Target), Str(im.Name), ..IdxArgs() ]), 2, ix.Args.Any(a => a.Spread));
 					if (ix.Args.Count > 0 && !ix.NullConditional && ix.Target is DynMemberExpr idm)
 						return MayYieldUnset(idm)
 							? DynMemberWrap(idm, (tt, name) => Op("GetPropertyValue", [ tt, name, ..IdxArgs()]))
-							: Op("GetPropertyValue", [ LowerExpr(idm.Target), LowerExpr(idm.NameExpr), ..IdxArgs()]);
+							: LateReceiver(idm.Target, Op("GetPropertyValue", [ LowerExpr(idm.Target), LowerExpr(idm.NameExpr), ..IdxArgs()]), 2, ix.Args.Any(a => a.Spread), idm.NameExpr);
 					return ix.NullConditional || MayYieldUnset(ix.Target)
 						? NullCondWrap(ix.Target, tt => Op("GetIndex", Cons(tt, IdxArgs())), ix.NullConditional)
-						: Op("GetIndex", Cons(LowerExpr(ix.Target), IdxArgs()));
+						: LateReceiver(ix.Target, Op("GetIndex", Cons(LowerExpr(ix.Target), IdxArgs())), 1, ix.Args.Any(a => a.Spread));
 				case ArrayExpr ar:
 					var arArgs = ar.Elements.Any(el => el.Spread)
 						? SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(Arg(SpreadParams(ar.Elements))))
@@ -4085,7 +4085,7 @@ namespace Keysharp.Compilation.Syntax
 				if (a.Op == ":=")   // target evaluated once — no temp needed
 					return me.NullConditional || MayYieldUnset(me.Target)
 						? NullCondWrap(me.Target, target => Op("SetPropertyValue", target, Str(me.Name), LowerExpr(a.Value)), me.NullConditional)
-						: Op("SetPropertyValue", LowerExpr(me.Target), Str(me.Name), LowerExpr(a.Value));
+						: LateReceiver(me.Target, Op("SetPropertyValue", LowerExpr(me.Target), Str(me.Name), LowerExpr(a.Value)), 2);
 				if (me.NullConditional || MayYieldUnset(me.Target))
 					return NullCondWrap(me.Target, target =>
 					{
@@ -4093,6 +4093,12 @@ namespace Keysharp.Compilation.Syntax
 						return value == null ? Str("") : Op("SetPropertyValue", target, Str(me.Name), value);
 					}, me.NullConditional);
 				// Compound: capture the target once so a side-effecting target expression runs a single time.
+				if (NamedReceiver(me.Target))
+				{
+					var compoundReceiver = LowerExpr(me.Target);
+					var compoundResult = CompoundValue(a.Op[..^1], Op("GetPropertyValue", compoundReceiver, Str(me.Name)), LowerExpr(a.Value));
+					if (compoundResult != null) return LateReceiver(me.Target, Op("SetPropertyValue", compoundReceiver, Str(me.Name), compoundResult), 2);
+				}
 				var t = NewTemp();
 				var mval = CompoundValue(a.Op[..^1], Op("GetPropertyValue", Id(t), Str(me.Name)), LowerExpr(a.Value));
 				if (mval == null) { Diag($"compound assignment to a member ('{a.Op}') not yet lowerable"); return Str(""); }
@@ -4104,7 +4110,7 @@ namespace Keysharp.Compilation.Syntax
 				if (a.Op == ":=")
 					return dme.NullConditional || MayYieldUnset(dme.Target)
 						? NullCondWrap(dme.Target, target => Op("SetPropertyValue", target, LowerExpr(dme.NameExpr), LowerExpr(a.Value)), dme.NullConditional)
-						: Op("SetPropertyValue", LowerExpr(dme.Target), LowerExpr(dme.NameExpr), LowerExpr(a.Value));
+						: LateReceiver(dme.Target, Op("SetPropertyValue", LowerExpr(dme.Target), LowerExpr(dme.NameExpr), LowerExpr(a.Value)), 2, dynamicName: dme.NameExpr);
 				if (dme.NullConditional || MayYieldUnset(dme.Target))
 					return NullCondWrap(dme.Target, target =>
 					{
@@ -4114,6 +4120,14 @@ namespace Keysharp.Compilation.Syntax
 							Assign(Id(name), LowerExpr(dme.NameExpr)),
 							Op("SetPropertyValue", target, Id(name), value));
 					}, dme.NullConditional);
+				if (NamedReceiver(dme.Target))
+				{
+					var dynamicReceiver = LowerExpr(dme.Target);
+					var dynamicSlot = Id(NewTemp());
+					var dynamicResult = CompoundValue(a.Op[..^1], Op("GetPropertyValue", dynamicReceiver, dynamicSlot), LowerExpr(a.Value));
+					if (dynamicResult != null) return Op("MultiStatement", Assign(dynamicSlot, LowerExpr(dme.NameExpr)),
+						LateReceiver(dme.Target, Op("SetPropertyValue", dynamicReceiver, dynamicSlot, dynamicResult), 2));
+				}
 				var dmt = NewTemp(); var dmn = NewTemp();
 				var dmval = CompoundValue(a.Op[..^1], Op("GetPropertyValue", Id(dmt), Id(dmn)), LowerExpr(a.Value));
 				if (dmval == null) { Diag($"compound assignment to a member ('{a.Op}') not yet lowerable"); return Str(""); }
@@ -4131,8 +4145,8 @@ namespace Keysharp.Compilation.Syntax
 					{
 						var name = dynamicName != null ? LowerExpr(dynamicName) : Str(propName);
 						if (spread)
-							return Op("SetPropertyValue", target, name, SpreadParams(mie.Args, trailing: LowerExpr(a.Value)));
-						return Op("SetPropertyValue", [ target, name, ..LowerArgs(mie.Args), LowerExpr(a.Value) ]);
+							return LateReceiver(owner, Op("SetPropertyValue", target, name, SpreadParams(mie.Args, trailing: LowerExpr(a.Value))), 2, true, dynamicName);
+						return LateReceiver(owner, Op("SetPropertyValue", [ target, name, ..LowerArgs(mie.Args), LowerExpr(a.Value) ]), 2, dynamicName: dynamicName);
 					}
 					return maybeOwner || MayYieldUnset(owner) ? NullCondWrap(owner, SetMember, maybeOwner) : SetMember(LowerExpr(owner));
 				}
@@ -4160,11 +4174,12 @@ namespace Keysharp.Compilation.Syntax
 					}
 					var updated = CompoundValue(a.Op[..^1], Op("GetPropertyValue", [ target, name, ..ids ]), LowerExpr(a.Value));
 					if (updated == null) { Diag($"compound assignment to a member index ('{a.Op}') not yet lowerable"); return Str(""); }
-					ops.Add(Op("SetPropertyValue", [ target, name, ..ids, updated ]));
+					ops.Add(LateReceiver(owner, Op("SetPropertyValue", [ target, name, ..ids, updated ]), 2));
 					return Op("MultiStatement", CollectionsMarshal.AsSpan(ops));
 				}
 				if (maybeOwner || MayYieldUnset(owner))
 					return NullCondWrap(owner, UpdateMember, maybeOwner);
+				if (NamedReceiver(owner)) return UpdateMember(LowerExpr(owner));
 				var ownerTemp = NewTemp();
 				return Op("MultiStatement", Assign(Id(ownerTemp), LowerExpr(owner)), UpdateMember(Id(ownerTemp)));
 			}
@@ -4176,9 +4191,9 @@ namespace Keysharp.Compilation.Syntax
 					{
 						// `x[idx*] := v`: the flattened index and the value share SetObject's params array, value last.
 						if (ie.Args.Any(x => x.Spread))
-							return Op("SetObject", target, SpreadParams(ie.Args, trailing: LowerExpr(a.Value)));
+							return LateReceiver(ie.Target, Op("SetObject", target, SpreadParams(ie.Args, trailing: LowerExpr(a.Value))), 1, true);
 						ExpressionSyntax[] argv = [ target, ..LowerArgs(ie.Args), LowerExpr(a.Value) ];
-						return Op("SetObject", argv);
+						return LateReceiver(ie.Target, Op("SetObject", argv), 1);
 					}
 					return ie.NullConditional || MayYieldUnset(ie.Target)
 						? NullCondWrap(ie.Target, SetIndex, ie.NullConditional)
@@ -4207,19 +4222,22 @@ namespace Keysharp.Compilation.Syntax
 						return Op("MultiStatement", ops);
 					}, ie.NullConditional);
 				// Compound: capture the target and each index once.
-				var tt = NewTemp();
+				var named = NamedReceiver(ie.Target);
+				var tt = named ? null : NewTemp();
 				// Lower the target before borrowing the pooled index list; its arguments may reuse that list.
 				var loweredTarget = LowerExpr(ie.Target);
 				var loweredArgs = LowerArgs(ie.Args);
 				var argTemps = loweredArgs.Select(_ => NewTemp()).ToArray();
-				var ops = new ExpressionSyntax[argTemps.Length + 2];
-				ops[0] = Assign(Id(tt), loweredTarget);
-				for (int k = 0; k < argTemps.Length; k++) ops[k + 1] = Assign(Id(argTemps[k]), loweredArgs[k]);
+				var offset = named ? 0 : 1;
+				var indexReceiver = named ? loweredTarget : Id(tt);
+				var ops = new ExpressionSyntax[argTemps.Length + offset + 1];
+				if (!named) ops[0] = Assign(Id(tt), loweredTarget);
+				for (int k = 0; k < argTemps.Length; k++) ops[k + offset] = Assign(Id(argTemps[k]), loweredArgs[k]);
 				var idxIds = argTemps.Select(n => (ExpressionSyntax)Id(n)).ToList();
-				var newVal = CompoundValue(a.Op[..^1], Op("GetIndex", Cons(Id(tt), idxIds)), LowerExpr(a.Value));
+				var newVal = CompoundValue(a.Op[..^1], Op("GetIndex", Cons(indexReceiver, idxIds)), LowerExpr(a.Value));
 				if (newVal == null) { Diag($"compound assignment to an index ('{a.Op}') not yet lowerable"); return Str(""); }
-				ExpressionSyntax[] setArgs = [Id(tt), ..idxIds, newVal];
-				ops[^1] = Op("SetObject", setArgs);
+				ExpressionSyntax[] setArgs = [indexReceiver, ..idxIds, newVal];
+				ops[^1] = LateReceiver(ie.Target, Op("SetObject", setArgs), 1);
 				return Op("MultiStatement", ops);
 			}
 			if (a.Target is not NameExpr tn)
@@ -4371,17 +4389,15 @@ namespace Keysharp.Compilation.Syntax
 					write = value => target.Write(value);
 					break;
 				case MemberExpr me:
-					var mt = NewTemp();
-					setup.Add(Assign(Id(mt), LowerExpr(me.Target)));
-					read = Op("GetPropertyValue", Id(mt), Str(me.Name));
-					write = value => Op("SetPropertyValue", Id(mt), Str(me.Name), value);
+					var memberReceiver = ReceiverValue(me.Target, setup);
+					read = Op("GetPropertyValue", memberReceiver, Str(me.Name));
+					write = value => LateReceiver(me.Target, Op("SetPropertyValue", memberReceiver, Str(me.Name), value), 2);
 					break;
 				case IndexExpr mie when IsMemberIndex(mie, out var owner, out var dynamicName, out var propName):
 					if (mie.Args.Any(x => x.Spread))
 					{ Diag($"'{u.Op}' with a spread index is not yet supported"); return Str(""); }
 
-					var ownerTemp = NewTemp();
-					setup.Add(Assign(Id(ownerTemp), LowerExpr(owner)));
+					var propertyReceiver = ReceiverValue(owner, setup);
 					ExpressionSyntax memberName = Str(propName);
 					if (dynamicName != null)
 					{
@@ -4396,21 +4412,20 @@ namespace Keysharp.Compilation.Syntax
 						setup.Add(Assign(Id(indexTemp), index));
 						memberIds.Add(Id(indexTemp));
 					}
-					read = Op("GetPropertyValue", [ Id(ownerTemp), memberName, ..memberIds ]);
-					write = value => Op("SetPropertyValue", [ Id(ownerTemp), memberName, ..memberIds, value ]);
+					read = Op("GetPropertyValue", [ propertyReceiver, memberName, ..memberIds ]);
+					write = value => LateReceiver(owner, Op("SetPropertyValue", [ propertyReceiver, memberName, ..memberIds, value ]), 2);
 					break;
 				case IndexExpr ie:
 					if (ie.Args.Any(x => x.Spread))
 					{ Diag($"'{u.Op}' with a spread index is not yet supported"); return Str(""); }
 
-					var it = NewTemp();
-					setup.Add(Assign(Id(it), LowerExpr(ie.Target)));
+					var itemReceiver = ReceiverValue(ie.Target, setup);
 					var idx = LowerArgs(ie.Args);
 					var argTemps = idx.Select(_ => NewTemp()).ToArray();
 					for (int k = 0; k < argTemps.Length; k++) setup.Add(Assign(Id(argTemps[k]), idx[k]));
 					var idxIds = argTemps.Select(n => (ExpressionSyntax)Id(n)).ToList();
-					read = Op("GetIndex", Cons(Id(it), idxIds));
-					write = value => Op("SetObject", [Id(it), .. idxIds, value]);
+					read = Op("GetIndex", Cons(itemReceiver, idxIds));
+					write = value => LateReceiver(ie.Target, Op("SetObject", [itemReceiver, .. idxIds, value]), 1);
 					break;
 				case DerefExpr dr:
 					var operation = SyntaxFactory.ParenthesizedLambdaExpression()
@@ -4625,7 +4640,13 @@ namespace Keysharp.Compilation.Syntax
 			if (c.Callee is MemberExpr m) args = Cons2(LowerExpr(m.Target), Str(m.Name), CallArgs());
 			else if (c.Callee is DynMemberExpr dm) args = Cons2(LowerExpr(dm.Target), LowerExpr(dm.NameExpr), CallArgs());
 			else args = Cons2(LowerExpr(c.Callee), Null, CallArgs());
-			var result = Op(statement ? "InvokeOrNull" : "Invoke", args);
+			ExpressionSyntax result = Op(statement ? "InvokeOrNull" : "Invoke", args);
+			result = c.Callee switch
+			{
+				MemberExpr method => LateReceiver(method.Target, result, 2, callArguments.Any(a => a.Spread), sourceArguments: callArguments),
+				DynMemberExpr method => LateReceiver(method.Target, result, 2, callArguments.Any(a => a.Spread), method.NameExpr, callArguments),
+				_ => LateReceiver(c.Callee, result, 2, callArguments.Any(a => a.Spread), sourceArguments: callArguments)
+			};
 			return _localFileCalls?.Contains(c) == true ? Inv(Member(Id(_localFileScopeName), "Track"), result) : result;
 		}
 
