@@ -9,9 +9,7 @@ dotnet build Keysharp.sln -c Debug
 
 Windows builds only need the `dotnet build` command. The output is under
 `bin/Debug/net10.0-windows/` on Windows or `bin/Debug/net10.0/` on Linux.
-The Linux brokers are runtime dependencies for their respective features; building
-Keysharp does not build or install them. Install them using
-[Linux setup](install-linux.md) or build them from their own repositories.
+The macOS and Windows builds require no external broker dependencies.
 
 Architecture is selected with a runtime identifier, such as `-r linux-arm64` or
 `-r win-arm64`. Keep the managed platform as AnyCPU.

@@ -15,7 +15,7 @@ Keysharp targets AutoHotkey v2.1-alpha.36. The initial differential corpus uses 
 | `DllCall` | Can call macOS libraries. Windows DLLs and the Win32 ABI are not supplied. |
 | Registry and native COM | Unsupported. The Apple Events adapter is not a Windows COM implementation. |
 | `SendPlay` | Falls back to Event mode; macOS has no Windows journal-playback equivalent. |
-| Object lifetime | C# garbage collection changes destruction timing compared with AutoHotkey reference counting. |
+| Object lifetime | Deterministic reference-counting implemented (Phase 15); destructors run immediately on last reference release (scopes, expressions, temporaries, arrays, maps, and properties). Fallback to GC for unmigrated CLR boundaries. |
 | Other language details | Unicode identifier case matching, Map float keys, and scoped `#Requires` behavior have documented differences. |
 
 The upstream [capability matrix](capabilities.md) and [differences reference](reference.md#differences) contain finer details. Several macOS entries remain partial or unverified. No claim of full compatibility is made.
@@ -83,4 +83,4 @@ Set `RID=osx-arm64` or `RID=osx-x64` explicitly to choose a target. Upstream pac
 
 ## Source provenance
 
-`UPSTREAM.lock.json` records the exact Keysharp snapshot, Eto dependency, and Windows reference archive. The original README is preserved as [`UPSTREAM-README.md`](UPSTREAM-README.md), and [`license.txt`](../license.txt) retains upstream and bundled third-party notices. The fork adds tooling and compatibility infrastructure; the engine and macOS backends are credited to Keysharp contributors.
+`UPSTREAM.lock.json` records the exact Keysharp snapshot, Eto dependency, and Windows reference archive. [`license.txt`](../license.txt) retains upstream and bundled third-party notices. The fork adds tooling and compatibility infrastructure; the engine and macOS backends are credited to Keysharp contributors.

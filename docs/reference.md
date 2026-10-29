@@ -83,7 +83,7 @@ Linux support is in active development. The following table summarises what work
 
 Keysharp runs on its own. Two standalone system components, [`keysharp-input`](https://github.com/keysharp-org/keysharp-input) and [`keysharp-desktop`](https://github.com/keysharp-org/keysharp-desktop), add the privileged input and desktop features listed in the table above; see [System components](#system-components).
 
-On NixOS, use the [NixOS guide](linux-nixos.md). For COSMIC-specific setup and limitations, see [Keysharp on COSMIC](linux-cosmic.md). On Arch-based systems Keysharp is also available as an [AUR package](https://aur.archlinux.org/packages/keysharp-git).
+On NixOS or COSMIC desktop, use standard platform package definitions. On Arch-based systems Keysharp is also available as an [AUR package](https://aur.archlinux.org/packages/keysharp-git).
 
 #### All three projects at once
 
@@ -100,7 +100,7 @@ sudo apt install keysharp
 Apt installs the recommended components and keeps PPA packages updated.
 Debian and Ubuntu 22.04-based distributions, including Pop!_OS 22.04, use the
 release installer. See
-[Linux installation](install-linux.md#install-from-the-ubuntu-ppa) for base requirements,
+Platform installation for base requirements,
 portable migration and package availability checks.
 
 `keysharp-linux-setup.sh` on the [Releases](https://github.com/keysharp-org/Keysharp/releases) page resolves and installs all three system-wide. Installation requires root; the diagnosis and dry-run modes do not. Download it, then run it:
@@ -171,7 +171,7 @@ On X11 and Wayland, foreign-window queries/control, capture, global cursor queri
 
 `PixelGetColor()`, `PixelSearch()`, `ImageSearch()` and the screen capture factories of `Image` require the `ScreenCapture` grant and a backend which can supply the requested screen area. Cinnamon Wayland captures the visible composited stage in memory. It uses one pixel scale across the captured area, including areas spanning monitors with different scales; monitor gaps and portions outside the outputs are transparent padding. A rectangle wholly outside the outputs fails. Window capture reads the window's own actor and can include transparency, so its pixels can differ from the visible screen.
 
-[Linux native integration](linux-native-integration.md) describes the API split, permission identities, and platform limits.
+Platform native integrations describes the API split, permission identities, and platform limits.
 
 Both are independently versioned MIT-licensed projects with their own installation and removal lifecycle. Applications call their stable C libraries, `libkeysharp-input.so.1` and `libkeysharp-desktop.so.1`; Keysharp requires client ABI 1.x for both helpers, with desktop protocol 3. The libraries hide the private service protocol. Both helpers pin the same `keysharp-permissions` source submodule, so the grant-store contract has one implementation without adding a third runtime package.
 

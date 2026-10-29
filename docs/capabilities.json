@@ -10922,7 +10922,7 @@
                      "linux_wayland":  "partial",
                      "macos":  "partial",
                      "notes":  "Linux requires a StatusNotifier/AppIndicator host and exposes no activation events. COSMIC 1.2.0 leaves its host-owned tray menu open after an item callback; click the tray icon again to dismiss it. Eto activation cannot cancel menu opening; macOS activation is unverified.",
-                     "tested-by":  "docs/linux-cosmic.md (native tray smoke check); BuiltInVarsTests.PropsMenuCommands; props-menu-commands.ahk; MessageFilterTests.TrayNotifications; MessageFilterTests.TrayActivations"
+                     "tested-by":  "BuiltInVarsTests.PropsMenuCommands; props-menu-commands.ahk; MessageFilterTests.TrayNotifications; MessageFilterTests.TrayActivations"
                  },
                  {
                      "category":  "Core Language",
