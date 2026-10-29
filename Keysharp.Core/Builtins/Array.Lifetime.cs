@@ -82,7 +82,7 @@ public partial class Array
 		return previous ?? DefaultObject;
 	}
 
-	private void ReplaceItems(IEnumerable<object> values)
+	private void AppendItems(IEnumerable<object> values)
 	{
 		var owned = ownsElements;
 		var replacement = new List<object>();
@@ -92,10 +92,12 @@ public partial class Array
 			if (owned) foreach (var value in replacement) Keysharp.Runtime.Lifetime.Release(value);
 			throw;
 		}
-		if (replacement.Count < capacity) replacement.Capacity = capacity;
-		var previous = array;
-		array = replacement;
-		if (owned)
-			foreach (var value in previous) Keysharp.Runtime.Lifetime.Release(value);
+		try { array.AddRange(replacement); }
+		catch
+		{
+			if (owned) foreach (var value in replacement) Keysharp.Runtime.Lifetime.Release(value);
+			throw;
+		}
+		if (array.Count < capacity) array.EnsureCapacity(capacity);
 	}
 }

@@ -134,6 +134,20 @@ trace := ""
 values := [[ArrayValue("nested1")], [ArrayValue("nested2")]]
 values := 0
 Check(trace, "nested1|nested2|", "nested arrays release recursively in index order")
+trace := ""
+values := [ArrayValue("original")]
+iterator := values.__Enum(1)
+values.__New(ArrayValue("appended"))
+Check(trace, "", "explicit __New appends without releasing existing elements")
+Check(values.Length, 2, "explicit __New preserves existing array length")
+Check(iterator(&element), true, "existing enumerator remains usable after __New")
+Check(element.Label, "original", "existing enumerator starts with original element")
+Check(iterator(&element), true, "existing enumerator sees appended element")
+Check(element.Label, "appended", "appended element remains owned")
+iterator := 0
+element := 0
+values := 0
+Check(trace, "original|appended|", "reinitialized array releases both elements once")
 class ReinsertingValue {
     __Delete() {
         global values, trace

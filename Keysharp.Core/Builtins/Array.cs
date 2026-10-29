@@ -219,7 +219,7 @@ public partial class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnum
 					Copy(values);
 					break;
 				case IEnumerable e when e is not string and not Any:
-					ReplaceItems(e.Cast<object>());
+					AppendItems(e.Cast<object>());
 					break;
 				default:
 					Copy(args);
@@ -235,7 +235,7 @@ public partial class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnum
 
 		void Copy(ICollection<object> values)
 		{
-			ReplaceItems(values);
+			AppendItems(values);
 		}
 	}
 

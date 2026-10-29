@@ -3200,8 +3200,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Constructs a new Array object.",
-                     "tested-by":  "collections-array.ahk"
+                     "notes":  "Constructs a new Array object. An explicit call appends elements to the existing array and preserves active enumerators; checked against AHK 2.0.31 on Windows.",
+                     "tested-by":  "collections-array.ahk; class-destructor-arrays.ahk"
                  },
                  {
                      "category":  "Collections",
