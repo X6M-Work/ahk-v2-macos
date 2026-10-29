@@ -13,6 +13,7 @@ namespace Keysharp.Builtins
 		private readonly Action dispose;
 		private readonly Func<bool> hasValue;
 		private readonly KeysharpFunc callback;
+		private readonly Map.EnumerationSnapshot snapshot;
 
 		internal object Source { get; }
 		internal bool UsesV20NativeContract { get; }
@@ -46,7 +47,8 @@ namespace Keysharp.Builtins
 			Func<(object, object)> currentPair,
 			Action reset,
 			Action dispose = null,
-			Func<bool> hasValue = null)
+			Func<bool> hasValue = null,
+			Map.EnumerationSnapshot snapshot = null)
 			: base(CallMethod(), null)
 		{
 			if (Base == null)
@@ -68,6 +70,7 @@ namespace Keysharp.Builtins
 			this.reset = reset;
 			this.dispose = dispose;
 			this.hasValue = hasValue;
+			this.snapshot = snapshot;
 		}
 
 		internal Enumerator(object source, int count, KeysharpFunc callback)
@@ -129,8 +132,7 @@ namespace Keysharp.Builtins
 				if (second != null)
 				{
 					var pair = CurrentPair;
-					Refs.SetValue(first, pair.Item1);
-					Refs.SetValue(second, pair.Item2);
+					AssignPair(first, second, pair);
 				}
 				else if (first != null)
 					Refs.SetValue(first, CurrentValue);
@@ -142,6 +144,22 @@ namespace Keysharp.Builtins
 				return Errors.ErrorOccurred(e.Message);
 			}
 			finally { if (owned) Lifetime.ReleaseScope(this); }
+		}
+
+		private void AssignPair(object first, object second, (object, object) pair)
+		{
+			Lifetime.Retain(pair.Item1);
+			try
+			{
+				Lifetime.Retain(pair.Item2);
+				try
+				{
+					Refs.SetValue(first, pair.Item1);
+					Refs.SetValue(second, pair.Item2);
+				}
+				finally { Lifetime.Release(pair.Item2); }
+			}
+			finally { Lifetime.Release(pair.Item1); }
 		}
 
 		private object CallV20(object[] args)
@@ -162,8 +180,7 @@ namespace Keysharp.Builtins
 			if (pairMode && (second != null || first != null && hasValue == null))
 			{
 				var pair = CurrentPair;
-				Refs.SetValue(first, pair.Item1);
-				Refs.SetValue(second, pair.Item2);
+				AssignPair(first, second, pair);
 			}
 			else if (first != null)
 				Refs.SetValue(first, CurrentValue);

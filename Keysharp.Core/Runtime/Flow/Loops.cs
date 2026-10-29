@@ -545,7 +545,7 @@ namespace Keysharp.Runtime
             var numOfVars = args.Length;
             var ke = MakeEnumerator(obj, numOfVars == 0 ? 1 : numOfVars);
             var iterator = Enumerate(ke, args).GetEnumerator();
-            return new OwnedEnumeration(iterator, ke.OwnsSource ? ke : ke.Source is Keysharp.Builtins.Array { OwnsElements: true } source ? source : null);
+            return new OwnedEnumeration(iterator, ke.OwnsSource ? ke : ke.Source is (Keysharp.Builtins.Array { OwnsElements: true } or Map { OwnsEntries: true }) ? ke.Source : null);
         }
 
         private sealed class OwnedEnumeration : IEnumerable, IEnumerator, IDisposable

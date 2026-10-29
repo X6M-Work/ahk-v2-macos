@@ -4049,7 +4049,7 @@ namespace Keysharp.Compilation.Syntax
 				case MapExpr mp:   // [k1: v1, k2: v2] -> Map.Literal(k1, v1, k2, v2)
 					var mapArgs = new List<ExpressionSyntax>(mp.Entries.Count * 2);
 					foreach (var (k, v) in mp.Entries) { mapArgs.Add(LowerExpr(k)); mapArgs.Add(LowerExpr(v)); }
-					return Inv(Access("Keysharp.Builtins.Map.Literal"), [.. mapArgs]);
+					return Inv(Access("Keysharp.Builtins.Map.OwnedLiteral"), [.. mapArgs]);
 				case ObjectExpr o: return LowerObject(o);
 				case FatArrowExpr fa: return LowerFatArrow(fa);
 				case DerefExpr dr:   // %name% read -> DerefGet(name); the maybe forms rewrite it to DerefGetOrNull

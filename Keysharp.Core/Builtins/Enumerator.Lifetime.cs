@@ -4,11 +4,12 @@ public partial class Enumerator
 {
 	private bool ownsSource;
 	internal bool OwnsSource => ownsSource;
-	internal override bool SupportsOwnedReferences => GetType() == typeof(Enumerator) && moveNext != null && Source is Array { OwnsElements: true };
+	internal override bool SupportsOwnedReferences => GetType() == typeof(Enumerator) && moveNext != null && Source is (Array { OwnsElements: true } or Map { OwnsEntries: true });
 	internal override void BeginOwnedReferences()
 	{
 		ownsSource = true;
 		Keysharp.Runtime.Lifetime.Retain(Source);
+		snapshot?.Retain();
 	}
 	internal override void ResetOwnedReferences() => ownsSource = false;
 	internal override void EscapeOwnedReferences()
@@ -16,11 +17,13 @@ public partial class Enumerator
 		if (!ownsSource) return;
 		ownsSource = false;
 		Keysharp.Runtime.Lifetime.Escape(Source);
+		snapshot?.Escape();
 	}
 	internal override void ReleaseOwnedReferences()
 	{
 		if (!ownsSource) return;
 		ownsSource = false;
-		Keysharp.Runtime.Lifetime.Release(Source);
+		try { snapshot?.Release(); }
+		finally { Keysharp.Runtime.Lifetime.Release(Source); }
 	}
 }

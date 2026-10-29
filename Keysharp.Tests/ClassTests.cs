@@ -15,6 +15,15 @@ public class ClassTests : TestRunner
 	public void DestructorArrays() => Assert.IsTrue(TestScript("class-destructor-arrays", false));
 
 	[Test, Category("Class")]
+	public void DestructorMaps() => Assert.IsTrue(TestScript("class-destructor-maps", false));
+
+	[Test, Category("Class")]
+	public void DestructorMapReentry() => Assert.IsTrue(TestScript("class-destructor-map-reentry", false));
+
+	[Test, Category("Class")]
+	public void DestructorMapExtensions() => Assert.IsTrue(TestScript("class-destructor-map-extensions", false));
+
+	[Test, Category("Class")]
 	public void BuiltInTypeVisibility() => Assert.IsTrue(TestScript("class-builtin-visibility", false));
 
 	[Test, Category("Class")]

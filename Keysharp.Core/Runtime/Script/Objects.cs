@@ -491,10 +491,13 @@ namespace Keysharp.Runtime
 			}
 
 			value = null;
-			return item is Keysharp.Builtins.Map map && map.TryGetValue(key, out value) && ReachesBuiltinItem(map, mapItemGet, false);
+			if (item is not Map map || !map.TryGetValue(key, out value) || !ReachesBuiltinItem(map, mapItemGet, false)) return false;
+			value = Lifetime.Temporary(value);
+			return true;
 		}
 
-		private static bool PreservesBuiltinItem(object item) => item is Keysharp.Builtins.Array array && ReachesBuiltinItem(array, arrayItemSet, true);
+		private static bool PreservesBuiltinItem(object item) => item is Keysharp.Builtins.Array array && ReachesBuiltinItem(array, arrayItemSet, true)
+			|| item is Map map && ReachesBuiltinItem(map, mapItemSet, true);
 
 		private static bool TrySetBuiltinItem(object item, object key, object value)
 		{

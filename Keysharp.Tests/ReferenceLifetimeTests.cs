@@ -33,7 +33,7 @@ public class ReferenceLifetimeTests : TestRunner
 	[Test]
 	public void UninstrumentedInstancesKeepTheirExistingLifetime()
 	{
-		foreach (Any value in new Any[] { new KeysharpObject(null), new Keysharp.Builtins.Map(null) })
+		foreach (Any value in new Any[] { new KeysharpObject(null), new Ks.HashMap(null) })
 		{
 			value.BeginReferenceConstruction();
 			value.CompleteReferenceConstruction();
@@ -41,6 +41,56 @@ public class ReferenceLifetimeTests : TestRunner
 			Lifetime.Release(value);
 			Assert.That(value.ReferenceState, Is.EqualTo(ReferenceLifeState.Untracked));
 		}
+	}
+
+	[Test]
+	public void MapDictionaryMutationsBalanceOwnedEdges()
+	{
+		var map = new Keysharp.Builtins.Map(null);
+		map.BeginReferenceConstruction();
+		map.CompleteReferenceConstruction();
+		Lifetime.Retain(map);
+		IDictionary<object, object> dictionary = map;
+		var key = new Probe();
+		var original = new Probe();
+		var replacement = new Probe();
+		dictionary.Add(key, original);
+		dictionary[key] = original;
+		Assert.That((key.Deletes, original.Deletes), Is.EqualTo((0, 0)));
+		dictionary[key] = replacement;
+		Assert.That(original.Deletes, Is.EqualTo(1));
+		Assert.That(dictionary.Remove(key), Is.True);
+		Assert.That((key.Deletes, replacement.Deletes), Is.EqualTo((1, 1)));
+		ICollection<KeyValuePair<object, object>> pairs = map;
+		var last = new Probe();
+		pairs.Add(new("last", last));
+		Assert.That(pairs.Remove(new("last", null)), Is.False);
+		Assert.That(last.Deletes, Is.Zero);
+		Assert.That(pairs.Remove(new("last", last)), Is.True);
+		Assert.That(last.Deletes, Is.EqualTo(1));
+		dictionary.Add(1, null);
+		dictionary.Add(1L, null);
+		Assert.That(map.Count, Is.EqualTo(2));
+		Assert.That(dictionary.Remove(1), Is.True);
+		Assert.That(dictionary.ContainsKey(1L), Is.True);
+		Lifetime.Release(map);
+	}
+
+	[Test]
+	public void MapClrReadTransfersValuesToCollectedOwnership()
+	{
+		var map = new Keysharp.Builtins.Map(null);
+		map.BeginReferenceConstruction();
+		map.CompleteReferenceConstruction();
+		Lifetime.Retain(map);
+		IDictionary<object, object> dictionary = map;
+		var value = new Probe();
+		dictionary.Add("key", value);
+		Assert.That(dictionary["key"], Is.SameAs(value));
+		Assert.That(value.ReferenceState, Is.EqualTo(ReferenceLifeState.Untracked));
+		Lifetime.Release(map);
+		Assert.That(value.Deletes, Is.Zero);
+		GC.KeepAlive(value);
 	}
 
 	[Test]

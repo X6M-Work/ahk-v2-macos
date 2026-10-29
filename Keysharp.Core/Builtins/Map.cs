@@ -92,7 +92,7 @@ namespace Keysharp.Builtins
 	/// Map class that wraps a <see cref="Dictionary{object, object}"/> which is sorted before enumeration
 	/// using MapComparer to keep compatibility with AutoHotkey.
 	/// </summary>
-	public class Map : KeysharpObject, I__Enum, IEnumerable<(object, object)>, ICollection, IDictionary<object, object>
+	public partial class Map : KeysharpObject, I__Enum, IEnumerable<(object, object)>, ICollection, IDictionary<object, object>
 	{
         /// <summary>
         /// The underlying <see cref="Dictionary"/> that holds the values.
@@ -113,7 +113,7 @@ namespace Keysharp.Builtins
 		/// <summary>
 		/// The underlying <see cref="Dictionary"/> sorted in the order AHK does it.
 		/// </summary>
-		private KeyValuePair<object, object>[] enumerableMap;
+		private EnumerationSnapshot enumerableMap;
 
 		/// <summary>
 		/// Gets or sets the capacity of the map.
@@ -194,7 +194,7 @@ namespace Keysharp.Builtins
 			get
 			{
 				if (enumerableMap != null)
-					return enumerableMap;
+					return enumerableMap.Pairs;
 
 				var sortedMap = new KeyValuePair<object, object>[map.Count];
 				var i = 0;
@@ -210,8 +210,8 @@ namespace Keysharp.Builtins
 					System.Array.Sort(sortedMap, mapComparer);
 				}
 
-				enumerableMap = sortedMap;
-				return enumerableMap;
+				enumerableMap = new EnumerationSnapshot(sortedMap, ownsEntries);
+				return sortedMap;
 			}
 		}
 
@@ -293,7 +293,9 @@ namespace Keysharp.Builtins
 			clone.map = new Dictionary<object, object>(map, map.Comparer);
 			_ = clone.map.EnsureCapacity(map.Capacity);
 			clone.enumerableMap = null;
-			return clone;
+			clone.BeginReferenceConstruction();
+			clone.CompleteReferenceConstruction();
+			return Lifetime.Temporary(clone);
 		}
 
 		/// <summary>
@@ -301,10 +303,7 @@ namespace Keysharp.Builtins
 		/// </summary>
 		public object Clear()
 		{
-			if (enumerableMap != null)
-				enumerableMap = null;
-
-			map.Clear();
+			ClearEntries();
 			return DefaultObject;
 		}
 
@@ -322,8 +321,8 @@ namespace Keysharp.Builtins
 
 			foreach (var kv in EnumerableMap)
 			{
-				kvs.Add(kv.Key);
-				kvs.Add(kv.Value);
+				kvs.Add(Lifetime.Escape(kv.Key));
+				kvs.Add(Lifetime.Escape(kv.Value));
 			}
 
 			for (int i = index, j = 0; i < array.Length && j < kvs.Count; i++, j++)
@@ -340,13 +339,7 @@ namespace Keysharp.Builtins
 		{
 			key = NormalizeKey(key);
 
-			if (map.Remove(key, out var val))
-			{
-				if (enumerableMap != null)
-					enumerableMap = null;
-
-				return val;
-			}
+			if (RemoveEntry(key, true, out var val)) return val;
 
 			return Script.CompatReturnsUnsetForMissing ? null
 				: Errors.UnsetItemErrorOccurred(key);
@@ -369,16 +362,16 @@ namespace Keysharp.Builtins
 			var def = @default;
 
 			if (TryGetValue(k, out var val))
-				return val;
+				return Lifetime.Temporary(val);
 
 			if (def != null)
-				return def;
+				return Lifetime.Temporary(def);
 
 			// AutoHotkey declares no Default: it looks for one the script may have defined, by assignment,
 			// DefineProp or a meta-function, so an ordinary lookup is the whole mechanism and a map given
 			// none simply has no such property.
 			if (Script.GetPropertyValueOrNull(this, "Default") is { } fallback)
-				return fallback;
+				return Lifetime.Temporary(fallback);
 
 			return Script.CompatReturnsUnsetForMissing ? null
 				: Errors.UnsetItemErrorOccurred(k);
@@ -414,7 +407,7 @@ namespace Keysharp.Builtins
 				}
 
 				for (var i = 0; i < (args?.Length ?? 0); i += 2)
-					Insert(args[i], args[i + 1]);
+					if (args[i] != null && args[i + 1] != null) Insert(args[i], args[i + 1]);
 
 				return this;
 			}
@@ -424,7 +417,7 @@ namespace Keysharp.Builtins
 
 			if (args == null || args.Length == 0)
 			{
-				map.Clear();
+				Clear();
 			}
 			else
 			{
@@ -432,12 +425,11 @@ namespace Keysharp.Builtins
 				{
 					if (args[0] is Map m)
 					{
-						map = m.map;
-						caseSense = m.caseSense;
+						AdoptStorage(m.map, m);
 					}
 					else if (args[0] is Dictionary<object, object> dkt)
 					{
-						map = dkt;
+						AdoptStorage(dkt);
 					}
 					else if (args[0] is Array temp)
 					{
@@ -510,20 +502,7 @@ namespace Keysharp.Builtins
 		// MapComparer ranks object keys alike, so the entry found must be checked to be this key.
 		private void Insert(object key, object value)
 		{
-			key = NormalizeKey(Keysharp.Runtime.Lifetime.Escape(key));
-			value = Keysharp.Runtime.Lifetime.Escape(value);
-			ref var slot = ref CollectionsMarshal.GetValueRefOrAddDefault(map, key, out var existed);
-			slot = value;
-
-			if (enumerableMap == null)
-				return;
-
-			var i = existed && mapComparer != null ? System.Array.BinarySearch(enumerableMap, new KeyValuePair<object, object>(key, null), mapComparer) : -1;
-
-			if (i >= 0 && map.Comparer.Equals(enumerableMap[i].Key, key))
-				enumerableMap[i] = new(enumerableMap[i].Key, value);
-			else
-				enumerableMap = null;
+			InsertEntry(NormalizeKey(key), value);
 		}
 
 		/// <summary>
@@ -549,7 +528,7 @@ namespace Keysharp.Builtins
 				var position = -1;
 				KeyValuePair<object, object> current = default;
 
-				return new Enumerator(
+				return PrepareEnumerator(new Enumerator(
 					this,
 					count,
 					() =>
@@ -562,7 +541,7 @@ namespace Keysharp.Builtins
 					},
 					() => current.Key,
 					() => (current.Key, current.Value),
-					() => position = -1);
+					() => position = -1));
 			}
 
 			var enumerable = EnumerableMap;
@@ -571,13 +550,13 @@ namespace Keysharp.Builtins
 			{
 				var position = -1;
 
-				return new Enumerator(
+				return PrepareEnumerator(new Enumerator(
 						   this,
 						   count,
 						   () => ++position < pairs.Length,
 						   () => pairs[position].Key,
 						   () => (pairs[position].Key, pairs[position].Value),
-						   () => position = -1);
+						   () => position = -1, snapshot: enumerableMap));
 			}
 
 			var iter = enumerable.GetEnumerator();
@@ -613,7 +592,7 @@ namespace Keysharp.Builtins
 			get
 			{
 				if (TryGetValue(key, out var val))
-					return val;
+					return Lifetime.Temporary(val);
 
 				return Script.GetPropertyValueOrNull(this, "Default") ?? (Script.CompatReturnsUnsetForMissing ? null
 					: Errors.UnsetItemErrorOccurred(key));
@@ -622,9 +601,7 @@ namespace Keysharp.Builtins
 			{
 				if (value == null)
 				{
-					if (map.Remove(NormalizeKey(key)))
-						enumerableMap = null;
-					else if (!Script.CompatReturnsUnsetForMissing)
+					if (!RemoveEntry(NormalizeKey(key), false, out _) && !Script.CompatReturnsUnsetForMissing)
 						_ = Errors.UnsetItemErrorOccurred(key);
 
 					return;
@@ -640,43 +617,36 @@ namespace Keysharp.Builtins
 		//directly. The script-facing indexer keeps its own semantics (Default fallback, assigning null removes).
 		object IDictionary<object, object>.this[object key]
 		{
-			get => map[key];
+			get => Lifetime.Escape(map[key]);
 
 			set
 			{
-				if (enumerableMap != null)
-					enumerableMap = null;
-
-				map[key] = value;
+				InsertEntry(key, value);
 			}
 		}
 
-		ICollection<object> IDictionary<object, object>.Keys => map.Keys;
+		ICollection<object> IDictionary<object, object>.Keys { get { Lifetime.Escape(this); return map.Keys; } }
 
-		ICollection<object> IDictionary<object, object>.Values => map.Values;
+		ICollection<object> IDictionary<object, object>.Values { get { Lifetime.Escape(this); return map.Values; } }
 
 		void IDictionary<object, object>.Add(object key, object value)
 		{
-			if (enumerableMap != null)
-				enumerableMap = null;
-
-			map.Add(key, value);
+			InsertEntry(key, value, true);
 		}
 
 		bool IDictionary<object, object>.ContainsKey(object key) => map.ContainsKey(key);
 
 		bool IDictionary<object, object>.Remove(object key)
 		{
-			if (!map.Remove(key))
-				return false;
-
-			if (enumerableMap != null)
-				enumerableMap = null;
-
-			return true;
+			return RemoveEntry(key, false, out _);
 		}
 
-		bool IDictionary<object, object>.TryGetValue(object key, out object value) => map.TryGetValue(key, out value);
+		bool IDictionary<object, object>.TryGetValue(object key, out object value)
+		{
+			if (!map.TryGetValue(key, out value)) return false;
+			Lifetime.Escape(value);
+			return true;
+		}
 
 		int ICollection<KeyValuePair<object, object>>.Count => (int)Count;
 
@@ -684,10 +654,7 @@ namespace Keysharp.Builtins
 
 		void ICollection<KeyValuePair<object, object>>.Add(KeyValuePair<object, object> item)
 		{
-			if (enumerableMap != null)
-				enumerableMap = null;
-
-			map.Add(item.Key, item.Value);
+			InsertEntry(item.Key, item.Value, true);
 		}
 
 		void ICollection<KeyValuePair<object, object>>.Clear() => _ = Clear();
@@ -700,21 +667,23 @@ namespace Keysharp.Builtins
 		void ICollection<KeyValuePair<object, object>>.CopyTo(KeyValuePair<object, object>[] array, int arrayIndex)
 		{
 			foreach (var kv in EnumerableMap)
+			{
+				Lifetime.Escape(kv.Key);
+				Lifetime.Escape(kv.Value);
 				array[arrayIndex++] = kv;
+			}
 		}
 
 		bool ICollection<KeyValuePair<object, object>>.Remove(KeyValuePair<object, object> item)
 		{
-			if (!((ICollection<KeyValuePair<object, object>>)map).Remove(item))
-				return false;
-
-			if (enumerableMap != null)
-				enumerableMap = null;
-
-			return true;
+			return ((ICollection<KeyValuePair<object, object>>)map).Contains(item) && RemoveEntry(item.Key, false, out _);
 		}
 
-		IEnumerator<KeyValuePair<object, object>> IEnumerable<KeyValuePair<object, object>>.GetEnumerator() => EnumerableMap.GetEnumerator();
+		IEnumerator<KeyValuePair<object, object>> IEnumerable<KeyValuePair<object, object>>.GetEnumerator()
+		{
+			Lifetime.Escape(this);
+			return EnumerableMap.GetEnumerator();
+		}
 
 		#endregion
 	}
