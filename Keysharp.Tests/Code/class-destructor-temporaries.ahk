@@ -120,6 +120,17 @@ trace := ""
 exportedArray := [Temporary("export")]
 Check(trace, "", "unconverted container keeps temporary alive")
 Check(exportedArray[1].Label, "export", "export remains usable")
+indexedContainer := []
+indexedContainer.Length := 2
+trace := ""
+indexedContainer[1] := Temporary("fast-index")
+indexedContainer["2"] := Temporary("slow-index")
+Check(trace, "", "both builtin index setters preserve exported values")
+keptIndexed := indexedContainer.Delete(1)
+keptSlowIndexed := indexedContainer.Delete(2)
+Check(keptIndexed.Label, "fast-index", "fast index value can be retained after removal")
+Check(keptSlowIndexed.Label, "slow-index", "slow index value can be retained after removal")
+Check(trace, "", "removed exported values remain alive")
 Default(value := Temporary("default")) => Type(value)
 trace := ""
 Default()

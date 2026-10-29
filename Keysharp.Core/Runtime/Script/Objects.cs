@@ -500,7 +500,7 @@ namespace Keysharp.Runtime
 					|| !ReachesBuiltinItem(arr, arrayItemSet, true))
 					return false;
 
-				arr.array[i] = value;
+				arr.array[i] = Lifetime.Escape(value);
 				return true;
 			}
 
