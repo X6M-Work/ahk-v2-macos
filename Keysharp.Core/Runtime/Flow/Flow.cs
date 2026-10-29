@@ -40,8 +40,11 @@ namespace Keysharp.Runtime
 
 			public void Dispose()
 			{
+				var completedCatch = tv.caughtException;
 				tv.insideTry = previousInsideTry;
 				tv.caughtException = previousCaughtException;
+				if (!ReferenceEquals(completedCatch, previousCaughtException) && completedCatch != null)
+					Lifetime.Release(completedCatch.ThrownValue);
 			}
 		}
 
@@ -64,6 +67,7 @@ namespace Keysharp.Runtime
 		[StackTraceHidden]
 		public static KeysharpException Throw(object value)
 		{
+			Lifetime.Retain(value);
 			var message = value is Any { op: { } props } && props.TryGetValue("Message", out var property) ? property.Value : null;
 			var err = value as Error ?? new Error(message ?? value);
 			var exception = err.AsException(value);
@@ -84,6 +88,7 @@ namespace Keysharp.Runtime
 				return Errors.ErrorOccurred("An exception was thrown.");
 
 			// Dispatch preserves the exception's original raise site.
+			Lifetime.Retain(exception.ThrownValue);
 			ExceptionDispatchInfo.Throw(exception);
 			return Script.DefaultObject;
 		}

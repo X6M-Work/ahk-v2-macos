@@ -8,10 +8,7 @@ namespace Keysharp.Compilation.Syntax
 	internal sealed partial class Lowerer
 	{
 		private int _boxCounter;
-		private static readonly TypeSyntax BoxType = Ty("Keysharp.Builtins.VarRef");
-		private static ExpressionSyntax NewBox(ExpressionSyntax value) =>
-			SyntaxFactory.ObjectCreationExpression(BoxType).WithArgumentList(
-				SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(Arg(value))));
+		private static ExpressionSyntax NewBox(ExpressionSyntax value) => Inv(Access("Keysharp.Runtime.Lifetime.Box"), value);
 
 		private sealed class LocalStorage
 		{
@@ -28,6 +25,8 @@ namespace Keysharp.Compilation.Syntax
 			? parameter : new("this", VarStorage.Local, _scope.Root);
 
 		private static ExpressionSyntax EscapingValue(ExpressionSyntax value) => Inv(Access("Keysharp.Runtime.Lifetime.Escape"), value);
+		private static ExpressionSyntax BorrowValue(ExpressionSyntax value) => Inv(Access("Keysharp.Runtime.Lifetime.Borrow"), value);
+		private static ExpressionSyntax ReturnValue(ExpressionSyntax value) => Inv(Access("Keysharp.Runtime.Lifetime.Return"), value);
 		private static ExpressionSyntax ReplaceValue(ExpressionSyntax target, ExpressionSyntax value) =>
 			SyntaxFactory.InvocationExpression(Access("Keysharp.Runtime.Lifetime.Replace"), SyntaxFactory.ArgumentList(
 				SyntaxFactory.SeparatedList(new[] { Arg(target).WithRefKindKeyword(SyntaxFactory.Token(SyntaxKind.RefKeyword)), Arg(value) })));
@@ -69,14 +68,23 @@ namespace Keysharp.Compilation.Syntax
 				NewBox(((LocalDeclarationStatementSyntax)node).Declaration.Variables[0].Initializer.Value)));
 		}
 
-		private static void InitializeParameters(List<StatementSyntax> body, IEnumerable<ScopeVar> parameters)
+		private void InitializeParameters(List<StatementSyntax> body, IEnumerable<ScopeVar> parameters)
 		{
 			foreach (var parameter in parameters)
-				if (parameter.Owner.Variables.TryGetValue(parameter.Key, out var storage) && storage.Box != null)
-					body.Insert(0, LocalDeclVar(storage.Box, NewBox(Id(NameMangler.Escape(parameter.Key)))));
+			{
+				var storage = Storage(parameter);
+				var name = Id(NameMangler.Escape(parameter.Key));
+				body.Insert(0, storage.Box != null ? LocalDeclVar(storage.Box, NewBox(name))
+					: Unsettled(CallStmt("Keysharp.Runtime.Lifetime.Retain", name), () => storage.Box != null,
+						_ => LocalDeclVar(storage.Box, NewBox(name))));
+			}
 		}
 
-		private static ExpressionSyntax LifetimeRoot(ScopeVar variable) =>
-			Id(variable.Owner.Variables.GetValueOrDefault(variable.Key)?.Box ?? NameMangler.Escape(variable.Key));
+		private ExpressionSyntax ScopeRoot(ScopeVar variable)
+		{
+			var storage = Storage(variable);
+			return storage.Box != null ? Id(storage.Box)
+				: Unsettled(Id(NameMangler.Escape(variable.Key)), () => storage.Box != null, _ => Id(storage.Box));
+		}
 	}
 }

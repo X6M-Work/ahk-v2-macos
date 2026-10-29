@@ -1025,7 +1025,7 @@ namespace Keysharp.Compilation.Syntax
 
 		private void CompleteModuleBody(List<StatementSyntax> body)
 		{
-			WrapBodyWithKeepAlive(body, [], _scopeKeptTemps, 0, body.Count);
+			WrapBodyWithKeepAlive(body, null, [], _scopeKeptTemps, 0, body.Count);
 			for (int i = _scopeTemps.Count - 1; i >= 0; i--) body.Insert(0, DeclLocal(ObjType, _scopeTemps[i], Null));
 			body.AddRange(_pendingScopeFuncs);
 		}
@@ -1181,13 +1181,13 @@ namespace Keysharp.Compilation.Syntax
 			// Inner marks a fat arrow or nested function, lowered to the C# local function Impl. It Captures when it or a
 			// callable within it reads an enclosing callable's frame, which makes it a closure; otherwise its function
 			// object is kept in the static Field.
-			public bool Inner, Captures, CapturesReceiver;
+			public bool Inner, Captures, CapturesReceiver, ReceiverCaptured;
 			public string Impl, Field;
 			// The scopes of the nested functions it declares, by name.
 			public Dictionary<string, FunctionScope> Functions;
 			// The enclosing callables' locals and nested functions it or a callable within it names, which are all of theirs
 			// a dynamic reference reaches, as in AutoHotkey.
-			public HashSet<string> UpVars;
+			public HashSet<string> UpVars, CapturedLocals;
 
 			public bool Reaches(ScopeVar v) => v.Owner == this || v.Storage is VarStorage.Static or VarStorage.Global || UpVars?.Contains(v.Key) == true;
 			// Locals holds the parameters and every other local; ByRef is the by-ref parameters.
@@ -1633,16 +1633,22 @@ namespace Keysharp.Compilation.Syntax
 		private void MarkCapture(ScopeVar v)
 		{
 			if (v.Storage is VarStorage.Local or VarStorage.ByRef or VarStorage.Closure)
+			{
+				if (v.Storage != VarStorage.Closure && v.Owner != _scope)
+					(v.Owner.CapturedLocals ??= new(AhkIdentifierComparer.Instance)).Add(v.Key);
 				for (var s = _scope; s != v.Owner; s = s.Parent)
 				{
 					(s.UpVars ??= new(AhkIdentifierComparer.Instance)).Add(v.Key);
 					s.Captures |= v.Storage != VarStorage.Closure;
 				}
+			}
 		}
 
 		// `this` is the receiver of the method the callable is nested in, which every callable between them captures.
 		private void CaptureThis()
 		{
+			if (_scope is { Inner: true })
+				_scope.Root.ReceiverCaptured = true;
 			for (var s = _scope; s is { Inner: true }; s = s.Parent)
 				s.Captures = s.CapturesReceiver = true;
 		}
@@ -1878,7 +1884,7 @@ namespace Keysharp.Compilation.Syntax
 						Diag($"{NodeAnchor(r)}Jumps cannot exit a FINALLY block.");
 						return null;
 					}
-					return SyntaxFactory.ReturnStatement(r.Value != null ? LowerExpr(r.Value) : DefaultReturnExpr());
+					return SyntaxFactory.ReturnStatement(r.Value != null ? ReturnValue(LowerExpr(r.Value)) : DefaultReturnExpr());
 				case Block b:
 					return SyntaxFactory.Block(LowerStmtList(b.Body));
 				case IfStmt iff:
@@ -3968,7 +3974,7 @@ namespace Keysharp.Compilation.Syntax
 				case SequenceExpr seq:
 					return Op("MultiStatement", seq.Items.Select((item, i) =>
 						i == seq.Items.Count - 1 ? LowerExpr(item) : LowerAllowingUnset(item)).ToArray());
-				case AssignExpr a: return EscapingValue(LowerAssign(a));
+				case AssignExpr a: return BorrowValue(LowerAssign(a));
 				case BinaryExpr b:
 					// && / and and || / or short-circuit and yield an operand (not a bool), so they can't be plain calls.
 					if (b.Op == "&&" || AhkIdentifierComparer.Instance.Equals(b.Op, "and")) return LowerShortCircuit(b, andOp: true);
@@ -4041,7 +4047,7 @@ namespace Keysharp.Compilation.Syntax
 				case ObjectExpr o: return LowerObject(o);
 				case FatArrowExpr fa: return LowerFatArrow(fa);
 				case DerefExpr dr:   // %name% read -> DerefGet(name); the maybe forms rewrite it to DerefGetOrNull
-					return EscapingValue(MayYieldUnset(dr.Name)
+					return BorrowValue(MayYieldUnset(dr.Name)
 						? NullCondWrap(dr.Name, name => Op("DerefGetOrNull", DerefScope, name))
 						: DerefGet(dr.Name));
 				case CallExpr c: return EscapingValue(LowerCall(c, statement: false));
@@ -4057,13 +4063,13 @@ namespace Keysharp.Compilation.Syntax
 			if (a.Target is DerefExpr dt)
 			{
 				if (a.Op == ":=")
-					return Op("DerefSetFound", DerefScope, DerefTarget(dt.Name), LowerExpr(a.Value));
+					return Op("DerefSetFound", DerefScope, DerefTarget(dt.Name), LowerOwnedValue(a.Value));
 				// `%name% ??= v` finds its target once, into temps, and evaluates v and assigns only when it has no value.
 				if (a.Op == "??=")
 				{
 					var (current, found) = (NewTemp(false), NewTemp(false));
 					return SyntaxFactory.ParenthesizedExpression(SyntaxFactory.ConditionalExpression(DerefGetForWrite(dt.Name, current, found),
-						Op("DerefSetFound", DerefScope, Id(found), LowerExpr(a.Value)), Id(current)));
+						Op("DerefSetFound", DerefScope, Id(found), LowerOwnedValue(a.Value)), Id(current)));
 				}
 				if (!BinOps.TryGetValue(a.Op[..^1], out var opMethod)) { Diag($"compound assignment to a dereference ('{a.Op}') not yet lowerable"); return Str(""); }
 				return DerefUpdate(dt.Name, opMethod, LowerExpr(a.Value), postfix: false);
@@ -4220,7 +4226,7 @@ namespace Keysharp.Compilation.Syntax
 			if (target.Write == null)
 				return target.Read;
 
-			var value = a.Op == ":=" ? LowerOwnedValue(a.Value) : CompoundValue(a.Op[..^1], target.Read, LowerExpr(a.Value));
+			var value = a.Op == ":=" ? LowerOwnedValue(a.Value) : CompoundValue(a.Op[..^1], target.Read, a.Op == "??=" ? LowerOwnedValue(a.Value) : LowerExpr(a.Value));
 			if (value == null) { Diag($"compound assignment '{a.Op}' not yet lowerable"); return Str(""); }
 			return target.Write(value);
 		}
@@ -4438,7 +4444,7 @@ namespace Keysharp.Compilation.Syntax
 		// Groups and sequences preserve the final result; only explicit ? crosses an optional chain's conditional.
 		private static ExpressionSyntax RewriteToOrNull(ExpressionSyntax e, Dictionary<string, string> map = null, bool throughChain = false)
 		{
-			if (e is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "Escape" or "Borrow" }, ArgumentList.Arguments.Count: 1 } escape)
+			if (e is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax { Name.Identifier.Text: "Escape" or "Borrow" or "Return" }, ArgumentList.Arguments.Count: 1 } escape)
 				return escape.WithArgumentList(SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(
 					escape.ArgumentList.Arguments[0].WithExpression(RewriteToOrNull(escape.ArgumentList.Arguments[0].Expression, map, throughChain)))));
 			if (e is ParenthesizedExpressionSyntax paren)
@@ -5336,9 +5342,10 @@ namespace Keysharp.Compilation.Syntax
 				{
 					var backup = NewTemp();
 					meArgs.Add(VariableRef(v, target));
-					saves.Add(ExprStmt(Assign(Id(backup), target.Read)));
+					saves.Add(ExprStmt(ReplaceValue(Id(backup), target.Read)));
 					saves.Add(ExprStmt(target.Write(Null)));
 					restores.Add(ExprStmt(target.Write(Id(backup))));
+					restores.Add(ExprStmt(ReplaceValue(Id(backup), Null)));
 				}
 				else
 					meArgs.Add(Str(""));
@@ -5466,7 +5473,7 @@ namespace Keysharp.Compilation.Syntax
 				catches.Add(SyntaxFactory.CatchClause()
 					.WithDeclaration(SyntaxFactory.CatchDeclaration(Ty("Keysharp.Builtins.KeysharpException"), SyntaxFactory.Identifier(ex)))
 					.WithFilter(SyntaxFactory.CatchFilterClause(IsError(Member(Id(ex), "ThrownValue"))))
-					.WithBlock(SyntaxFactory.Block()));
+					.WithBlock(SyntaxFactory.Block(CallStmt("Keysharp.Runtime.Lifetime.Release", Member(Id(ex), "ThrownValue")))));
 			}
 
 			// Errors raised in this body are caught here, so built-ins throw them instead of reporting them (AHK's EXCPTMODE_CATCH).
@@ -5522,7 +5529,7 @@ namespace Keysharp.Compilation.Syntax
 		// unwind before OnError; outside a catch it is a continuable Error in Return mode.
 		private StatementSyntax LowerThrow(ThrowStmt th) => th.Value == null
 			? ExprStmt(Inv(Access("Keysharp.Runtime.Flow.Rethrow")))
-			: SyntaxFactory.ThrowStatement(Inv(Access("Keysharp.Runtime.Flow.Throw"), LowerExpr(th.Value)));
+			: SyntaxFactory.ThrowStatement(Inv(Access("Keysharp.Runtime.Flow.Throw"), LowerOwnedValue(th.Value)));
 
 		// ---- classes ----
 
@@ -5843,7 +5850,7 @@ namespace Keysharp.Compilation.Syntax
 			stmts.InsertRange(setupEnd + _scopeTemps.Count, _pendingScopeClosureInits);
 			execStart += _pendingScopeClosureInits.Count; execEnd += _pendingScopeClosureInits.Count;
 			declared.Add(Receiver());
-			WrapBodyWithKeepAlive(stmts, declared, _scopeKeptTemps, execStart, execEnd);
+			WrapBodyWithKeepAlive(stmts, scope, declared, _scopeKeptTemps, execStart, execEnd);
 			InitializeParameters(stmts, [Receiver()]);
 			if (_stamped) stmts.Insert(0, LocationDecl);
 			var block = Settle(SyntaxFactory.Block(stmts));
@@ -6305,7 +6312,7 @@ namespace Keysharp.Compilation.Syntax
 		{
 			var saved = _loweringParamDefault;
 			_loweringParamDefault = true;
-			var result = LowerExpr(expr);
+			var result = LowerOwnedValue(expr);
 			_loweringParamDefault = saved;
 			return result;
 		}
@@ -6394,6 +6401,7 @@ namespace Keysharp.Compilation.Syntax
 			_derefReferences = scope.HasDerefReference;
 			// Declared here once the body is lowered, which shows the enclosing variables the scope reaches.
 			var scopeAt = body.Count;
+			var setupEnd = body.Count;   // boundary after local hoists, before parameter defaults and the executable body
 
 			// An omitted optional by-ref parameter acts as a normal local. Its CLR default is null, so give it a private
 			// reference initialized to the declared default, or leave its value unset when the declaration used `?`.
@@ -6404,13 +6412,11 @@ namespace Keysharp.Compilation.Syntax
 						var rid = LocalValue(scope.Find(p.Name));
 						var deflt = p.Default != null ? LowerParamDefault(p.Default) : Null;
 						if (p.Default != null) body.Add(Stamp(p.Default));
-						body.Add(ExprStmt(SyntaxFactory.AssignmentExpression(SyntaxKind.CoalesceAssignmentExpression, rid,
-							SyntaxFactory.ObjectCreationExpression(Ty("Keysharp.Builtins.VarRef"))
-								.WithArgumentList(SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(Arg(deflt)))))));
+						body.Add(ExprStmt(SyntaxFactory.AssignmentExpression(SyntaxKind.CoalesceAssignmentExpression, rid, NewBox(deflt))));
 					}
 
 			// Non-literal parameter defaults: the param is declared [Optional, DefaultParameterValue(null)],
-			// so assign the real default when the caller omitted it (`param ??= <expr>`).
+			// so assign the real default when the caller omitted it.
 			if (paramDefaults != null)
 				foreach (var p in paramDefaults)
 					if (!p.ByRef && !p.Variadic && p.Default != null)
@@ -6420,16 +6426,18 @@ namespace Keysharp.Compilation.Syntax
 							_literalDefaults[p] = literal;
 						else
 						{
+							var parameter = scope.Find(p.Name);
+							var current = LocalValue(parameter);
 							body.Add(Stamp(p.Default));
-							body.Add(ExprStmt(SyntaxFactory.AssignmentExpression(SyntaxKind.CoalesceAssignmentExpression,
-								LocalValue(scope.Find(p.Name)), defaultExpr)));
+							body.Add(SyntaxFactory.IfStatement(
+								SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, current, Null),
+								ExprStmt(WriteVariable(parameter, current, defaultExpr))));
 						}
 					}
 
 			// A fat-arrow `=> expr` propagates the unset result of a call rather than raising (unlike an explicit
 			// `return f()`), so its outermost call uses the non-raising *OrNull form - see ArrowOrNull.
-			var setupEnd = body.Count;   // boundary after local hoists + param setup, before the executable body
-			if (arrowBody != null) body.AddRange([Stamp(arrowBody), SyntaxFactory.ReturnStatement(RewriteToOrNull(LowerExpr(arrowBody), ArrowOrNull))]);
+			if (arrowBody != null) body.AddRange([Stamp(arrowBody), SyntaxFactory.ReturnStatement(ReturnValue(RewriteToOrNull(LowerExpr(arrowBody), ArrowOrNull)))]);
 			else if (bodyBlock != null) body.AddRange(LowerStmtList(bodyBlock.Body));
 
 			// Roslyn reports a default return after a body which cannot complete as unreachable.
@@ -6456,7 +6464,7 @@ namespace Keysharp.Compilation.Syntax
 			body.InsertRange(setupEnd + _scopeTemps.Count, _pendingScopeClosureInits);
 			execStart += _pendingScopeClosureInits.Count; execEnd += _pendingScopeClosureInits.Count;
 			declared.AddRange(paramLowers.Select(scope.Find));
-			WrapBodyWithKeepAlive(body, declared, _scopeKeptTemps, execStart, execEnd);
+			WrapBodyWithKeepAlive(body, scope, declared, _scopeKeptTemps, execStart, execEnd);
 			if (_localFileCalls != null) WrapLocalFiles(body, execStart, execStart + 1);
 			InitializeParameters(body, paramLowers.Select(scope.Find));
 			if (_inMethod && !capturing) InitializeParameters(body, [Receiver()]);
@@ -6498,24 +6506,35 @@ namespace Keysharp.Compilation.Syntax
 		private string ClassMemberFuncName(string memberName, bool isStatic) =>
 			$"{_currentClassUserPath}.{(isStatic ? "" : "Prototype.")}{memberName}";
 
-		// AHK keeps locals alive to scope exit; the JIT may otherwise collect a Buffer after its last managed
-		// read while native code still uses its Ptr. KeepAlive restores that lifetime on every exit path.
-		private static void WrapBodyWithKeepAlive(List<StatementSyntax> body, IEnumerable<ScopeVar> declared, List<string> keptTemps, int execStart, int execEnd)
+		// AHK releases locals and parameters at scope exit in case-insensitive alphabetical order, and keeps
+		// native-pointer temporaries alive across every exit path so the JIT cannot collect a Buffer early.
+		private void WrapBodyWithKeepAlive(List<StatementSyntax> body, FunctionScope scope, IEnumerable<ScopeVar> declared, List<string> keptTemps, int execStart, int execEnd)
 		{
-			var roots = declared.Select(LifetimeRoot).Concat(keptTemps.Select(Id));
+			var unique = declared.DistinctBy(static variable => variable.Key, AhkIdentifierComparer.Instance)
+				.OrderBy(static variable => variable.Key, StringComparer.OrdinalIgnoreCase)
+				.ToArray();
 
-			if (!roots.Any() || execEnd <= execStart)
+			if (unique.Length == 0 && keptTemps.Count == 0 || execEnd <= execStart)
 				return;
 
-			var keep = roots.Chunk(8).Select(chunk =>
-				ExprStmt(Inv(Access(chunk.Length == 1 ? "System.GC.KeepAlive" : "Keysharp.Runtime.Lifetime.KeepAlive"), chunk)));
+			bool IsCaptured(ScopeVar variable) => AhkIdentifierComparer.Instance.Equals(variable.Key, "this")
+				? scope?.ReceiverCaptured == true
+				: scope?.CapturedLocals?.Contains(variable.Key) == true;
+
+			var cleanup = unique.Where(IsCaptured)
+				.Select(variable => ExprStmt(EscapingValue(ScopeRoot(variable))))
+				.Concat(unique.Select(ScopeRoot)
+					.Chunk(8)
+					.Select(chunk => ExprStmt(Inv(Access("Keysharp.Runtime.Lifetime.ReleaseScope"), chunk))))
+				.Concat(keptTemps.Select(Id).Chunk(8).Select(chunk =>
+					ExprStmt(Inv(Access(chunk.Length == 1 ? "System.GC.KeepAlive" : "Keysharp.Runtime.Lifetime.KeepAlive"), chunk))));
 
 			var inner = body.GetRange(execStart, execEnd - execStart);
 			body.RemoveRange(execStart, execEnd - execStart);
 			body.Insert(execStart, SyntaxFactory.TryStatement(
 										SyntaxFactory.Block(inner),
 										default,
-										SyntaxFactory.FinallyClause(SyntaxFactory.Block(keep))));
+										SyntaxFactory.FinallyClause(SyntaxFactory.Block(cleanup))));
 		}
 
 		// `new FuncScope(name, reader, writer, declarations, assumeGlobal)`. The reader and writer match script names;
@@ -6584,7 +6603,7 @@ namespace Keysharp.Compilation.Syntax
 			ExpressionSyntax LocalReference(ScopeVar variable) => !_derefReferences ? null
 				: Inv(Access("Keysharp.Builtins.Misc.MakeVarRef"), LocalBox(variable), Str(variable.Owner.Spelling(variable.Key)));
 			void Var(ScopeVar variable, ExpressionSyntax value, VarKind kind, ExpressionSyntax reference) =>
-				Arm(variable.Key, value, Assign(value, Id("KS_val")), variable.Owner.Spelling(variable.Key), kind, reference);
+				Arm(variable.Key, value, WriteVariable(variable, value, Id("KS_val")), variable.Owner.Spelling(variable.Key), kind, reference);
 			foreach (var variable in _scope.Visible())
 			{
 				if (!_scope.Reaches(variable) || Bind(variable.Key) is not { Kind: NameKind.ScopeVariable, Variable: var bound } || bound != variable) continue;
@@ -6600,7 +6619,7 @@ namespace Keysharp.Compilation.Syntax
 					case VarStorage.Static:
 						var value = Id(variable.Field);
 						var staticReference = !_derefReferences ? null : Inv(Access("Keysharp.Builtins.Misc.MakeVarRef"),
-							FieldRefGS("Program." + CurrentTypePath, variable.Field, value, Assign(value, Id("KS_value"))), Str(name));
+							FieldRefGS("Program." + CurrentTypePath, variable.Field, value, ReplaceValue(value, Id("KS_value"))), Str(name));
 						Var(variable, value, own ? variable.Owner.Kinds[variable.Key] : VarKind.Static, staticReference);
 						break;
 					case VarStorage.Global:

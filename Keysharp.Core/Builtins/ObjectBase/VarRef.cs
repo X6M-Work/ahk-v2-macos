@@ -4,6 +4,8 @@ namespace Keysharp.Builtins
 	{
 		// The value of a reference without a getter, such as a compiled local's, which lives in its reference.
 		private object stored;
+		private readonly Lock boxGate;
+		private long boxReferences;
 		private readonly bool variable;
 		private bool valueEscaped, exposingValue;
 		// The memory the variable keeps for native code, on the variable's one reference (see StringMemory.Of).
@@ -16,10 +18,17 @@ namespace Keysharp.Builtins
 
 		protected VarRef() : base(null) { }
 
-		public VarRef(object x) : base(null)
+		public VarRef(object x) : this(x, false) { }
+
+		internal VarRef(object x, bool scoped) : base(null)
 		{
 			stored = Keysharp.Runtime.Lifetime.Retain(x);
 			variable = true;
+			if (scoped)
+			{
+				boxGate = new();
+				boxReferences = 1;
+			}
 		}
 
 		public VarRef(Func<object> getter, Action<object> setter) : this(getter, setter, "") { }
@@ -35,6 +44,26 @@ namespace Keysharp.Builtins
 		// A variable's canonical reference owns native memory: a local's value lives in it, while a static field's cached
 		// reference reaches its storage. Virtual references and script subclasses own no native memory.
 		internal bool IsVariable => variable && GetType() == typeof(VarRef);
+		internal bool HasBoxReferences => boxGate != null && Volatile.Read(ref boxReferences) > 0;
+
+		internal void RetainBox()
+		{
+			if (boxGate == null) return;
+			lock (boxGate)
+				if (!valueEscaped && boxReferences > 0)
+					boxReferences = checked(boxReferences + 1);
+		}
+
+		internal void ReleaseBox()
+		{
+			if (boxGate == null) return;
+			lock (boxGate)
+			{
+				if (valueEscaped || boxReferences == 0 || --boxReferences != 0)
+					return;
+			}
+			Keysharp.Runtime.Lifetime.Replace(ref stored, null);
+		}
 
 		public object __Value
 		{
@@ -62,7 +91,14 @@ namespace Keysharp.Builtins
 		{
 			if (!IsVariable || exposingValue) return;
 			exposingValue = true;
-			valueEscaped = true;
+			if (boxGate != null)
+				lock (boxGate)
+				{
+					valueEscaped = true;
+					boxReferences = 0;
+				}
+			else
+				valueEscaped = true;
 			try { Keysharp.Runtime.Lifetime.Escape(Get == null ? stored : Get()); }
 			finally { exposingValue = false; }
 		}

@@ -6,6 +6,9 @@ public class ClassTests : TestRunner
 	public void DestructorAliases() => Assert.IsTrue(TestScript("class-destructor-aliases", false));
 
 	[Test, Category("Class")]
+	public void DestructorScopes() => Assert.IsTrue(TestScript("class-destructor-scopes", false));
+
+	[Test, Category("Class")]
 	public void BuiltInTypeVisibility() => Assert.IsTrue(TestScript("class-builtin-visibility", false));
 
 	[Test, Category("Class")]

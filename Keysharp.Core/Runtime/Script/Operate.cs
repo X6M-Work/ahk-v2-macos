@@ -669,13 +669,13 @@ namespace Keysharp.Runtime
 		public static object DerefSetFound(FuncScope scope, object target, object value)
 		{
 			if (target is string key)
-				_ = scope.Write(key, value);
+				return scope.Write(key, value);
 			else if (ScriptVar.FromTarget(target) is { Exists: true } v)
-				v.Set(value);
+				v.Set(Lifetime.Escape(value));
 			else if (target != Raised)
-				_ = Refs.SetValue(target, value);
+				return Refs.SetValue(target, value);
 
-			return value;
+			return Lifetime.Escape(value);
 		}
 
 		// `%name% op= value`, `++%name%` and `%name%++` on what DerefTarget found, yielding the new value, or the old one for a
@@ -745,7 +745,7 @@ namespace Keysharp.Runtime
 
 		// AHK's `%obj%` for an object that is not a reference: a temporary variable holding the object, so a read yields
 		// the object and a write goes to that variable.
-		private static object DerefOperand(object name) => name is Any && !Refs.DeclaresValue(name) ? new VarRef(name) : name;
+		private static object DerefOperand(object name) => name is Any && !Refs.DeclaresValue(name) ? new VarRef(Lifetime.Escape(name)) : name;
 
 		// The name a dynamic reference looks up, or null once it has raised for an unset, non-text or blank name.
 		private static string DerefKey(object name)

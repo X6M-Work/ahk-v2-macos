@@ -335,7 +335,7 @@ namespace Keysharp.Runtime
 			else if (args.Length == 1) return SetPropertyValue(item, "__Item", args);
 			else if (args.Length == 2 && TrySetBuiltinItem(item, args[0], args[1])) return args[1];
 
-			object value = args[^1];
+			object value = Lifetime.Escape(args[^1]);
 
 			if (item is ITuple otup && otup.Length > 1)
 			{

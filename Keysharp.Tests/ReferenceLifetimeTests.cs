@@ -110,4 +110,37 @@ public class ReferenceLifetimeTests : TestRunner
 		Assert.That((clone.Deletes, clone.Disposes), Is.EqualTo((0, 0)));
 		GC.KeepAlive(clone);
 	}
+
+	[Test]
+	public void ScopedBoxReleasesStoredValueWhenLastBoxReferenceDrops()
+	{
+		var probe = new Probe();
+		var box = Lifetime.Box(probe);
+		object exported = null;
+		Lifetime.Replace(ref exported, box);
+		Lifetime.ReleaseScope(box);
+		Assert.That((probe.Deletes, probe.Disposes), Is.EqualTo((0, 0)));
+		Lifetime.Replace(ref exported, null);
+		Assert.That((probe.Deletes, probe.Disposes), Is.EqualTo((1, 1)));
+	}
+
+	[Test]
+	public void ReleaseScopeSkipsDestructorsAfterScriptExit()
+	{
+		var probe = new Probe();
+		Lifetime.Retain(probe);
+		var previousExited = s.hasExited;
+		try
+		{
+			s.hasExited = true;
+			Lifetime.ReleaseScope(probe);
+			Assert.That((probe.Deletes, probe.Disposes), Is.EqualTo((0, 0)));
+		}
+		finally
+		{
+			s.hasExited = previousExited;
+			Lifetime.Release(probe);
+		}
+		Assert.That((probe.Deletes, probe.Disposes), Is.EqualTo((1, 1)));
+	}
 }

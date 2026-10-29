@@ -9,6 +9,7 @@ namespace Keysharp.Builtins
 		private long referenceCount;
 		private bool referencesEscaped;
 		internal ReferenceLifeState ReferenceState => (ReferenceLifeState)Volatile.Read(ref referenceState);
+		internal bool HasReferences => Volatile.Read(ref referenceCount) > 0;
 		internal bool AllowsCollectedCleanup => ReferenceState == ReferenceLifeState.Untracked;
 
 		internal void BeginReferenceConstruction()

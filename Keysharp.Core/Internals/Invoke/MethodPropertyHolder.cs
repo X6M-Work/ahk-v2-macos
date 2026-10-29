@@ -21,15 +21,18 @@ namespace Keysharp.Internals.Invoke
 			var deletes = AhkIdentifierComparer.Instance.Equals(mi?.Name, "__Delete");
 			var constructs = mi?.DeclaringType == typeof(Class) && mi.Name == "Call"
 				|| mi?.DeclaringType == typeof(KeysharpObject) && mi.Name == "staticCall";
+			var preservesArguments = IsScript || mi?.DeclaringType == typeof(Keysharp.Builtins.Types);
 			object ReferencedInvoke(object instance, object[] args)
 			{
 				var receiver = instance ?? (args is { Length: > 0 } ? args[0] : null);
 				var lifecycle = receiver is Any a && (a.ReferenceState == ReferenceLifeState.Constructing && initializes
 					|| a.ReferenceState == ReferenceLifeState.Deleting && deletes);
-				if (!lifecycle) Lifetime.Escape(instance);
+				if (!lifecycle)
+					_ = preservesArguments ? Lifetime.Borrow(instance) : Lifetime.Escape(instance);
 				if (args != null)
 					for (var i = 0; i < args.Length; i++)
-						if (!lifecycle || i != 0 || !ReferenceEquals(args[i], receiver)) Lifetime.Escape(args[i]);
+						if (!lifecycle || i != 0 || !ReferenceEquals(args[i], receiver))
+							_ = preservesArguments ? Lifetime.Borrow(args[i]) : Lifetime.Escape(args[i]);
 				var result = invoke(instance, args);
 				return lifecycle || constructs ? result : Lifetime.Escape(result);
 			}
