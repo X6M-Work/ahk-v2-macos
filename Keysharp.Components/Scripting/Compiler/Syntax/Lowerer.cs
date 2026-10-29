@@ -4045,7 +4045,7 @@ namespace Keysharp.Compilation.Syntax
 					var arArgs = ar.Elements.Any(el => el.Spread)
 						? SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(Arg(SpreadParams(ar.Elements))))
 						: ArgList(LowerArgs(ar.Elements));
-					return SyntaxFactory.InvocationExpression(Access("Keysharp.Builtins.Array.Literal"), arArgs);
+					return SyntaxFactory.InvocationExpression(Access("Keysharp.Builtins.Array.OwnedLiteral"), arArgs);
 				case MapExpr mp:   // [k1: v1, k2: v2] -> Map.Literal(k1, v1, k2, v2)
 					var mapArgs = new List<ExpressionSyntax>(mp.Entries.Count * 2);
 					foreach (var (k, v) in mp.Entries) { mapArgs.Add(LowerExpr(k)); mapArgs.Add(LowerExpr(v)); }
@@ -5295,8 +5295,8 @@ namespace Keysharp.Compilation.Syntax
 			return result;//This is somewhat dangerous, but provides a large reduction in allocations. Revert back to a normal allocation if this ever causes errors.
 		}
 
-		// { [headers] [IEnumerator KS_eN = null;] [var KS_loopN =] Push(type); [backups] try { loop } finally { [restores]
-		// Pop([KS_eN]); } [if (KS_loopN.index == 0) else] [_end:] }
+		// { [headers] [IEnumerator KS_eN = null;] [var KS_loopN =] Push(type); [backups] try { loop } finally {
+		// Pop([KS_eN]); [restores] } [if (KS_loopN.index == 0) else] [_end:] }
 		// The else follows the try, so it runs only when the loop completed without an iteration, never while an
 		// exception unwinds, and it may return or break. Lowered after PopLoop, so its break targets the outer loop.
 		private BlockSyntax LoopBlock(int id, LoopFrame frame, string loopType, BlockSyntax loop, Stmt elseStmt,
@@ -5318,8 +5318,9 @@ namespace Keysharp.Compilation.Syntax
 			block.Add(elseStmt != null ? LocalDeclVar(info, push) : ExprStmt(push));
 			if (backups != null) block.AddRange(backups);
 			var finallyStmts = _scratchListStatements.Get();
-			if (restores != null) finallyStmts.AddRange(restores);
-			finallyStmts.Add(disposedEnumerator != null ? CallStmt("Keysharp.Runtime.Loops.Pop", Id(disposedEnumerator)) : CallStmt("Keysharp.Runtime.Loops.Pop"));
+			var pop = disposedEnumerator != null ? CallStmt("Keysharp.Runtime.Loops.Pop", Id(disposedEnumerator)) : CallStmt("Keysharp.Runtime.Loops.Pop");
+			finallyStmts.Add(restores is { Count: > 0 }
+				? TryFinally(SyntaxFactory.Block(pop), SyntaxFactory.Block(restores)) : pop);
 			block.Add(TryFinally(loop, SyntaxFactory.Block(finallyStmts)));
 			if (elseStmt != null)
 				block.Add(SyntaxFactory.IfStatement(
@@ -5371,7 +5372,7 @@ namespace Keysharp.Compilation.Syntax
 			body = body.WithStatements(body.Statements.Insert(0, CallStmt("Keysharp.Runtime.Loops.Inc")));
 			var cond = Inv(Access("Keysharp.Runtime.Flow.IsTrueAndRunning"), Inv(Member(Id(ev), "MoveNext")));
 			var loop = SyntaxFactory.WhileStatement(cond, WrapLoopBody(body, fr.Until, frame, fr));
-			var block = LoopBlock(id, frame, "Normal", SyntaxFactory.Block(LocalDeclVar(ev, enumInit), loop), fr.Else, header, null, saves, restores);
+			var block = LoopBlock(id, frame, "Normal", SyntaxFactory.Block(ExprStmt(Assign(Id(ev), enumInit)), loop), fr.Else, header, ev, saves, restores);
 			_scratchListStatements.Return(restores);
 			_scratchListStatements.Return(saves);
 			_scratchListExpressions.Return(meArgs);

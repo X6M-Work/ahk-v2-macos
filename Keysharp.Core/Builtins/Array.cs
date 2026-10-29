@@ -5,7 +5,7 @@ namespace Keysharp.Builtins;
 /// Internally the list uses 0-based indexing, however the public interface expects 1-based indexing.<br/>
 /// A negative index can be used to address elements in reverse, so -1 is the last element, -2 is the second last element, and so on.
 /// </summary>
-public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(object, object)>, IList
+public partial class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(object, object)>, IList
 {
 	private const int DefaultCapacity = 4;
 	private int capacity = DefaultCapacity;
@@ -59,7 +59,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 				return;
 
 			if (i == 0)
-				array.Clear();
+				RemoveItems(0, array.Count);
 			else if (i > array.Count)
 			{
 				if (array.Capacity < i)
@@ -69,7 +69,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 					array.Add(null);
 			}
 			else if (i < array.Count)
-				array.RemoveRange(i, array.Count - i);
+				RemoveItems(i, array.Count - i);
 		}
 	}
 
@@ -103,8 +103,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 	/// </summary>
 	public Array(params object[] args) : base(args) { }
 
-	// An array literal or a variadic parameter, as AHK's Array::Create: each item as it is, and no __New, whose single
-	// collection argument would be expanded.
+	// Native factories may store their result outside script ownership; compiler literals use OwnedLiteral.
 	[PublicHiddenFromUser]
 	public new static Array Literal(params object[] items)
 	{
@@ -131,7 +130,9 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 		var clone = (Array)MemberwiseClone();
 		clone.array = clone.array.ToList();
 		clone.array.Capacity = array.Capacity;
-		return clone;
+		clone.BeginReferenceConstruction();
+		clone.CompleteReferenceConstruction();
+		return Keysharp.Runtime.Lifetime.Temporary(clone);
 	}
 
 	/// <summary>
@@ -218,8 +219,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 					Copy(values);
 					break;
 				case IEnumerable e when e is not string and not Any:
-					array = new (e.Cast<object>()); // enumerate once
-					if (array.Count < capacity) array.Capacity = capacity;
+					ReplaceItems(e.Cast<object>());
 					break;
 				default:
 					Copy(args);
@@ -235,12 +235,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 
 		void Copy(ICollection<object> values)
 		{
-			if (array.Count != 0)
-				array = new (Math.Max(capacity, values.Count));
-			else
-				array.Capacity = Math.Max(capacity, values.Count);
-
-			array.AddRange(values);
+			ReplaceItems(values);
 		}
 	}
 
@@ -264,7 +259,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 	/// <returns>The length of the array after value has been added.</returns>
 	int IList.Add(object value)
 	{
-		array.Add(value);
+		array.Add(StoreValue(value));
 		return array.Count;
 	}
 
@@ -272,7 +267,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 	/// The implementation for <see cref="IList.Clear"/> which clears the array.<br/>
 	/// This is not visible to the method lookup system, but is required for the <see cref="IList"/> interface.
 	/// </summary>
-	void IList.Clear() => array.Clear();
+	void IList.Clear() => RemoveItems(0, array.Count);
 
 	/// <summary>
 	/// Returns whether the passed in object is contained in the array.<br/>
@@ -295,9 +290,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 		if (!TryConvertIndex(index, out var i, nameof(Delete)))
 			return DefaultObject;
 
-		var ob = array[i];
-		array[i] = null;
-		return ob ?? DefaultObject;
+		return RemoveValue(i, leaveHole: true);
 	}
 
 	/// <summary>
@@ -458,7 +451,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 		var val = array[i];
 
 		if (val != null)
-			return val;
+			return Keysharp.Runtime.Lifetime.Temporary(val);
 		else if (@default != null)
 			return @default;
 		// AutoHotkey declares no Default: it looks for one the script may have defined, by assignment, DefineProp
@@ -551,7 +544,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 				return DefaultObject;
 
 			for (var i = 1; i < args.Length; i++)//Need to use values here and not o because the enumerator will make the elements into Tuples because of the special enumerator.
-				array.Insert(index++, args[i]);
+				array.Insert(index++, StoreValue(args[i]));
 		}
 
 		return DefaultObject;
@@ -632,9 +625,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 			return Errors.ErrorOccurred($"Cannot pop an empty array.");
 		}
 
-		var val = array[index];
-		array.RemoveAt(index);
-		return val ?? DefaultObject;
+		return RemoveValue(index, leaveHole: false);
 	}
 
 	/// <summary>
@@ -643,9 +634,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 	/// <param name="args">One or more values to append.</param>
 	public object Push(params object[] args)
 	{
-		if (args.Length == 1) array.Add(args[0]);
-		else
-			array.AddRange(args);
+		foreach (var value in args) array.Add(StoreValue(value));
 		return DefaultObject;
 	}
 
@@ -664,7 +653,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 		if (found == 0)
 			return false;
 
-		array.RemoveAt((int)found - 1);
+		RemoveItems((int)found - 1, 1);
 		return true;
 	}
 
@@ -697,15 +686,13 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 				_ = o[1].TryCoerceInt(out var len, 1);
 
 				if (len >= 0 && len <= array.Count - i)
-					array.RemoveRange(i, len);
+					RemoveItems(i, len);
 				else
 					return Errors.InvalidParameterErrorOccurred(2, "Array.Prototype.RemoveAt", len);
 			}
 			else if (i < array.Count)
 			{
-				var ob = array[i];
-				array.RemoveAt(i);
-				return ob ?? DefaultObject;
+				return RemoveValue(i, leaveHole: false);
 			}
 		}
 
@@ -828,7 +815,7 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 		set
 		{
 			if (TryConvertIndex(index, out var i, what: "Array.Prototype.__Item.Set"))
-				array[i] = Keysharp.Runtime.Lifetime.Escape(value);
+				SetItem(i, value);
 		}
 	}
 
@@ -850,12 +837,15 @@ public class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnumerable<(
 		var arr = array;
 		var position = -1;
 
-		return new Enumerator(
+		var result = new Enumerator(
 				   this,
 				   count,
 				   () => ++position < arr.Count,
 				   () => count > 1 ? position + 1L : arr[position],
 				   () => (position + 1L, arr[position]),
 				   () => position = -1);
+		result.BeginReferenceConstruction();
+		result.CompleteReferenceConstruction();
+		return (Enumerator)Keysharp.Runtime.Lifetime.Temporary(result);
 	}
 }

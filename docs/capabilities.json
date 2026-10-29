@@ -962,8 +962,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Instrumented Object-rooted user instances count variable, callable-scope and full-expression owners. Alias/scope/file fixtures pass Windows and both Mac architectures in CI 40803366218. All five strict fixtures now pass locally on Windows against AHK 2.0.31: alias, scope, temporary, resurrection and file cleanup; native revalidation pending. Retained resurrection survives predicates, methods and return transfers; self-assignment and __Delete reentry are protected. Unconverted containers (including variadic arrays), captures, legacy/inline-C# classes and native bases remain partial or GC-managed.",
-                     "tested-by":  "class-special-funcs.ahk; class-destructor-aliases.ahk; class-destructor-scopes.ahk; class-destructor-temporaries.ahk; ReferenceLifetimeTests; compat/phase15-architecture/; FileAndDirTests.FileLocalLifetime"
+                     "notes":  "Instrumented Object-rooted user instances and compiler-created exact Array instances count variable, scope, expression and element owners. Array literals/constructors/clones/variadics, primitive mutations and native array enumerators retain/release their edges; native receivers and canonical script-field references preserve ownership. All five strict fixtures and array differential regressions pass locally on Windows against AHK 2.0.31. Native temporary/resurrection/array revalidation is blocked before jobs start by GitHub account billing/spending-limit checks. Unknown native calls, Map/property storage, callbacks/captures, legacy classes and unconverted paths remain partial or GC-managed.",
+                     "tested-by":  "class-special-funcs.ahk; class-destructor-aliases.ahk; class-destructor-scopes.ahk; class-destructor-temporaries.ahk; class-destructor-arrays.ahk; ReferenceLifetimeTests; compat/phase15-architecture/; FileAndDirTests.FileLocalLifetime"
                  },
                  {
                      "category":  "Core Language",
@@ -3167,7 +3167,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Ordered collection object. In v2.1 mode, index access, Get, Has, Delete, InsertAt and RemoveAt require an integer index and reject Float or nonnumeric values with TypeError; integer strings are accepted. v2.0 mode retains Float truncation and its index error categories.",
+                     "notes":  "Ordered collection object. In v2.1 mode, index access, Get, Has, Delete, InsertAt and RemoveAt require an integer index and reject Float or nonnumeric values with TypeError; integer strings are accepted. v2.0 mode retains Float truncation and its index error categories. Compiler-created exact arrays and native array enumerators count element/source ownership; differential Windows tests cover mutation, variadics, clones, return transfer, reentrancy and scope cleanup. Unconverted native factories and opaque calls retain GC fallback; native revalidation pending.",
                      "tested-by":  "assign-dyn-var.ahk; collections-array.ahk"
                  },
                  {

@@ -544,7 +544,31 @@ namespace Keysharp.Runtime
         {
             var numOfVars = args.Length;
             var ke = MakeEnumerator(obj, numOfVars == 0 ? 1 : numOfVars);
-            return Enumerate(ke, args);
+            var iterator = Enumerate(ke, args).GetEnumerator();
+            return new OwnedEnumeration(iterator, ke.OwnsSource ? ke : ke.Source is Keysharp.Builtins.Array { OwnsElements: true } source ? source : null);
+        }
+
+        private sealed class OwnedEnumeration : IEnumerable, IEnumerator, IDisposable
+        {
+            private readonly IEnumerator inner;
+            private object source;
+            private bool disposed;
+            internal OwnedEnumeration(IEnumerator inner, object source)
+            {
+                this.inner = inner;
+                this.source = Lifetime.Retain(source);
+            }
+            public IEnumerator GetEnumerator() => this;
+            public object Current => inner.Current;
+            public bool MoveNext() => !disposed && inner.MoveNext();
+            public void Reset() => inner.Reset();
+            public void Dispose()
+            {
+                if (disposed) return;
+                disposed = true;
+                try { (inner as IDisposable)?.Dispose(); }
+                finally { var previous = source; source = null; Lifetime.ReleaseScope(previous); }
+            }
         }
 
         private static IEnumerable Enumerate(Enumerator ke, object[] args)

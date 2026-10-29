@@ -21,7 +21,11 @@ namespace Keysharp.Internals.Invoke
 			var deletes = AhkIdentifierComparer.Instance.Equals(mi?.Name, "__Delete");
 			var constructs = mi?.DeclaringType == typeof(Class) && mi.Name == "Call"
 				|| mi?.DeclaringType == typeof(KeysharpObject) && mi.Name == "staticCall";
-			var preservesArguments = IsScript || constructs || mi?.DeclaringType == typeof(Keysharp.Builtins.Types);
+			var preservesContainer = mi?.DeclaringType == typeof(Keysharp.Builtins.Array) && mi.Name is
+				"__New" or "__Enum" or "Clone" or "Get" or "Has" or "Contains" or "IndexOf" or "Delete" or "Pop" or "Push" or "InsertAt"
+				or "Remove" or "RemoveAt" or "get_Length" or "set_Length" or "get_Capacity" or "set_Capacity" or "get_Item" or "set_Item"
+				|| mi?.DeclaringType == typeof(Enumerator) && mi.Name is "Call" or "IsByRef";
+			var preservesArguments = IsScript || constructs || preservesContainer || mi?.DeclaringType == typeof(Keysharp.Builtins.Types);
 			object ReferencedInvoke(object instance, object[] args)
 			{
 				var receiver = instance ?? (args is { Length: > 0 } ? args[0] : null);
@@ -33,9 +37,14 @@ namespace Keysharp.Internals.Invoke
 					for (var i = 0; i < args.Length; i++)
 						if (!lifecycle || i != 0 || !ReferenceEquals(args[i], receiver))
 							_ = preservesArguments ? Lifetime.Borrow(args[i]) : Lifetime.Escape(args[i]);
-				using var invocation = Lifetime.EnterInvocation();
-				var result = invoke(instance, args);
-				return lifecycle ? result : IsScript || constructs ? Lifetime.Temporary(result) : Lifetime.Escape(result);
+				if (preservesContainer) Lifetime.Retain(receiver);
+				try
+				{
+					using var invocation = Lifetime.EnterInvocation();
+					var result = invoke(instance, args);
+					return lifecycle ? result : IsScript || constructs || preservesContainer ? Lifetime.Temporary(result) : Lifetime.Escape(result);
+				}
+				finally { if (preservesContainer) Lifetime.ReleaseScope(receiver); }
 			}
 			Func<object, object[], object> del = ReferencedInvoke;
 			if (!isGuiType) return del;
@@ -688,6 +697,8 @@ namespace Keysharp.Internals.Invoke
 		{
 			fi = f;
 			moduleType = ResolveModuleType(fi.DeclaringType);
+			InScriptModule = moduleType != null && moduleType.Assembly != typeof(Keysharp.Runtime.Module).Assembly;
+			IsScript = InScriptModule && !fi.IsDefined(typeof(InlineCSharpAttribute), false);
 			IsStatic = fi.IsStatic;
 			isGuiType = Gui.IsGuiType(fi.DeclaringType);
 			parameters = System.Array.Empty<ParameterInfo>();
@@ -699,6 +710,11 @@ namespace Keysharp.Internals.Invoke
 		{
 			var instParam = Expression.Parameter(typeof(object), "inst");
 			var valParam = Expression.Parameter(typeof(object), "value");
+			if (IsScript && fi.IsStatic && fi.FieldType == typeof(object))
+			{
+				var replace = typeof(Lifetime).GetMethod(nameof(Lifetime.Replace), [typeof(object).MakeByRefType(), typeof(object)]);
+				return Expression.Lambda<Action<object, object>>(Expression.Call(replace, Expression.Field(null, fi), valParam), instParam, valParam).Compile();
+			}
 			Expression assignExpr;
 			// Same conversion policy as parameters and properties: a script assigning to a typed field must
 			// not be able to raise an uncatchable InvalidCastException out of the compiled setter.
@@ -916,7 +932,7 @@ namespace Keysharp.Internals.Invoke
 						pTarget, pArgs, pStart, Expression.Constant(i), Expression.Constant(ps.Length), Expression.Constant(isVariadicSetter),
 						Expression.Constant(holder.IsScript ? holder.ScriptParameterName(ps[^1]) : ""));
 					if (ps[i].IsDefined(typeof(Keysharp.Runtime.VariadicAttribute), false))
-						packed = Expression.Call(typeof(Keysharp.Builtins.Array).GetMethod(nameof(Keysharp.Builtins.Array.Literal),
+						packed = Expression.Call(typeof(Keysharp.Builtins.Array).GetMethod(holder.IsScript ? nameof(Keysharp.Builtins.Array.OwnedLiteral) : nameof(Keysharp.Builtins.Array.Literal),
 							BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly), packed);
 					a[i] = Expression.Convert(packed, ps[i].ParameterType);
 					a[i] = steps?.Hold(a[i]) ?? a[i];

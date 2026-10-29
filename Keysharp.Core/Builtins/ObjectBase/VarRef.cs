@@ -44,6 +44,7 @@ namespace Keysharp.Builtins
 		// A variable's canonical reference owns native memory: a local's value lives in it, while a static field's cached
 		// reference reaches its storage. Virtual references and script subclasses own no native memory.
 		internal bool IsVariable => variable && GetType() == typeof(VarRef);
+		internal bool HasOwnedStorage => IsVariable && !valueEscaped && (boxGate == null || HasBoxReferences);
 		internal bool HasBoxReferences => boxGate != null && Volatile.Read(ref boxReferences) > 0;
 
 		internal void RetainBox()
@@ -75,7 +76,7 @@ namespace Keysharp.Builtins
 			set
 			{
 				if (Get == null) ReplaceValue(value);
-				else Set(Keysharp.Runtime.Lifetime.Escape(value));
+				else Set(HasOwnedStorage ? value : Keysharp.Runtime.Lifetime.Escape(value));
 			}
 		}
 
@@ -83,7 +84,7 @@ namespace Keysharp.Builtins
 		{
 			if (Get == null)
 				return Keysharp.Runtime.Lifetime.Replace(ref stored, valueEscaped ? Keysharp.Runtime.Lifetime.Escape(value) : value);
-			Set(Keysharp.Runtime.Lifetime.Escape(value));
+			Set(HasOwnedStorage ? value : Keysharp.Runtime.Lifetime.Escape(value));
 			return __Value;
 		}
 

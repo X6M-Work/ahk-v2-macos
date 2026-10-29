@@ -335,7 +335,7 @@ namespace Keysharp.Runtime
 			else if (args.Length == 1) return SetPropertyValue(item, "__Item", args);
 			else if (args.Length == 2 && TrySetBuiltinItem(item, args[0], args[1])) return args[1];
 
-			object value = Lifetime.Escape(args[^1]);
+			object value = PreservesBuiltinItem(item) ? args[^1] : Lifetime.Escape(args[^1]);
 
 			if (item is ITuple otup && otup.Length > 1)
 			{
@@ -485,12 +485,16 @@ namespace Keysharp.Runtime
 			{
 				value = key is long l && l is >= int.MinValue and <= int.MaxValue && arr.TranslateIndex((int)l) is var i and >= 0
 					? arr.array[i] : null;
-				return value != null && ReachesBuiltinItem(arr, arrayItemGet, false);
+				if (value == null || !ReachesBuiltinItem(arr, arrayItemGet, false)) return false;
+				value = Lifetime.Temporary(value);
+				return true;
 			}
 
 			value = null;
 			return item is Keysharp.Builtins.Map map && map.TryGetValue(key, out value) && ReachesBuiltinItem(map, mapItemGet, false);
 		}
+
+		private static bool PreservesBuiltinItem(object item) => item is Keysharp.Builtins.Array array && ReachesBuiltinItem(array, arrayItemSet, true);
 
 		private static bool TrySetBuiltinItem(object item, object key, object value)
 		{
@@ -500,7 +504,7 @@ namespace Keysharp.Runtime
 					|| !ReachesBuiltinItem(arr, arrayItemSet, true))
 					return false;
 
-				arr.array[i] = Lifetime.Escape(value);
+				arr.SetItem(i, value);
 				return true;
 			}
 

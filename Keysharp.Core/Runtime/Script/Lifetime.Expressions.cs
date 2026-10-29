@@ -45,7 +45,7 @@ namespace Keysharp.Runtime
 			{
 				if (value is not Keysharp.Builtins.Any { ReferenceState: Keysharp.Builtins.ReferenceLifeState.Alive
 					or Keysharp.Builtins.ReferenceLifeState.Resurrected }
-					&& value is not Keysharp.Builtins.VarRef { HasBoxReferences: true }) return Escape(value);
+					&& value is not Keysharp.Builtins.VarRef { HasOwnedStorage: true }) return Escape(value);
 				if (values != null && values.Exists(item => ReferenceEquals(item, value))) return value;
 				Retain(value);
 				(values ??= []).Add(value);

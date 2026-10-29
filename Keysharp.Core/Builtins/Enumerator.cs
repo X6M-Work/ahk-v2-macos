@@ -1,6 +1,6 @@
 namespace Keysharp.Builtins
 {
-	public class Enumerator : KeysharpFunc, IEnumerator<object>, IEnumerator<(object, object)>, IDisposable
+	public partial class Enumerator : KeysharpFunc, IEnumerator<object>, IEnumerator<(object, object)>, IDisposable
 	{
 		internal static readonly object True = true;
 		private static readonly object False = false;
@@ -35,8 +35,8 @@ namespace Keysharp.Builtins
 		{
 		}
 
-		// Loops own disposal.
-		internal override bool DisposesWhenCollected => false;
+		// Iteration disposal and release of the retained source have separate lifetimes.
+		internal override bool DisposesWhenCollected => ownsSource;
 
 		internal Enumerator(
 			object source,
@@ -99,6 +99,8 @@ namespace Keysharp.Builtins
 
 		public override object Call([ByRef] params object[] args)
 		{
+			var owned = ownsSource;
+			if (owned) Lifetime.Retain(this);
 			try
 			{
 				if (callback != null)
@@ -139,6 +141,7 @@ namespace Keysharp.Builtins
 			{
 				return Errors.ErrorOccurred(e.Message);
 			}
+			finally { if (owned) Lifetime.ReleaseScope(this); }
 		}
 
 		private object CallV20(object[] args)

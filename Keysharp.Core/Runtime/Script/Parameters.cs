@@ -15,7 +15,7 @@ namespace Keysharp.Runtime
 			{
 				// Resolve once: a getter-backed __Enum can run script, even when it returns the built-in method.
 				var over = Loops.ScriptEnum(obj);
-				if (over == null) return arr.array.ToArray();
+				if (over == null) return arr.array.Select(Lifetime.Temporary).ToArray();
 				ke = Loops.MakeEnumerator(arr, 1L, 1, over);
 			}
 			else
@@ -33,7 +33,7 @@ namespace Keysharp.Runtime
 				var callArgs = new object[] { vf };
 
 				while (ke.Call(callArgs).IsCallbackResultNonEmpty())
-					l.Add(vf.__Value);
+					l.Add(Lifetime.Temporary(vf.__Value));
 
 				return l.ToArray();
 			}

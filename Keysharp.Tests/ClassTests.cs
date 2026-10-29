@@ -12,6 +12,9 @@ public class ClassTests : TestRunner
 	public void DestructorTemporaries() => Assert.IsTrue(TestScript("class-destructor-temporaries", false));
 
 	[Test, Category("Class")]
+	public void DestructorArrays() => Assert.IsTrue(TestScript("class-destructor-arrays", false));
+
+	[Test, Category("Class")]
 	public void BuiltInTypeVisibility() => Assert.IsTrue(TestScript("class-builtin-visibility", false));
 
 	[Test, Category("Class")]

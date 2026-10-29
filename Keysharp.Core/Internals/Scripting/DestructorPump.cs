@@ -106,6 +106,7 @@ namespace Keysharp.Internals.Scripting
 					return true;
 				}
 
+				foreach (var (any, _) in batch) any.EscapeOwnedReferences();
 				var deleted = false;
 				// A batch of Buffers and Files, the usual one, has nothing to order.
 				var anyDelete = batch.Exists(static entry => !entry.Again && entry.Owner.HasDeleteCall);

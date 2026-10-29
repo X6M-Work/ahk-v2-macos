@@ -12,19 +12,29 @@ namespace Keysharp.Builtins
 		internal bool HasReferences => Volatile.Read(ref referenceCount) > 0;
 		internal bool AllowsCollectedCleanup => ReferenceState == ReferenceLifeState.Untracked;
 
+		internal virtual bool SupportsOwnedReferences => false;
+		internal virtual void BeginOwnedReferences() { }
+		internal virtual void EscapeOwnedReferences() { }
+		internal virtual void ReleaseOwnedReferences() { }
+		internal virtual void ResetOwnedReferences() { }
+
 		internal void BeginReferenceConstruction()
 		{
-			// Native base classes still have manager and resource roots outside the ownership protocol.
+			// Only opted-in native containers bypass script-class instrumentation.
 			var root = GetType();
-			if (root.Assembly == typeof(Any).Assembly) return;
-			while (root != null && root.Assembly != typeof(Any).Assembly)
+			if (!SupportsOwnedReferences)
 			{
-				if (!root.IsDefined(typeof(Keysharp.Runtime.ReferenceCountedAttribute), false)) return;
-				root = root.BaseType;
+				if (root.Assembly == typeof(Any).Assembly) return;
+				while (root != null && root.Assembly != typeof(Any).Assembly)
+				{
+					if (!root.IsDefined(typeof(Keysharp.Runtime.ReferenceCountedAttribute), false)) return;
+					root = root.BaseType;
+				}
+				if (root != typeof(KeysharpObject)) return;
 			}
-			if (root != typeof(KeysharpObject)) return;
 			referenceGate = new();
 			referenceState = (int)ReferenceLifeState.Constructing;
+			BeginOwnedReferences();
 		}
 
 		internal void CompleteReferenceConstruction()
@@ -32,6 +42,7 @@ namespace Keysharp.Builtins
 			if (referenceGate == null) return;
 			lock (referenceGate)
 				referenceState = (int)(referencesEscaped ? ReferenceLifeState.Untracked : ReferenceLifeState.Alive);
+			MaybeActivateFinalizer();
 		}
 
 		internal void EscapeReferences()
@@ -43,6 +54,7 @@ namespace Keysharp.Builtins
 				if (ReferenceState is ReferenceLifeState.Alive or ReferenceLifeState.Resurrected)
 					referenceState = (int)ReferenceLifeState.Untracked;
 			}
+			EscapeOwnedReferences();
 		}
 
 		internal void RetainReference()
@@ -91,6 +103,7 @@ namespace Keysharp.Builtins
 				}
 				if (dispose)
 				{
+					ReleaseOwnedReferences();
 					try { if (this is IDisposable native) native.Dispose(); }
 					catch { }
 				}
@@ -120,6 +133,7 @@ namespace Keysharp.Builtins
 			referenceState = (int)ReferenceLifeState.Untracked;
 			referenceCount = 0;
 			referencesEscaped = false;
+			ResetOwnedReferences();
 		}
 	}
 }
