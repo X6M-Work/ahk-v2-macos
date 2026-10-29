@@ -52,7 +52,7 @@ namespace Keysharp.Builtins
 		}
 
 		// Whether the object has something to release when collected, so it needs a sentinel even without a __Delete.
-		internal virtual bool DisposesWhenCollected => this is IDisposable;
+		internal virtual bool DisposesWhenCollected => ownsProperties || this is IDisposable;
 
 		// Whether collecting the object calls its __Delete (see KeysharpObject and Struct).
 		internal virtual bool HasDeleteCall => false;
@@ -94,7 +94,7 @@ namespace Keysharp.Builtins
 				copy.op = new(op.Count, AhkIdentifierComparer.Instance);
 
 				foreach (var (name, desc) in op)
-					copy.op[name] = desc.Clone();
+					copy.op[name] = desc.CopyForOwner();
 			}
 
 			copy.MaybeActivateFinalizer();
@@ -199,17 +199,30 @@ namespace Keysharp.Builtins
 		// Internal method to define or update an own property, and notify children of the change
 		internal void DefinePropInternal(string name, OwnPropsDesc desc)
 		{
+			if (ownsProperties)
+			{
+				MergeOwnProperty(name, desc.Value, desc.Get, desc.Set, desc.Call, desc.Enumerable);
+				return;
+			}
 			if (EnsureOwnProps().TryGetValue(name, out var existing))
 				existing.Merge(desc);
 			else
 				op[name] = desc;
 
+			enumerableProperties = null;
 			OnPropertyChanged(name);
 		}
 		internal object DeleteOwnPropInternal(string name)
 		{
+			if (ownsProperties)
+			{
+				Lifetime.Retain(this);
+				try { return RemoveOwnedProperty(name, true); }
+				finally { Lifetime.ReleaseScope(this); }
+			}
 			if (op is null || !op.Remove(name, out var map)) return DefaultObject;
 			if (op.Count == 0) op = null;
+			enumerableProperties = null;
 			OnPropertyChanged(name);
 			return map.Value;
 		}

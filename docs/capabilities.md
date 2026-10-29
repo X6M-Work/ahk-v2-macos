@@ -14,7 +14,7 @@ Status legend:
 |---|---|---|---|---|---|
 | __Await() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Lets a script object expose asynchronous work without inheriting from Task. The zero-argument method returns a Task, CLR Task or ValueTask, or another __Await object; Await, Task(Value), either Then callback's direct return, Task.Create settlement and Task combinators consume it. |
 | __Call | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Meta-function invoked when calling a missing method or property. |
-| __Delete | 🟡 Partial | 🟡 Partial | 🟡 Partial | 🟡 Partial | Instrumented Object-rooted user instances and compiler-prepared exact Array/Map instances count variable, scope, expression and container owners. Native container mutations, clones and enumerators retain/release their edges; Map Clear removes entries in reverse key order before callbacks and handles reentrant mutations. All five strict fixtures and portable lifecycle regressions pass locally on Windows against AHK 2.0.31. Native revalidation is blocked before jobs start by GitHub account billing/spending-limit checks. Unknown native calls, CLR dictionary aliases/exports, property storage, callbacks/captures, legacy classes and native subclasses retain GC fallback. Completed construction registers its expression owner even when __Init, __New or argument binding fails; retained/resurrected failed instances keep their owners. |
+| __Delete | 🟡 Partial | 🟡 Partial | 🟡 Partial | 🟡 Partial | Instrumented Object-rooted user instances and compiler-prepared exact Object/Array/Map instances count variable, scope, expression, container and own-property owners. Descriptor Value/Get/Set/Call slots and native OwnProps enumerators retain their references. Map entries are released before ascending-name own properties; replacements publish before callbacks. Failed construction still registers its expression owner, and retained/resurrected instances keep their owners. All five strict fixtures and seven portable lifecycle regressions pass locally on Windows against AHK 2.0.31. Native revalidation is pending after GitHub account billing/spending-limit refusals. Unknown native calls, CLR dictionary aliases/exports, base/prototype pointers, callbacks/captures, legacy classes and native subclasses retain GC fallback. Named receiver evaluation when an argument changes its variable remains under investigation. |
 | __Enum() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Returns an enumerator for the object. |
 | __Get | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Meta-function invoked when getting a missing property. |
 | __Init() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Class initialization method executed once before first use. |
@@ -39,7 +39,7 @@ Status legend:
 | [ ... ] / Array | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Creates an Array literal. |
 | [ ... ] / Map | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Creates an Map literal. |
 | { ... } (Block) | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Creates a block scope for one or more statements. |
-| { ... } / Object | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Creates an Object literal. |
+| { ... } / Object | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Creates an Object literal. Compiler-prepared exact objects count own-property descriptor references; duplicate unset values preserve existing fields. Windows lifecycle differential tests pass; native lifetime revalidation remains pending. |
 | {Blind} | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Send option which preserves modifier state while sending keys; parsed and applied by the shared cross-platform sender. |
 | * | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Multiplication operator |
 | ** | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Power operator |
@@ -304,7 +304,7 @@ Status legend:
 | Array.__Item | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Indexer property for getting or setting array elements. In v2.1 mode, a non-integer index raises TypeError; an integer outside the bounds raises IndexError. |
 | Array.__New() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Constructs a new Array object. An explicit call appends elements to the existing array and preserves active enumerators; checked against AHK 2.0.31 on Windows. |
 | Array.Capacity | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Gets or sets the reserved element capacity. |
-| Array.Clone() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Returns a shallow copy of an array. An instance created by ObjCreateWithDataPtr raises TypeError. |
+| Array.Clone() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Returns a shallow copy with independent counted element and own-property owners for compiler-prepared exact arrays. An instance created by ObjCreateWithDataPtr raises TypeError. Windows lifecycle differential tests pass; native lifetime revalidation remains pending. |
 | Array.Contains() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Keysharp-specific Array method. Omitting the value searches for an element which has no value. |
 | Array.Default | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Default value returned for missing indexes. |
 | Array.Delete() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Unsets an element and returns its previous value. In v2.1 mode, a non-integer index raises TypeError; an integer outside the bounds raises ValueError. |
@@ -458,7 +458,7 @@ Status legend:
 | DateAdd() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The DateAdd function adds or subtracts time from a date-time value. |
 | DateDiff() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The DateDiff function compares two date-time values and returns the difference. |
 | Default | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Default branch label used by switch. |
-| DefineProp() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Defines own properties with callable accessors; Enumerable: false hides one from Props. Struct instances raise TypeError. |
+| DefineProp() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Defines own properties with callable accessors; Enumerable: false hides one from Props. Counted objects own descriptor Value/Get/Set/Call slots and publish replacements before reentrant destructor or accessor metadata callbacks. Struct instances raise TypeError. Windows lifecycle differential tests pass; native lifetime revalidation remains pending. |
 | DetectHiddenText() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The DetectHiddenText function determines whether invisible text in a window is "seen" for the purpose of finding the window. |
 | DetectHiddenWindows() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Determines whether invisible windows are seen by the script. On macOS, application hiding affects title searches; direct handles still work. |
 | DirCopy() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Copies a folder along with all its sub-folders and files (similar to xcopy). A .zip, .tar, .tar.gz or .tgz source is extracted into the destination folder; a plain .gz is decompressed to the destination as a single file. |
@@ -804,9 +804,9 @@ Status legend:
 | Map.Capacity | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Gets or sets the internal capacity for map entries. |
 | Map.CaseSense | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Retrieves or sets the map's case sensitivity setting. |
 | Map.Clear() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Removes entries in reverse key order, releasing each value before its key after publishing that entry removal. Reentrant mutations restart traversal, including newly inserted entries. Count and Has observe remaining entries during callbacks. Native lifetime validation remains pending. |
-| Map.Clone() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Shallow clone preserving key conversion mode, case sensitivity and independent counted key/value owners for compiler-prepared exact Maps. An instance created by ObjCreateWithDataPtr raises TypeError. Native lifetime validation remains pending. |
+| Map.Clone() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Shallow clone preserving key conversion mode, case sensitivity and independent counted key/value and own-property owners for compiler-prepared exact Maps. An instance created by ObjCreateWithDataPtr raises TypeError. Windows lifecycle differential tests pass; native lifetime revalidation remains pending. |
 | Map.Count | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Number of key/value pairs in the map. |
-| Map.Default | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Default value returned for missing keys. |
+| Map.Default | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Default value returned for missing keys. Compiler-prepared exact Maps own this property reference; returned fallback values transfer to the expression owner. Windows lifecycle differential tests pass; native lifetime revalidation remains pending. |
 | Map.Delete() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Deletes a key/value pair and protects its returned value before releasing the entry. A missing key raises UnsetItemError, or returns unset in v2.1 compatibility mode. Native lifetime validation remains pending. |
 | Map.Get() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Gets a value by key with optional fallback default. |
 | Map.Has() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Returns whether a dictionary contains a value, even an empty one, for the given key. |
@@ -884,7 +884,7 @@ Status legend:
 | ObjBindMethod() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The ObjBindMethod function creates a BoundFunc object which calls a method of a given object. |
 | ObjCreateWithDataPtr() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Creates a directly constructible Object or Struct instance with an external data pointer, without calling __Init, __New or static Call. Enables __Delete without freeing the external memory; ObjSetDataPtr can rebind it. Typed properties remain restricted to struct classes. |
 | Object.__Ref() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Returns a property-reference (PropRef) object. |
-| Object() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Creates a new Object; optional key/value arguments initialize own properties. |
+| Object() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Creates a new Object; optional key/value arguments initialize own properties. Compiler-prepared exact instances count own-property descriptor references. Windows lifecycle differential tests pass; native lifetime revalidation remains pending. |
 | ObjFromPtr() | 🟢 Full | 🔴 Unsupported | 🔴 Unsupported | 🔴 Unsupported | Retrieves the managed object for an IUnknown pointer, or creates a native COM wrapper which takes ownership of the supplied native reference. Returning a managed object does not consume a native reference. |
 | ObjFromPtrAddRef() | 🟢 Full | 🔴 Unsupported | 🔴 Unsupported | 🔴 Unsupported | Retrieves the managed object for an IUnknown pointer, or creates a native COM wrapper which owns an additional native reference. Returning a managed object does not add a native reference. The caller retains ownership of any reference it supplied. |
 | ObjGetBase | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Retrieves the value's base object. Differs in that it only returns the name of the base type as a string. |
@@ -893,7 +893,7 @@ Status legend:
 | ObjGetDataSize() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Returns the size of the object's structure (typed properties), in bytes. Accepts struct prototypes and returns zero for ordinary objects. |
 | ObjHasOwnProp() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Checks for an own property; structs raise TypeError. |
 | ObjOwnPropCount() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Counts own properties; structs raise TypeError. |
-| ObjOwnProps | 🟢 Full | 🟢 Full | 🟢 Full | ⚪ Unknown | Enumerates own properties; structs raise TypeError. v2.0 ignores invalid output slots and evaluates getters only when the second output is a real VarRef. |
+| ObjOwnProps | 🟢 Full | 🟢 Full | 🟢 Full | ⚪ Unknown | Enumerates own properties; structs raise TypeError. v2.0 ignores invalid output slots and evaluates getters only when the second output is a real VarRef. The prepared native enumerator retains its counted source and observes current own properties after mutations. Windows lifecycle differential tests pass; native lifetime revalidation remains pending. |
 | ObjPtr() | 🟢 Full | 🔴 Unsupported | 🔴 Unsupported | 🔴 Unsupported | Returns an Integer containing the object's IUnknown address without adding a native reference. Keep the object alive while using the pointer. |
 | ObjPtrAddRef() | 🟢 Full | 🔴 Unsupported | 🔴 Unsupported | 🔴 Unsupported | Returns an Integer containing the object's IUnknown address and adds a native reference, released with ObjRelease. This also applies to the COM wrappers of managed objects. |
 | ObjRelease() | 🟢 Full | 🔴 Unsupported | 🔴 Unsupported | 🔴 Unsupported | The ObjAddRef and ObjRelease functions increment or decrement an object's reference count. |

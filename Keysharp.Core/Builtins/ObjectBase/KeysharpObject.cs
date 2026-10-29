@@ -16,6 +16,7 @@ namespace Keysharp.Builtins
 	public class KeysharpObject : Any
 	{
 		private bool hasDeleteInChain;
+		internal override bool SupportsOwnedReferences => GetType() == typeof(KeysharpObject);
 
 		public KeysharpObject(params object[] args) : base(args) { }
 
@@ -109,12 +110,27 @@ namespace Keysharp.Builtins
 			return kso;
 		}
 
+		[PublicHiddenFromUser]
+		public static object OwnedLiteral(params object[] pairs)
+		{
+			var result = new KeysharpObject(null);
+			result.BeginReferenceConstruction();
+			try
+			{
+				for (var i = 0; i < pairs.Length; i += 2)
+					if (pairs[i].CoerceString(out var name)) DefineOne(result, name, pairs[i + 1]);
+					else return DefaultObject;
+			}
+			finally { result.CompleteReferenceConstruction(); Lifetime.Temporary(result); }
+			return result;
+		}
+
 		private static void DefineOne(KeysharpObject kso, string name, object value)
 		{
 			if (AhkIdentifierComparer.Instance.Equals(name, "base"))
 				_ = Objects.ObjSetBase(kso, value);
-			else
-				kso.DefinePropInternal(name, new OwnPropsDesc(value));
+			else if (value != null || !kso.HasOwnPropInternal(name))
+				kso.SetOwnDataProperty(name, value, shadow: true);
 		}
 
 		/// <summary>
@@ -122,9 +138,16 @@ namespace Keysharp.Builtins
 		/// type holding a native resource or structured data raises a TypeError instead.
 		/// </summary>
 		/// <returns>A cloned copy of the object.</returns>
-		public object Clone() => this is IDisposable or InputHook || Objects.HasExternalDataPointer(this)
-			? Errors.TypeErrorOccurred("An object holding native data cannot be cloned.")
-			: MemberwiseClone();
+		public object Clone()
+		{
+			if (this is Array or Map) return Errors.TypeErrorOccurred("Type mismatch.");
+			if (this is IDisposable or InputHook || Objects.HasExternalDataPointer(this))
+				return Errors.TypeErrorOccurred("An object holding native data cannot be cloned.");
+			var clone = (KeysharpObject)MemberwiseClone();
+			clone.BeginReferenceConstruction();
+			clone.CompleteReferenceConstruction();
+			return Lifetime.Temporary(clone);
+		}
 
 		public static object DefineProp(object @this, object name, object descriptor) => Objects.DefineProp(@this, name, descriptor, true);
 

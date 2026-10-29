@@ -26,6 +26,9 @@ namespace Keysharp.Internals.Invoke
 				or "Remove" or "RemoveAt" or "get_Length" or "set_Length" or "get_Capacity" or "set_Capacity" or "get_Item" or "set_Item"
 				|| mi?.DeclaringType == typeof(Map) && mi.Name is "__New" or "__Enum" or "Clone" or "Get" or "Has" or "Set" or "Delete" or "Clear"
 				or "get_Count" or "get_Capacity" or "set_Capacity" or "get_CaseSense" or "set_CaseSense" or "get_Item" or "set_Item"
+				|| mi?.DeclaringType == typeof(KeysharpObject) && mi.Name is "Clone" or "DefineProp" or "DeleteProp" or "GetOwnPropDesc" or "HasOwnProp" or "OwnProps"
+				|| mi?.DeclaringType == typeof(Any) && mi.Name is "HasBase" or "HasMethod" or "HasProp"
+				|| mi?.DeclaringType == typeof(Objects) && mi.Name is "DefineProp" or "ObjHasOwnProp" or "ObjOwnPropCount" or "ObjOwnProps"
 				|| mi?.DeclaringType == typeof(Enumerator) && mi.Name is "Call" or "IsByRef";
 			var preservesArguments = IsScript || constructs || preservesContainer || mi?.DeclaringType == typeof(Keysharp.Builtins.Types);
 			object ReferencedInvoke(object instance, object[] args)

@@ -245,15 +245,7 @@ namespace Keysharp.Builtins
 						   packValue, offset, false, enumerable) ?? Errors.ErrorOccurred("Cannot add typed property.");
 			}
 
-			var op = target.EnsureOwnProps();
-
-			if (op.TryGetValue(nameVal, out var currProp))
-				currProp.Merge(value, get, set, call);
-			else
-				op[nameVal] = currProp = new OwnPropsDesc(value, get, set, call);
-
-			currProp.Enumerable = enumerable;
-			target.OnPropertyChanged(nameVal);
+			target.MergeOwnProperty(nameVal, value, get, set, call, enumerable);
 
 			return target;
 		}

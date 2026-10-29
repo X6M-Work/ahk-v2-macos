@@ -44,7 +44,7 @@ public partial class Map
 	}
 
 	[PublicHiddenFromUser]
-	public static Map OwnedLiteral(params object[] pairs)
+	public new static Map OwnedLiteral(params object[] pairs)
 	{
 		var result = new Map(eCaseSense.On);
 		result.BeginReferenceConstruction();

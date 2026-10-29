@@ -33,7 +33,7 @@ public class ReferenceLifetimeTests : TestRunner
 	[Test]
 	public void UninstrumentedInstancesKeepTheirExistingLifetime()
 	{
-		foreach (Any value in new Any[] { new KeysharpObject(null), new Ks.HashMap(null) })
+		foreach (Any value in new Any[] { new Any(null), new Ks.HashMap(null) })
 		{
 			value.BeginReferenceConstruction();
 			value.CompleteReferenceConstruction();

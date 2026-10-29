@@ -4758,7 +4758,7 @@ namespace Keysharp.Compilation.Syntax
 			var i = 0;
 			var args = new ExpressionSyntax[o.Entries.Count * 2];
 			foreach (var en in o.Entries) { args[i++] = LiteralKey(en.Key); args[i++] = LowerExpr(en.Value); }
-			return Inv(Access("Keysharp.Builtins.KeysharpObject.Literal"), args);
+			return Inv(Access("Keysharp.Builtins.KeysharpObject.OwnedLiteral"), args);
 		}
 
 		// An object-literal key or argument name. A bare identifier and a string literal are literal names; everything else

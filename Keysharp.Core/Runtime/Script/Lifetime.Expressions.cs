@@ -43,6 +43,8 @@ namespace Keysharp.Runtime
 
 			internal object Track(object value)
 			{
+				if (value is Keysharp.Builtins.Any { ReferenceState: Keysharp.Builtins.ReferenceLifeState.Constructing
+					or Keysharp.Builtins.ReferenceLifeState.Deleting }) return value;
 				if (value is not Keysharp.Builtins.Any { ReferenceState: Keysharp.Builtins.ReferenceLifeState.Alive
 					or Keysharp.Builtins.ReferenceLifeState.Resurrected }
 					&& value is not Keysharp.Builtins.VarRef { HasOwnedStorage: true }) return Escape(value);

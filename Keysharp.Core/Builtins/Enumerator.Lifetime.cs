@@ -4,7 +4,8 @@ public partial class Enumerator
 {
 	private bool ownsSource;
 	internal bool OwnsSource => ownsSource;
-	internal override bool SupportsOwnedReferences => GetType() == typeof(Enumerator) && moveNext != null && Source is (Array { OwnsElements: true } or Map { OwnsEntries: true });
+	internal override bool SupportsOwnedReferences => GetType() == typeof(Enumerator) && moveNext != null
+		&& (Source is (Array { OwnsElements: true } or Map { OwnsEntries: true }) || propertyEnumeration && Source is Any { OwnsProperties: true });
 	internal override void BeginOwnedReferences()
 	{
 		ownsSource = true;

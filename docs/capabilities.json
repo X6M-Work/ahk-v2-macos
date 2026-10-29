@@ -962,8 +962,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Instrumented Object-rooted user instances and compiler-prepared exact Array/Map instances count variable, scope, expression and container owners. Native container mutations, clones and enumerators retain/release their edges; Map Clear removes entries in reverse key order before callbacks and handles reentrant mutations. All five strict fixtures and portable lifecycle regressions pass locally on Windows against AHK 2.0.31. Native revalidation is blocked before jobs start by GitHub account billing/spending-limit checks. Unknown native calls, CLR dictionary aliases/exports, property storage, callbacks/captures, legacy classes and native subclasses retain GC fallback. Completed construction registers its expression owner even when __Init, __New or argument binding fails; retained/resurrected failed instances keep their owners.",
-                     "tested-by":  "class-special-funcs.ahk; class-destructor-aliases.ahk; class-destructor-scopes.ahk; class-destructor-temporaries.ahk; class-destructor-arrays.ahk; ReferenceLifetimeTests; compat/phase15-architecture/; FileAndDirTests.FileLocalLifetime; class-destructor-maps.ahk; class-destructor-construction.ahk"
+                     "notes":  "Instrumented Object-rooted user instances and compiler-prepared exact Object/Array/Map instances count variable, scope, expression, container and own-property owners. Descriptor Value/Get/Set/Call slots and native OwnProps enumerators retain their references. Map entries are released before ascending-name own properties; replacements publish before callbacks. Failed construction still registers its expression owner, and retained/resurrected instances keep their owners. All five strict fixtures and seven portable lifecycle regressions pass locally on Windows against AHK 2.0.31. Native revalidation is pending after GitHub account billing/spending-limit refusals. Unknown native calls, CLR dictionary aliases/exports, base/prototype pointers, callbacks/captures, legacy classes and native subclasses retain GC fallback. Named receiver evaluation when an argument changes its variable remains under investigation.",
+                     "tested-by":  "class-special-funcs.ahk; class-destructor-aliases.ahk; class-destructor-scopes.ahk; class-destructor-temporaries.ahk; class-destructor-arrays.ahk; ReferenceLifetimeTests; compat/phase15-architecture/; FileAndDirTests.FileLocalLifetime; class-destructor-maps.ahk; class-destructor-construction.ahk; class-destructor-properties.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -1050,8 +1050,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Creates an Object literal.",
-                     "tested-by":  "misc-object.ahk"
+                     "notes":  "Creates an Object literal. Compiler-prepared exact objects count own-property descriptor references; duplicate unset values preserve existing fields. Windows lifecycle differential tests pass; native lifetime revalidation remains pending.",
+                     "tested-by":  "misc-object.ahk; class-destructor-properties.ahk"
                  },
                  {
                      "category":  "Input/Automation",
@@ -3222,8 +3222,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Returns a shallow copy of an array. An instance created by ObjCreateWithDataPtr raises TypeError.",
-                     "tested-by":  "collections-array.ahk; struct-pack.ahk"
+                     "notes":  "Returns a shallow copy with independent counted element and own-property owners for compiler-prepared exact arrays. An instance created by ObjCreateWithDataPtr raises TypeError. Windows lifecycle differential tests pass; native lifetime revalidation remains pending.",
+                     "tested-by":  "collections-array.ahk; struct-pack.ahk; class-destructor-properties.ahk"
                  },
                  {
                      "category":  "Collections",
@@ -7991,8 +7991,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Shallow clone preserving key conversion mode, case sensitivity and independent counted key/value owners for compiler-prepared exact Maps. An instance created by ObjCreateWithDataPtr raises TypeError. Native lifetime validation remains pending.",
-                     "tested-by":  "collections-map.ahk; struct-pack.ahk; class-destructor-maps.ahk"
+                     "notes":  "Shallow clone preserving key conversion mode, case sensitivity and independent counted key/value and own-property owners for compiler-prepared exact Maps. An instance created by ObjCreateWithDataPtr raises TypeError. Windows lifecycle differential tests pass; native lifetime revalidation remains pending.",
+                     "tested-by":  "collections-map.ahk; struct-pack.ahk; class-destructor-maps.ahk; class-destructor-properties.ahk"
                  },
                  {
                      "category":  "Collections",
@@ -8013,8 +8013,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Default value returned for missing keys.",
-                     "tested-by":  "collections-map.ahk"
+                     "notes":  "Default value returned for missing keys. Compiler-prepared exact Maps own this property reference; returned fallback values transfer to the expression owner. Windows lifecycle differential tests pass; native lifetime revalidation remains pending.",
+                     "tested-by":  "collections-map.ahk; class-destructor-properties.ahk"
                  },
                  {
                      "category":  "Collections",
@@ -8993,8 +8993,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Creates a new Object; optional key/value arguments initialize own properties.",
-                     "tested-by":  "assign-multiline.ahk"
+                     "notes":  "Creates a new Object; optional key/value arguments initialize own properties. Compiler-prepared exact instances count own-property descriptor references. Windows lifecycle differential tests pass; native lifetime revalidation remains pending.",
+                     "tested-by":  "assign-multiline.ahk; class-destructor-properties.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -9113,8 +9113,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "unknown",
-                     "notes":  "Enumerates own properties; structs raise TypeError. v2.0 ignores invalid output slots and evaluates getters only when the second output is a real VarRef.",
-                     "tested-by":  "collections-object.ahk; struct-basic.ahk; compat/phase15-enumerators/enumerator-ownprops-getters.ahk"
+                     "notes":  "Enumerates own properties; structs raise TypeError. v2.0 ignores invalid output slots and evaluates getters only when the second output is a real VarRef. The prepared native enumerator retains its counted source and observes current own properties after mutations. Windows lifecycle differential tests pass; native lifetime revalidation remains pending.",
+                     "tested-by":  "collections-object.ahk; struct-basic.ahk; compat/phase15-enumerators/enumerator-ownprops-getters.ahk; class-destructor-properties.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -11851,8 +11851,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Defines own properties with callable accessors; Enumerable: false hides one from Props. Struct instances raise TypeError.",
-                     "tested-by":  "struct-basic.ahk; class-props.ahk; class-ownprops.ahk"
+                     "notes":  "Defines own properties with callable accessors; Enumerable: false hides one from Props. Counted objects own descriptor Value/Get/Set/Call slots and publish replacements before reentrant destructor or accessor metadata callbacks. Struct instances raise TypeError. Windows lifecycle differential tests pass; native lifetime revalidation remains pending.",
+                     "tested-by":  "struct-basic.ahk; class-props.ahk; class-ownprops.ahk; class-destructor-properties.ahk"
                  },
                  {
                      "category":  "Interop/Memory",

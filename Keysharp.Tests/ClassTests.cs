@@ -27,6 +27,9 @@ public class ClassTests : TestRunner
 	public void DestructorConstruction() => Assert.IsTrue(TestScript("class-destructor-construction", false));
 
 	[Test, Category("Class")]
+	public void DestructorProperties() => Assert.IsTrue(TestScript("class-destructor-properties", false));
+
+	[Test, Category("Class")]
 	public void BuiltInTypeVisibility() => Assert.IsTrue(TestScript("class-builtin-visibility", false));
 
 	[Test, Category("Class")]

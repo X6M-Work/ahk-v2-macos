@@ -14,6 +14,7 @@ namespace Keysharp.Builtins
 		private readonly Func<bool> hasValue;
 		private readonly KeysharpFunc callback;
 		private readonly Map.EnumerationSnapshot snapshot;
+		private readonly bool propertyEnumeration;
 
 		internal object Source { get; }
 		internal bool UsesV20NativeContract { get; }
@@ -48,7 +49,8 @@ namespace Keysharp.Builtins
 			Action reset,
 			Action dispose = null,
 			Func<bool> hasValue = null,
-			Map.EnumerationSnapshot snapshot = null)
+			Map.EnumerationSnapshot snapshot = null,
+			bool propertyEnumeration = false)
 			: base(CallMethod(), null)
 		{
 			if (Base == null)
@@ -71,6 +73,7 @@ namespace Keysharp.Builtins
 			this.dispose = dispose;
 			this.hasValue = hasValue;
 			this.snapshot = snapshot;
+			this.propertyEnumeration = propertyEnumeration;
 		}
 
 		internal Enumerator(object source, int count, KeysharpFunc callback)

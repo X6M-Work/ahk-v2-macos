@@ -34,6 +34,7 @@ namespace Keysharp.Builtins
 			}
 			referenceGate = new();
 			referenceState = (int)ReferenceLifeState.Constructing;
+			BeginPropertyReferences();
 			BeginOwnedReferences();
 		}
 
@@ -54,7 +55,7 @@ namespace Keysharp.Builtins
 				if (ReferenceState is ReferenceLifeState.Alive or ReferenceLifeState.Resurrected)
 					referenceState = (int)ReferenceLifeState.Untracked;
 			}
-			EscapeOwnedReferences();
+			AbandonOwnedReferences();
 		}
 
 		internal void RetainReference()
@@ -103,7 +104,8 @@ namespace Keysharp.Builtins
 				}
 				if (dispose)
 				{
-					ReleaseOwnedReferences();
+					try { ReleaseOwnedReferences(); }
+					finally { ReleasePropertyReferences(); }
 					try { if (this is IDisposable native) native.Dispose(); }
 					catch { }
 				}
@@ -133,6 +135,8 @@ namespace Keysharp.Builtins
 			referenceState = (int)ReferenceLifeState.Untracked;
 			referenceCount = 0;
 			referencesEscaped = false;
+			ownsProperties = false;
+			enumerableProperties = null;
 			ResetOwnedReferences();
 		}
 	}

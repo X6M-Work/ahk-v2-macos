@@ -14,7 +14,24 @@ namespace Keysharp.Builtins
 		internal static Enumerator CreateEnumerator(object obj, Dictionary<object, object> map, bool getVal)
 		{
 			var iter = map.GetEnumerator();
+			var source = obj as Any;
+			var live = source?.OwnsProperties == true;
+			var position = -1;
+			KeyValuePair<object, object> current = default;
 			(object, object)? evaluated = null;
+			bool MoveNext()
+			{
+				if (!live)
+				{
+					if (!iter.MoveNext()) return false;
+					current = iter.Current;
+					return true;
+				}
+				var pairs = source.CurrentOwnProperties();
+				if (++position >= pairs.Length) return false;
+				current = pairs[position];
+				return true;
+			}
 
 			// Asked for a value, a property must be able to produce one: the descriptor has to allow it at all, and
 			// the getter has to actually yield something -- an Array's Default holds nothing until it is assigned,
@@ -24,22 +41,25 @@ namespace Keysharp.Builtins
 			{
 				evaluated = null;
 
-				if (!CanYieldValue(obj, iter.Current.Value))
+				if (!CanYieldValue(obj, current.Value))
 					return false;
 
-				var pair = GetCurrent(obj, iter.Current);
+				var pair = GetCurrent(obj, current);
 				evaluated = pair;
 				return pair.Item2 != null;
 			}
 
-			return new Enumerator(
+			var result = new Enumerator(
 					   obj,
 					   getVal ? 0 : 1,
-					   () => iter.MoveNext(),
-					   () => iter.Current.Key,
-					   () => evaluated ?? GetCurrent(obj, iter.Current),
-					   () => { evaluated = null; iter = map.GetEnumerator(); },
-					   hasValue: HasValue);
+					   MoveNext,
+					   () => current.Key,
+					   () => evaluated ?? GetCurrent(obj, current),
+					   () => { evaluated = null; position = -1; iter = map.GetEnumerator(); },
+					   hasValue: HasValue, propertyEnumeration: true);
+			result.BeginReferenceConstruction();
+			result.CompleteReferenceConstruction();
+			return (Enumerator)Lifetime.Temporary(result);
 		}
 
 		/// <summary>
@@ -89,7 +109,7 @@ namespace Keysharp.Builtins
 		}
 	}
 
-	public class OwnPropsDesc
+	public partial class OwnPropsDesc
 	{
 		private object _value;
 		private object _get;
@@ -103,12 +123,9 @@ namespace Keysharp.Builtins
 			get => _value;
 			internal set
 			{
-				_value = Keysharp.Runtime.Lifetime.Escape(value);
-				_get = null;
-				_set = null;
-				_call = null;
 				Type = value != null ? OwnPropsMapType.Value : OwnPropsMapType.None;
 				AccessFlags = OwnPropAccessFlags.None;
+				ReplaceSlots(value, null, null, null);
 			}
 		}
 
@@ -117,19 +134,9 @@ namespace Keysharp.Builtins
 			get => _get;
 			internal set
 			{
-				_get = Keysharp.Runtime.Lifetime.Escape(value);
-
-				if (value != null)
-				{
-					_value = null;
-					Type = (Type & ~OwnPropsMapType.Value) | OwnPropsMapType.Get;
-				}
-				else
-				{
-					Type &= ~OwnPropsMapType.Get;
-				}
-
+				Type = value != null ? (Type & ~OwnPropsMapType.Value) | OwnPropsMapType.Get : Type & ~OwnPropsMapType.Get;
 				AccessFlags &= ~(OwnPropAccessFlags.NoEnumGet | OwnPropAccessFlags.NoParamGet);
+				ReplaceSlots(value != null ? null : _value, value, _set, _call);
 				FillAccessorFlags(value, false);
 			}
 		}
@@ -139,19 +146,9 @@ namespace Keysharp.Builtins
 			get => _set;
 			internal set
 			{
-				_set = Keysharp.Runtime.Lifetime.Escape(value);
-
-				if (value != null)
-				{
-					_value = null;
-					Type = (Type & ~OwnPropsMapType.Value) | OwnPropsMapType.Set;
-				}
-				else
-				{
-					Type &= ~OwnPropsMapType.Set;
-				}
-
+				Type = value != null ? (Type & ~OwnPropsMapType.Value) | OwnPropsMapType.Set : Type & ~OwnPropsMapType.Set;
 				AccessFlags &= ~OwnPropAccessFlags.NoParamSet;
+				ReplaceSlots(value != null ? null : _value, _get, value, _call);
 				FillAccessorFlags(value, true);
 			}
 		}
@@ -208,17 +205,8 @@ namespace Keysharp.Builtins
 			get => _call;
 			internal set
 			{
-				_call = Keysharp.Runtime.Lifetime.Escape(value);
-
-				if (value != null)
-				{
-					_value = null;
-					Type = (Type & ~OwnPropsMapType.Value) | OwnPropsMapType.Call;
-				}
-				else
-				{
-					Type &= ~OwnPropsMapType.Call;
-				}
+				Type = value != null ? (Type & ~OwnPropsMapType.Value) | OwnPropsMapType.Call : Type & ~OwnPropsMapType.Call;
+				ReplaceSlots(value != null ? null : _value, _get, _set, value);
 			}
 		}
 
@@ -283,20 +271,21 @@ namespace Keysharp.Builtins
 
 		public KeysharpObject GetDesc()
 		{
-			var map = new KeysharpObject();
+			var map = new KeysharpObject(null);
+			map.BeginReferenceConstruction();
 			map.EnsureOwnProps();
 
 			if (Value != null)
-				map.DefinePropInternal("Value", new OwnPropsDesc(Value));
+				map.SetOwnDataProperty("Value", Value);
 
 			if (Get != null)
-				map.DefinePropInternal("Get", new OwnPropsDesc(Get));
+				map.SetOwnDataProperty("Get", Get);
 
 			if (Set != null)
-				map.DefinePropInternal("Set", new OwnPropsDesc(Set));
+				map.SetOwnDataProperty("Set", Set);
 
 			if (Call != null)
-				map.DefinePropInternal("Call", new OwnPropsDesc(Call));
+				map.SetOwnDataProperty("Call", Call);
 
 			if (StructField != null)
 			{
@@ -311,7 +300,8 @@ namespace Keysharp.Builtins
 					map.DefinePropInternal("Pack", new OwnPropsDesc(StructField.Pack));
 			}
 
-			return map;
+			map.CompleteReferenceConstruction();
+			return (KeysharpObject)Lifetime.Temporary(map);
 		}
 
 		internal void SetStructProperty(StructFieldInfo structProperty)
@@ -321,6 +311,14 @@ namespace Keysharp.Builtins
 			Type = (Type & ~OwnPropsMapType.Value) | OwnPropsMapType.Get | OwnPropsMapType.Set;
 		}
 
-		public OwnPropsDesc Clone() => (OwnPropsDesc)MemberwiseClone();
+		public OwnPropsDesc Clone()
+		{
+			var result = CopyForOwner();
+			Lifetime.Escape(result._value);
+			Lifetime.Escape(result._get);
+			Lifetime.Escape(result._set);
+			Lifetime.Escape(result._call);
+			return result;
+		}
 	}
 }

@@ -32,7 +32,7 @@ public partial class Array
 	}
 
 	[PublicHiddenFromUser]
-	public static Array OwnedLiteral(params object[] items)
+	public new static Array OwnedLiteral(params object[] items)
 	{
 		var result = new Array(null);
 		result.BeginReferenceConstruction();

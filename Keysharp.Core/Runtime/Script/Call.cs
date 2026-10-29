@@ -315,7 +315,7 @@ namespace Keysharp.Runtime
 
 					if (opm.Value != null)
 					{
-						return args.Length > 0 ? GetIndexOrNull(opm.Value, args) : opm.Value;
+						return args.Length > 0 ? GetIndexOrNull(opm.Value, args) : Lifetime.Temporary(opm.Value);
 					}
 
 					if (opm.Get != null)
@@ -329,7 +329,7 @@ namespace Keysharp.Runtime
 
 					if (opm.Call != null)
 					{
-						return args.Length > 0 ? GetIndexOrNull(opm.Call, args) : opm.Call;
+						return args.Length > 0 ? GetIndexOrNull(opm.Call, args) : Lifetime.Temporary(opm.Call);
 					}
 
 					return args.Length > 0 ? UnsetResultErrorOccurred(item, namestr) : null;
@@ -704,6 +704,9 @@ namespace Keysharp.Runtime
 		internal static object SetRefValue(object item, object value) =>
 			SetPropertyValueCore(item, Refs.ValueName, null, value, allowCreate: false);
 
+		private static bool PreservesOwnProperties(object item) => item is Any { OwnsProperties: true }
+			|| item is ITuple { Length: > 1 } tuple && tuple[1] is Any { OwnsProperties: true };
+
 		private static object SetPropertyValueCore(object item, object name, object[] args, object value, bool allowCreate)
 		{
 			if (!name.CoerceString(out var namestr)) return DefaultObject;
@@ -717,7 +720,7 @@ namespace Keysharp.Runtime
 			if (item is VarRef vr && vr.IsPlain && AhkIdentifierComparer.Instance.Equals(namestr, "__Value"))
 				return argCount > 1 ? SetPropertyResultIndex(vr.__Value) : vr.__Value = value;
 
-			if (!AhkIdentifierComparer.Instance.Equals(namestr, "__Item") || !PreservesBuiltinItem(item))
+			if (!PreservesOwnProperties(item) && (!AhkIdentifierComparer.Instance.Equals(namestr, "__Item") || !PreservesBuiltinItem(item)))
 				value = Lifetime.Escape(value);
 
 			if (item is Any a2)
@@ -791,8 +794,7 @@ namespace Keysharp.Runtime
 						return Errors.ReadOnlyPropertyErrorOccurred(namestr);
 					if (fieldOwner == kso && ReferenceEquals(item, kso))
 					{
-						field.Value = value;
-						if (value == null) kso.op.Remove(namestr);
+						kso.SetOwnDataProperty(namestr, value);
 						return value;
 					}
 				}
@@ -809,8 +811,7 @@ namespace Keysharp.Runtime
 				{
 					if (item is Any receiver)
 					{
-						receiver.EnsureOwnProps()[namestr] = new OwnPropsDesc(value);
-						receiver.OnPropertyChanged(namestr);
+						receiver.SetOwnDataProperty(namestr, value, shadow: true);
 						return value;
 					}
 					return field != null ? Errors.ReadOnlyPropertyErrorOccurred(namestr) : Errors.MissingPropertyErrorOccurred(item, namestr);
@@ -825,7 +826,7 @@ namespace Keysharp.Runtime
 				// Define new own data prop when target is a KeysharpObject and it's a simple assignment
 				if (allowCreate && argCount == 1 && item is KeysharpObject ksoObj)
 				{
-					ksoObj.DefinePropInternal(namestr, new OwnPropsDesc(value));
+					ksoObj.SetOwnDataProperty(namestr, value, shadow: true);
 					return value;
 				}
 			}
