@@ -9,6 +9,14 @@ namespace Keysharp.Tests;
 public partial class ClipboardTests : TestRunner
 {
 	private static Ks.KeysharpClipboard Clip => null;   // the class is static-only; members take a null receiver
+	private IDisposable savedClipboard;
+
+	[TearDown]
+	public void RestoreClipboard()
+	{
+		try { savedClipboard?.Dispose(); }
+		finally { savedClipboard = null; }
+	}
 
 	/// <summary>Whether this session has a clipboard that actually round-trips, so a headless CI box skips
 	/// rather than fails.</summary>
@@ -25,13 +33,14 @@ public partial class ClipboardTests : TestRunner
 		}
 	}
 
-	private static void RequireClipboard()
+	private void RequireClipboard()
 	{
+		savedClipboard ??= PreserveClipboard();
 		if (!ClipboardWorks())
 			Assert.Ignore("No working clipboard in this environment.");
 	}
 
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -46,7 +55,7 @@ public partial class ClipboardTests : TestRunner
 		Assert.IsTrue((bool)Ks.KeysharpClipboard.Has(Clip, "Text"));
 	}
 
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -68,7 +77,7 @@ public partial class ClipboardTests : TestRunner
 			$"Empty text left formats [{string.Join(", ", formats.Cast<object>())}] and text '{Ks.KeysharpClipboard.staticget_Text(Clip)}'.");
 	}
 
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -83,7 +92,7 @@ public partial class ClipboardTests : TestRunner
 		Assert.That(Ks.KeysharpClipboard.staticget_Text(Clip), Is.Empty);
 	}
 
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -105,7 +114,7 @@ public partial class ClipboardTests : TestRunner
 	/// ("HTML Format", "Rich Text Format"), so a clipboard holding only such a format read as EMPTY — which also
 	/// made OnClipboardChange announce "now empty" and hung ClipWait(, 1).
 	/// </summary>
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -120,7 +129,7 @@ public partial class ClipboardTests : TestRunner
 
 	/// <summary>A private, script-named format must survive a round trip and be visible to IsEmpty/Formats —
 	/// the case a fixed list of well-known names can never see.</summary>
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -144,7 +153,7 @@ public partial class ClipboardTests : TestRunner
 		Assert.That(got[..payload.Length], Is.EqualTo(payload).AsCollection);
 	}
 
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -173,7 +182,7 @@ public partial class ClipboardTests : TestRunner
 		Assert.IsTrue(string.Equals(b, files[2L] as string, StringComparison.OrdinalIgnoreCase), $"{b} != {files[2L]}");
 	}
 
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -195,7 +204,7 @@ public partial class ClipboardTests : TestRunner
 	}
 
 	/// <summary>The multi-format write is the whole reason Set exists: "rich text with a plain fallback".</summary>
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -216,7 +225,7 @@ public partial class ClipboardTests : TestRunner
 		Assert.That(Platform.Clipboard.ChangeType(), Is.EqualTo(1L), "Text is present, so the change type is 1.");
 	}
 
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -262,7 +271,7 @@ public partial class ClipboardTests : TestRunner
 				Assert.That(alias.Width, Is.EqualTo(32L));
 	}
 
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -280,7 +289,7 @@ public partial class ClipboardTests : TestRunner
 
 	/// <summary>Has() takes a kind name OR a native format name; an unknown kind name falls through to the
 	/// native probe rather than throwing.</summary>
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -305,7 +314,7 @@ public partial class ClipboardTests : TestRunner
 
 	/// <summary>Every typed getter reports an absent format as "" (falsy), which is what makes
 	/// `if (files := Clipboard.Files)` the idiom.</summary>
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -384,7 +393,7 @@ public partial class ClipboardTests : TestRunner
 		Assert.That(ClipboardBase.ParseUriList(null).Length, Is.Zero);
 	}
 
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -537,7 +546,7 @@ public partial class ClipboardTests : TestRunner
 		}
 	}
 
-	[Test, Category("Clipboard"), NonParallelizable]
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif

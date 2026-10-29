@@ -24,6 +24,8 @@ sb.Append("world")
 AssertEq(sb.ToString(), "Hello, world", A_LineNumber)
 ; A .NET object is taken as its ToString where a string is expected.
 AssertEq("<" sb ">", "<Hello, world>", A_LineNumber)
+AssertEq(StrLen(sb), 12, A_LineNumber)
+Throws(() => StrLen({}.DefineProp("ToString", {Call: (*) => "script"})), A_LineNumber, TypeError)
 
 ; 3) Int32.CompareTo (long -> int)
 i32 := System.Int32(123)

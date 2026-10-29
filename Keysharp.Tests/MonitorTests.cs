@@ -13,35 +13,35 @@ public partial class MonitorTests : TestRunner
 			Assert.Ignore("Monitor tests require a non-headless GUI session.");
 	}
 
-	[Test, Category("Monitor")]
+	[Test, Category("Monitor"), Category("Desktop")]
 	public void MonitorGet()
 	{
 		SkipIfGuiHeadless();
 		Assert.IsTrue(TestScript("monitor-monitorget", true));
 	}
 
-	[Test, Category("Monitor")]
+	[Test, Category("Monitor"), Category("Desktop")]
 	public void MonitorGetCount()
 	{
 		SkipIfGuiHeadless();
 		Assert.IsTrue(TestScript("monitor-monitorgetcount", true));
 	}
 
-	[Test, Category("Monitor")]
+	[Test, Category("Monitor"), Category("Desktop")]
 	public void MonitorGetName()
 	{
 		SkipIfGuiHeadless();
 		Assert.IsTrue(TestScript("monitor-monitorgetname", true));
 	}
 
-	[Test, Category("Monitor")]
+	[Test, Category("Monitor"), Category("Desktop")]
 	public void MonitorGetPrimary()
 	{
 		SkipIfGuiHeadless();
 		Assert.IsTrue(TestScript("monitor-monitorgetprimary", true));
 	}
 
-	[Test, Category("Monitor")]
+	[Test, Category("Monitor"), Category("Desktop")]
 	public void MonitorGetWorkArea()
 	{
 		SkipIfGuiHeadless();
@@ -53,7 +53,7 @@ public partial class MonitorTests : TestRunner
 	/// A display whose RandR output was matched (a non-zero NativeId) has a real connector name, never the
 	/// synthetic "display-N" placeholder. Xvfb exposes no named output, and there the placeholder is honest.
 	/// </summary>
-	[Test, Category("Monitor")]
+	[Test, Category("Monitor"), Category("Desktop")]
 	public void MonitorName()
 	{
 		SkipIfGuiHeadless();
@@ -70,14 +70,14 @@ public partial class MonitorTests : TestRunner
 	}
 #endif
 
-	[Test, Category("Monitor")]
+	[Test, Category("Monitor"), Category("Desktop")]
 	public void MonitorClass()
 	{
 		SkipIfGuiHeadless();
 		Assert.IsTrue(TestScript("monitor-class", true));
 	}
 
-	[Test, Category("Monitor")]
+	[Test, Category("Monitor"), Category("Desktop")]
 	public void MonitorVirtualScreen()
 	{
 		SkipIfGuiHeadless();

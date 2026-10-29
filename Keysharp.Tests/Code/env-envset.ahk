@@ -3,22 +3,28 @@
 #NoTrayIcon
 #Include <assert>
 
-key := "dummynothing123"
-s := "a test value"
-EnvSet(key, s)
-val := EnvGet(key)
+key := "KEYSHARP_ENVSET_" ProcessExist() "_" A_TickCount
 
-AssertEq(val, s, A_LineNumber)
+try
+{
+	s := "a test value"
+	EnvSet(key, s)
+	val := EnvGet(key)
 
-; A number is written as its text; an object is refused and leaves the variable alone.
-EnvSet(key, 8080)
-AssertEq(EnvGet(key), "8080", A_LineNumber)
-Throws(() => EnvSet(key, {}), A_LineNumber, TypeError)
-AssertEq(EnvGet(key), "8080", A_LineNumber)
+	AssertEq(val, s, A_LineNumber)
 
-EnvSet(key, unset)
-val := EnvGet(key)
+	; A number is written as its text; an object is refused and leaves the variable alone.
+	EnvSet(key, 8080)
+	AssertEq(EnvGet(key), "8080", A_LineNumber)
+	Throws(() => EnvSet(key, {}), A_LineNumber, TypeError)
+	AssertEq(EnvGet(key), "8080", A_LineNumber)
 
-AssertEq(val, "", A_LineNumber)
+	EnvSet(key, unset)
+	val := EnvGet(key)
+
+	AssertEq(val, "", A_LineNumber)
+}
+finally
+	EnvSet(key, unset)
 
 FileAppend "pass", "*"

@@ -150,7 +150,7 @@ namespace Keysharp.Builtins
 
 		public object FocusedCtrl => form.ActiveControl ?? (object)DefaultObject;
 
-		public long Hwnd => form.Handle;
+		public long Hwnd => form.CachedHwnd;
 
 		/// <summary>Backing pixels per GUI coordinate unit.</summary>
 #if WINDOWS

@@ -810,8 +810,11 @@ public class PackageDirectiveTests : TestRunner
 			var result = await provider.ResolveAsync(context,
 				[new Keysharp.Components.Packages.PackageRequest("Newtonsoft.Json", "[12.0.1]")], CancellationToken.None);
 			Assert.IsTrue(result.Success, result.Failure);
-			Assert.IsTrue(result.Diagnostics.Any(message => message.Contains("NU190", StringComparison.Ordinal)),
-				"NuGetAudit was configured but emitted no NU190x advisory: " + string.Join("; ", result.Diagnostics));
+			TestContext.Out.WriteLine(string.Join(Environment.NewLine, result.Diagnostics));
+			Assert.IsTrue(result.Diagnostics.Any(message =>
+				System.Text.RegularExpressions.Regex.IsMatch(message, @"\bNU190[1-4]\b")
+				&& message.Contains("Newtonsoft.Json", StringComparison.OrdinalIgnoreCase)),
+				"NuGetAudit emitted no vulnerability advisory for Newtonsoft.Json: " + string.Join("; ", result.Diagnostics));
 		}
 		finally
 		{

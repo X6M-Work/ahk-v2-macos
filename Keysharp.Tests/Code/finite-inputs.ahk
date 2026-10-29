@@ -121,7 +121,7 @@ OnError(handler, 0)
 AssertEq(continued.Count, 1, A_LineNumber)
 
 SoundBeep(523, 0)
-Throws(() => SoundBeep(0, 0), A_LineNumber, ValueError)
+SoundBeep(0, 0)
 
 #if WINDOWS
 soundErrors := []

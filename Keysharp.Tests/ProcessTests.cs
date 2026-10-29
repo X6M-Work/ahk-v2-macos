@@ -2,7 +2,7 @@ namespace Keysharp.Tests;
 
 public partial class ProcessTests : TestRunner
 {
-	[Test, Category("Process")]
+	[Test, Category("Process"), Category("Curated")]
 	public void ProcessRunWaitClose() => Assert.IsTrue(TestScript("process-run-wait-close", false));
 
 	[Test, Category("Internal"), Category("Curated")]
@@ -53,9 +53,9 @@ public partial class ProcessTests : TestRunner
 		Assert.IsEmpty(exceptions, "An exited PID must be an ordinary lookup miss, without a first-chance ArgumentException.");
 	}
 
-	[Test, Category("Process")]
+	[Test, Category("Process"), Category("Curated")]
 	public void ProcessGetParent() => Assert.IsTrue(TestScript("process-get-parent", false));
 
-	[Test, Category("Process")]
+	[Test, Category("Process"), Category("Curated")]
 	public void ProcessRunScript() => Assert.IsTrue(TestScript("process-runscript", false));
 }

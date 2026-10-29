@@ -2,7 +2,7 @@ namespace Keysharp.Tests;
 
 public partial class SoundTests : TestRunner
 {
-	[Test, Category("Sound")]
+	[Test, Category("Sound"), Category("Audio")]
 	public void SoundBeep() => Assert.IsTrue(TestScript("sound-soundbeep", true));
 
 	// The synthesized tone is what makes SoundBeep honour Frequency/Duration on Linux and macOS, so the

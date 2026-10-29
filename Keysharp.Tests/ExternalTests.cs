@@ -5,7 +5,7 @@ public partial class ExternalTests : TestRunner
 	[Test, Category("External")]
 	public void CallbackCreate() => Assert.IsTrue(TestScript("external-callbackcreate", false));
 
-	[Test, Category("External")]
+	[Test, Category("External"), Category("Curated")]
 	public void Clr() => Assert.IsTrue(TestScript("external-clr", false));
 
 #if WINDOWS
@@ -37,20 +37,20 @@ public partial class ExternalTests : TestRunner
 	[Test, Category("External")]
 	public void NumPutNumGet() => Assert.IsTrue(TestScript("external-numput-numget", true));
 
-	[Test, Category("External")]
+	[Test, Category("External"), Category("WindowsInterop")]
 	public void COM() => Assert.IsTrue(TestScript("external-com", false));
 
-	[Test, Category("External")]
+	[Test, Category("External"), Category("WindowsInterop")]
 	public void COMEvents() => Assert.IsTrue(TestScript("external-com-events", false));
 
-	[Test, Category("External")]
+	[Test, Category("External"), Category("WindowsInterop")]
 	public void COMInvoke() => Assert.IsTrue(TestScript("external-com-invoke", false));
 
 	[Test, Category("External"), Category("Curated")]
 	public void COMEnumeration() => Assert.IsTrue(TestScript("external-com-atp", false));
 
 	// Native reference counts expose leaks when argument conversion fails before invoking the server.
-	[Test, Category("External"), Category("Internal")]
+	[Test, Category("External"), Category("Internal"), Category("WindowsInterop")]
 	public void ComPackingFailure()
 	{
 		Assert.That(Marshal.SizeOf<VARIANT>(), Is.EqualTo(8 + (2 * IntPtr.Size)));
@@ -69,7 +69,7 @@ public partial class ExternalTests : TestRunner
 		Assert.That(Marshal.Release(pointer), Is.EqualTo(before));
 	}
 
-	[Test, Category("External"), Category("Internal")]
+	[Test, Category("External"), Category("Internal"), Category("WindowsInterop")]
 	public void ComSafeArrayLockedStorage()
 	{
 		using var inner = new ComObjArray(VarEnum.VT_BSTR, 1);
@@ -112,7 +112,7 @@ public partial class ExternalTests : TestRunner
 
 	// Scripting.Dictionary's own interface supplies its members, a nameless lookup finds its default member, and
 	// every object of the type shares one scope.
-	[Test, Category("External"), Category("Internal")]
+	[Test, Category("External"), Category("Internal"), Category("WindowsInterop")]
 	public void ComTypeScopeReadsTheObjectsInterface()
 	{
 		const ComTypes.INVOKEKIND FuncOrGet = ComTypes.INVOKEKIND.INVOKE_FUNC | ComTypes.INVOKEKIND.INVOKE_PROPERTYGET;
@@ -145,7 +145,7 @@ public partial class ExternalTests : TestRunner
 	// Every _Type.InvokeMember overload in the registered mscorlib library takes (BSTR, BindingFlags, _Binder*, VARIANT,
 	// SAFEARRAY(VARIANT), ...): the SAFEARRAY keeps its element type, and the vtable view's [retval] is no caller's. The
 	// library, as the last resort, finds an overload by its DISPID and name only.
-	[Test, Category("External"), Category("Internal")]
+	[Test, Category("External"), Category("Internal"), Category("WindowsInterop")]
 	public void ComTypeScopeReadsDeclaredSafeArrays() =>
 		WithRegisteredType(new("BED7F4EA-1A96-11D2-8F08-00A0C9A6186D"), 2, 4, new("BCA8B44D-AAD6-3A86-8AB7-03349F4F2DA2"), (members, library) =>
 		{
@@ -161,7 +161,7 @@ public partial class ExternalTests : TestRunner
 		});
 
 	// stdole's Font dispinterface declares its properties as variables, each read, and assigned by its own type.
-	[Test, Category("External"), Category("Internal")]
+	[Test, Category("External"), Category("Internal"), Category("WindowsInterop")]
 	public void ComTypeScopeReadsDispinterfaceProperties() =>
 		WithRegisteredType(new("00020430-0000-0000-C000-000000000046"), 2, 0, new("BEF6E003-A874-101A-8BBA-00AA00300CAB"), (members, _) =>
 		{
@@ -195,7 +195,7 @@ public partial class ExternalTests : TestRunner
 	}
 
 	// An Array nested twice converts twice, and one nested within itself stays the object where it recurs.
-	[Test, Category("External"), Category("Internal")]
+	[Test, Category("External"), Category("Internal"), Category("WindowsInterop")]
 	public void SafeArrayElementsOfNestedArrays()
 	{
 		var inner = new Keysharp.Builtins.Array(1L, 2L);
@@ -208,7 +208,7 @@ public partial class ExternalTests : TestRunner
 		Assert.That(elements[2], Is.SameAs(outer));
 	}
 
-	[Test, Category("External")]
+	[Test, Category("External"), Category("WindowsInterop")]
 	public void OnMessage() => Assert.IsTrue(TestScript("external-onmessage", false));
 
 #endif

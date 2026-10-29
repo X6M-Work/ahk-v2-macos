@@ -3,7 +3,7 @@ namespace Keysharp.Tests;
 [Category("Internal")]
 public class ProviderDeploymentTests : TestRunner
 {
-	[Test]
+	[Test, Category("Curated")]
 	public void BundledNuGetProviderIsAnIsolatedExplicitPayload()
 	{
 		Assert.IsTrue(Keysharp.Internals.Os.PackageProviderRegistry.TryGetPayload("nuget", out var payload),
@@ -28,7 +28,7 @@ public class ProviderDeploymentTests : TestRunner
 	[TearDown]
 	public void ClearProviders() => Keysharp.Internals.Os.PackageProviderRegistry.ResetForTests();
 
-	[Test]
+	[Test, Category("Curated")]
 	public void FullArtifactCopiesOnlyRequiredProviders()
 	{
 		var root = NewProviderRoot(out var providerRoot);
@@ -133,14 +133,14 @@ public class ProviderDeploymentTests : TestRunner
 		}
 	}
 
-	[Test]
+	[Test, Category("Curated")]
 	public void MinimalArtifactAuthenticatesAndRepairsEmbeddedProvider()
 	{
 		var root = NewProviderRoot(out _);
 		var work = Path.Combine(Path.GetTempPath(), "ks-provider-embed-" + Guid.NewGuid().ToString("N"));
 		_ = Directory.CreateDirectory(work);
 		var script = Path.Combine(work, "embed.ks");
-		File.WriteAllText(script, "#NoTrayIcon\n#ErrorStdOut\nClr.LoadPackage(\"fake:demo\",, true)\n");
+		File.WriteAllText(script, "#NoTrayIcon\n#ErrorStdOut\n#Warn All, StdOut\n#Import Ks { Clr }\nClr.LoadPackage(\"fake:demo\",, true)\n");
 		string extractedRoot = null;
 
 		try

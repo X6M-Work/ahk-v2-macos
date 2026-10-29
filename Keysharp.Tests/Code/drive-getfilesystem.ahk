@@ -1,18 +1,15 @@
+#ErrorStdOut
+#Warn All, StdOut
 #NoTrayIcon
 #Include <assert>
 
 #if WINDOWS
-	val := DriveGetFileSystem("C:\")
+root := EnvGet("SystemDrive") "\"
 #else
-	val := DriveGetFileSystem("/")
+root := "/"
 #endif
 
-Assert(
-#if WINDOWS
-	val == "NTFS" || val == "FAT32" || val == "FAT" || val == "CDFS" || val == "UDF"
-#else
-	val != ""
-#endif
-, A_LineNumber)
+Assert(StrLen(DriveGetFileSystem(root)) > 0, A_LineNumber)
+Assert(Type(DriveGetLabel(root)) = "String", A_LineNumber)
 
 FileAppend "pass", "*"

@@ -2,7 +2,7 @@ namespace Keysharp.Tests;
 
 public class ImageTests : TestRunner
 {
-	[Test, Category("Image")]
+	[Test, Category("Image"), Category("Desktop")]
 	public void Image()
 	{
 		if (Script.IsHeadless)
@@ -11,7 +11,7 @@ public class ImageTests : TestRunner
 		Assert.IsTrue(TestScript("image", false));
 	}
 
-	[Test, Category("Image")]
+	[Test, Category("Image"), Category("Desktop")]
 	public void VectorDrawing()
 	{
 		if (Script.IsHeadless)
@@ -20,7 +20,7 @@ public class ImageTests : TestRunner
 		Assert.IsTrue(TestScript("image-vector", false));
 	}
 
-	[Test, Category("Image"), Category("Internal")]
+	[Test, Category("Image"), Category("Internal"), Category("Desktop")]
 	public void DrawImageResources()
 	{
 		if (Script.IsHeadless)
@@ -36,7 +36,7 @@ public class ImageTests : TestRunner
 		Assert.That(canvas.PendingResourcesCount, Is.Zero);
 	}
 
-	[Test, Category("Image"), Category("Internal")]
+	[Test, Category("Image"), Category("Internal"), Category("Desktop")]
 	public void OverlaySurfaceReadBoundary()
 	{
 		if (Script.IsHeadless)
@@ -114,7 +114,7 @@ public class ImageTests : TestRunner
 		}
 	}
 
-	[TestCase(1), TestCase(-1), Category("Image"), Category("Internal")]
+	[TestCase(1), TestCase(-1), Category("Image"), Category("Internal"), Category("Curated")]
 	public void RegionalClearStride(int direction)
 	{
 		const int width = 7, height = 5, stride = 40, guard = 16;
@@ -152,7 +152,7 @@ public class ImageTests : TestRunner
 #endif
 
 #if LINUX
-	[Test, Category("Image"), Category("Internal")]
+	[Test, Category("Image"), Category("Internal"), Category("Desktop")]
 	public void GtkOverlaySnapshotPreservesArgbPixels()
 	{
 		using var source = new Bitmap(4, 3, PixelFormat.Format32bppRgba);

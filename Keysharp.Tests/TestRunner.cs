@@ -116,6 +116,39 @@ public abstract class TestRunner
 			Assert.Ignore(reason);
 	}
 
+	protected IDisposable PreserveClipboard()
+	{
+		SkipIfUiInitializationBlocked("Clipboard tests need a main-thread-capable desktop runner.");
+		Script.TheScript.ErrorStdOut = true;
+		var clipboard = Platform.Clipboard;
+		var saved = new ClipboardAll(clipboard.CaptureAll());
+		return new CallbackDisposable(() =>
+		{
+			// Compiled scripts close their clipboard-owner window before returning.
+			if (Script.TheScript.IsDisposed)
+				ResetScriptState();
+			Script.TheScript.ErrorStdOut = true;
+			try { Platform.Clipboard.RestoreAll(saved); }
+			finally { ((IDisposable)saved).Dispose(); }
+		});
+	}
+
+	protected void RequireDisposableTestVolume()
+	{
+#if WINDOWS
+		var root = Environment.GetEnvironmentVariable("KEYSHARP_TEST_VOLUME");
+		if (string.IsNullOrEmpty(root))
+			Assert.Ignore("Requires KEYSHARP_TEST_VOLUME pointing to a marked disposable volume.");
+		Assert.That(root, Does.Match(@"^[A-Za-z]:\\$"));
+		Assert.That(root, Is.Not.EqualTo(Path.GetPathRoot(Environment.SystemDirectory)).IgnoreCase);
+		Assert.That(new DriveInfo(root).VolumeLabel, Is.EqualTo("KEYSHARP_TEST"));
+		Assert.That(File.ReadAllText(Path.Combine(root, ".keysharp-disposable-test-volume")),
+			Is.EqualTo("Keysharp disposable test volume"));
+#else
+		Assert.Ignore("Requires an isolated OS account/volume; FileRecycleEmpty ignores its volume argument off Windows.");
+#endif
+	}
+
 	protected QueuedSynchronizationContext UseQueuedMainContext()
 	{
 		var context = new QueuedSynchronizationContext();

@@ -376,7 +376,7 @@ public partial class FlowTests : TestRunner
 	[Test, Category("Flow")]
 	public void FlowLoopRead() => Assert.IsTrue(TestScript("flow-loop-read", true));
 
-	[Test, Category("Internal")]
+	[Test, Category("Internal"), Category("Curated")]
 	public void LoopCleanupAfterDisposeFailure()
 	{
 		var outer = Loops.Push();

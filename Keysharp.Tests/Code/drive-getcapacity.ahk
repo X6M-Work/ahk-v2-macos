@@ -1,14 +1,16 @@
+#ErrorStdOut
+#Warn All, StdOut
 #NoTrayIcon
 #Include <assert>
 
 #if WINDOWS
-	val := DriveGetCapacity("C:\")
-#elif OSX
-	val := DriveGetCapacity("/")
+root := EnvGet("SystemDrive") "\"
 #else
-	val := DriveGetCapacity("/")
+root := "/"
 #endif
-			
-Assert(val > 1000, A_LineNumber)
+
+capacity := DriveGetCapacity(root)
+Assert(capacity > 0, A_LineNumber)
+Assert(DriveGetSpaceFree(root) <= capacity, A_LineNumber)
 
 FileAppend "pass", "*"

@@ -3,10 +3,13 @@ namespace Keysharp.Tests;
 [Category("Internal")]
 public class GuiTests : TestRunner
 {
-	private const string MsgBoxTitle = "this is a sample title";
+	private static readonly string MsgBoxTitle = $"Keysharp MsgBox probe {Guid.NewGuid():N}";
+
+	[SetUp]
+	public void DirectGuiErrorsToConsole() => s.ErrorStdOut = true;
 
 #if WINDOWS
-	[TestCase(false), TestCase(true), Category("Gui"), Apartment(ApartmentState.STA)]
+	[TestCase(false), TestCase(true), Category("Gui"), Category("Desktop"), Apartment(ApartmentState.STA)]
 	public void TrayMenuLazyInitialization(bool allowMainWindow)
 	{
 		SkipIfUiInitializationBlocked("Building a tray menu needs a usable UI toolkit.");
@@ -49,7 +52,7 @@ public class GuiTests : TestRunner
 	}
 #endif
 
-	[TestCase(false), TestCase(true), Category("Gui")]
+	[TestCase(false), TestCase(true), Category("Gui"), Category("Desktop")]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -150,7 +153,7 @@ public class GuiTests : TestRunner
 		});
 	}
 
-	[Test, Category("Gui"), NonParallelizable]
+	[Test, Category("Gui"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -160,7 +163,7 @@ public class GuiTests : TestRunner
 		Assert.IsTrue(TestScript("gui-window-from-point", false));
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Curated")]
 	public void DisplaySelection()
 	{
 		DisplayInfo[] displays =
@@ -188,7 +191,7 @@ public class GuiTests : TestRunner
 		Assert.That(edgeNearest.Name, Is.EqualTo("large"), "nearest lookup must compare display edges, not centres");
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Curated")]
 	public void ExtremeDisplayInput()
 	{
 		DisplayInfo[] displays =
@@ -202,7 +205,7 @@ public class GuiTests : TestRunner
 		Assert.That(new ScreenRect(int.MaxValue, 0, 1, 1).Right, Is.EqualTo((long)int.MaxValue + 1));
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Curated")]
 	public void WindowsCaptureScale()
 	{
 		// PMv2 Windows exposes both monitors in physical desktop pixels. A 1920-wide 100% display followed
@@ -214,7 +217,7 @@ public class GuiTests : TestRunner
 		Assert.That(desktop.ScreenToPixel(2920, 700, pixels), Is.EqualTo(new Point(2920, 700)));
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Curated")]
 	public void DenseCaptureScale()
 	{
 		var twice = new ScreenRect(10, 20, 2, 1);
@@ -240,7 +243,7 @@ public class GuiTests : TestRunner
 			new Point(4840, 600), new PixelSize(6720, 2160)), Is.EqualTo(new Point(2420, 300)));
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	public void HiddenOverlaySetImage()
 	{
 		using var image = KeysharpImage.Create(null, 20, 12, "0xFF204060") as KeysharpImage;
@@ -263,7 +266,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	public void OverlayRedraw()
 	{
 		var overlay = new Ks.KeysharpOverlay();
@@ -290,7 +293,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	public void OverlayRedrawPreservesAutoSize()
 	{
 		using var small = KeysharpImage.Create(null, 10L, 6L, "0xFF204060") as KeysharpImage;
@@ -326,7 +329,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	public void OverlayImageSize()
 	{
 		using var image = KeysharpImage.Create(null, 20, 12, "0xFF204060", 2.0) as KeysharpImage;
@@ -349,7 +352,7 @@ public class GuiTests : TestRunner
 	/// One Overlay event's handlers run as one chain, as a Gui event's do: a non-empty return (0 included) or an
 	/// uncaught error stops the rest, while "" or no return passes the event on.
 	/// </summary>
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	public void OverlayEventChainStopsOnNonEmptyReturn()
 	{
 		var overlay = new Ks.KeysharpOverlay();
@@ -1024,7 +1027,7 @@ public class GuiTests : TestRunner
 		Assert.IsTrue(TestScript("control-coordinates", false));
 	}
 
-	[Test, Category("Gui"), NonParallelizable]
+	[Test, Category("Gui"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -1034,7 +1037,7 @@ public class GuiTests : TestRunner
 		Assert.IsTrue(TestScript("gui-window", false));
 	}
 
-	[Test, Category("Gui"), NonParallelizable]
+	[Test, Category("Gui"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -1129,7 +1132,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void CaptionlessToolWindow()
 	{
@@ -1169,11 +1172,11 @@ public class GuiTests : TestRunner
 	/// The WebView surface as a script reaches it. Driven from a script because the members live on the
 	/// holder the binder hands back, and because OnEvent's per-control event set is only visible from there.
 	/// </summary>
-	[Test, Category("Gui"), NonParallelizable]
+	[Test, Category("Gui"), Category("Desktop"), NonParallelizable]
 	[Apartment(ApartmentState.STA)]
 	public void WebViewScriptSurface() => Assert.IsTrue(TestScript("gui-webview", false));
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void DpiResizeDefaults()
 	{
@@ -1209,7 +1212,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void DpiOptOut()
 	{
@@ -1244,7 +1247,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void DpiChangeEvent()
 	{
@@ -1269,7 +1272,7 @@ public class GuiTests : TestRunner
 	/// An <c>ObjBindMethod</c> handler carries no signature, which raised out of <c>IsClosure</c>, and its
 	/// receiver was then cleared off the script's own function object. Registration must leave it as it was.
 	/// </summary>
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void BoundEventHandler()
 	{
@@ -1292,7 +1295,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void MessageHandlers()
 	{
@@ -1386,7 +1389,7 @@ public class GuiTests : TestRunner
 	/// string stop it, while "" or no return passes the event on. Close runs its chain inline and DpiChanged
 	/// queues it, so both dispatch paths are covered.
 	/// </summary>
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void EventChainStopsOnNonEmptyReturn()
 	{
@@ -1438,7 +1441,7 @@ public class GuiTests : TestRunner
 	/// while one which calls Exit (EARLY_EXIT) ends only itself and the next handler runs. Covers the inline
 	/// (Close), queued (DpiChanged) and window-message (OnMessage) paths.
 	/// </summary>
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void EventChainStopsOnErrorButNotExit()
 	{
@@ -1504,7 +1507,7 @@ public class GuiTests : TestRunner
 	/// WM_CONTEXTMENU sent to the control, which its default procedure passes up to the window, and a ListView's
 	/// NM_RCLICK, which carries the clicked row.
 	/// </summary>
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void ContextMenuDispatch()
 	{
@@ -1653,7 +1656,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void MenuBarUsesClientCoordinates()
 	{
@@ -1701,7 +1704,7 @@ public class GuiTests : TestRunner
 	//As in AHK, the controls are children of the Gui window, which so gets their notifications and the mouse on its
 	//background: a -Caption window answering WM_NCHITTEST with HTCAPTION there is dragged, and OnMessage sees Gui.Hwnd.
 	//Only a menu bar, a control within the WinForms client area, moves them to a panel below it.
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void ControlsParentIsGuiWindowUntilMenuBar()
 	{
@@ -1756,7 +1759,7 @@ public class GuiTests : TestRunner
 
 	//The panel a menu bar puts the controls in is the toolkit's business: the margins, the section and the
 	//container the next control goes to are the Gui's, and carry on across it.
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void MenuBarLeavesLayoutAlone()
 	{
@@ -1810,7 +1813,7 @@ public class GuiTests : TestRunner
 
 	//A native control keeps notifying the parent it was created under, so its window is created only once it has been
 	//added to the Gui: OnMessage then sees an Edit's EN_CHANGE as in AHK, which WinForms' parking window would swallow.
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void ControlNotifiesGuiWindow()
 	{
@@ -1843,7 +1846,7 @@ public class GuiTests : TestRunner
 
 	//As in AHK, MarginX/MarginY are in the units of a control's position whatever the DPI, and default to 1.25 and
 	//0.75 times the font's point size. The positions are the ones AHK gives for the same calls.
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void MarginsFollowDpi()
 	{
@@ -1889,7 +1892,7 @@ public class GuiTests : TestRunner
 
 	//As in AHK: a blank value removes the menu bar, anything else but a MenuBar is a TypeError, and the window keeps
 	//its size while the bar comes out of, and goes back into, its client area.
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void MenuBarAssignment()
 	{
@@ -1934,7 +1937,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void ColumnedMenuSize()
 	{
@@ -1998,7 +2001,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void MenuOptions()
 	{
@@ -2085,7 +2088,7 @@ public class GuiTests : TestRunner
 		menu.Close();
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void WinSetStyle()
 	{
@@ -2112,7 +2115,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void WinSetExStyle()
 	{
@@ -2139,7 +2142,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void NativeInputBox()
 	{
@@ -2398,7 +2401,7 @@ public class GuiTests : TestRunner
 	}
 #endif
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -2491,7 +2494,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -2531,7 +2534,7 @@ public class GuiTests : TestRunner
 		}
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 #if WINDOWS
 	// Same STA apartment as Theme so the two share a per-test STA thread that is torn down afterward. Otherwise this
 	// test's message loop strands a SystemEvents (dark-mode/theming) subscription on the persistent runner thread,
@@ -2549,25 +2552,40 @@ public class GuiTests : TestRunner
 
 		var (cts, task) = StartMsgBoxAutoAccept();
 		KeysharpForm form = null;
+		Exception failure = null;
 		try
 		{
 			form = CreateMsgBoxHostForm();
-			form.Shown += Form_Shown;
+			form.Shown += (sender, args) =>
+			{
+				try { Form_Shown(sender, args); }
+				catch (Exception ex) { failure = ex; form.Close(); }
+			};
 			RunMsgBoxHost(form);
 		}
 		finally
 		{
 			form?.Close();
 			cts.Cancel();
-			task.Wait();
+			Assert.IsTrue(task.Wait(2000), "The MsgBox responder must stop after cancellation.");
+			cts.Dispose();
 		}
 
-		var timeoutForm = CreateMsgBoxHostForm();
-		timeoutForm.Shown += TimeoutForm_Shown;
+		if (failure != null)
+			Assert.Fail(failure.ToString());
+
+		using var timeoutForm = CreateMsgBoxHostForm();
+		timeoutForm.Shown += (sender, args) =>
+		{
+			try { TimeoutForm_Shown(sender, args); }
+			catch (Exception ex) { failure = ex; timeoutForm.Close(); }
+		};
 		RunMsgBoxHost(timeoutForm);
+		if (failure != null)
+			Assert.Fail(failure.ToString());
 	}
 
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
@@ -2690,7 +2708,7 @@ public class GuiTests : TestRunner
 #endif
 
 #if WINDOWS
-	[Test, Category("Gui")]
+	[Test, Category("Gui"), Category("Desktop")]
 	[Apartment(ApartmentState.STA)]
 	public void ErrorDialogThemeColors()
 	{
@@ -2728,36 +2746,66 @@ public class GuiTests : TestRunner
 
 	private void Form_Shown(object sender, EventArgs e)
 	{
-		var ret = Dialogs.MsgBox("ok, hand, def: 1", MsgBoxTitle, "0 16");
+		var ret = TimedMsgBox("ok, hand, def: 1", MsgBoxTitle, "0 16");
 		Assert.That(ret.ToUpper(), Is.EqualTo("OK"));
-		ret = Dialogs.MsgBox("ok, hand, def: 1", MsgBoxTitle, 16);
+		ret = TimedMsgBox("ok, hand, def: 1", MsgBoxTitle, 16);
 		Assert.That(ret.ToUpper(), Is.EqualTo("OK"));
-		ret = Dialogs.MsgBox("ok-cancel, question, def: 2", MsgBoxTitle, "1 32 256");
+		ret = TimedMsgBox("ok-cancel, question, def: 2", MsgBoxTitle, "1 32 256");
 		Assert.That(ret, Is.EqualTo("Cancel"));
-		ret = Dialogs.MsgBox("ok-cancel, question, def: 2", MsgBoxTitle, 1 | 32 | 256);
+		ret = TimedMsgBox("ok-cancel, question, def: 2", MsgBoxTitle, 1 | 32 | 256);
 		Assert.That(ret, Is.EqualTo("Cancel"));
-		ret = Dialogs.MsgBox("yes-no-cancel, asterisk/info, def: 1", MsgBoxTitle, "3 64");
+		ret = TimedMsgBox("yes-no-cancel, asterisk/info, def: 1", MsgBoxTitle, "3 64");
 		Assert.That(ret, Is.EqualTo("Yes"));
-		ret = Dialogs.MsgBox("yes-no-cancel, asterisk/info, def: 1", MsgBoxTitle, 3 | 64);
+		ret = TimedMsgBox("yes-no-cancel, asterisk/info, def: 1", MsgBoxTitle, 3 | 64);
 		Assert.That(ret, Is.EqualTo("Yes"));
-		ret = Dialogs.MsgBox("yes-no, asterisk/info, def: 2", MsgBoxTitle, "4 64 256");
+		ret = TimedMsgBox("yes-no, asterisk/info, def: 2", MsgBoxTitle, "4 64 256");
 		Assert.That(ret, Is.EqualTo("No"));
-		ret = Dialogs.MsgBox("yes-no, asterisk/info, def: 2", MsgBoxTitle, 4 | 64 | 256);
+		ret = TimedMsgBox("yes-no, asterisk/info, def: 2", MsgBoxTitle, 4 | 64 | 256);
 		Assert.That(ret, Is.EqualTo("No"));
 #if WINDOWS
-		ret = Dialogs.MsgBox("abort-retry-ignore, exclamation, def: 3, just: right", MsgBoxTitle, "2 48 512 524288");
+		ret = TimedMsgBox("abort-retry-ignore, exclamation, def: 3, just: right", MsgBoxTitle, "2 48 512 524288");
 		Assert.That(ret, Is.EqualTo("Ignore"));
-		ret = Dialogs.MsgBox("abort-retry-ignore, exclamation, def: 3, just: right", MsgBoxTitle, 2 | 48 | 512 | 524288);
+		ret = TimedMsgBox("abort-retry-ignore, exclamation, def: 3, just: right", MsgBoxTitle, 2 | 48 | 512 | 524288);
 		Assert.That(ret, Is.EqualTo("Ignore"));
-		ret = Dialogs.MsgBox("retry-cancel, asterisk/info, def: 1", MsgBoxTitle, "5 64");
+		ret = TimedMsgBox("retry-cancel, asterisk/info, def: 1", MsgBoxTitle, "5 64");
 		Assert.That(ret, Is.EqualTo("Retry"));
-		ret = Dialogs.MsgBox("retry-cancel, asterisk/info, def: 1", MsgBoxTitle, 5 | 64);
+		ret = TimedMsgBox("retry-cancel, asterisk/info, def: 1", MsgBoxTitle, 5 | 64);
 		Assert.That(ret, Is.EqualTo("Retry"));
-		ret = Dialogs.MsgBox("cancel-try-continue, exclamation, def: 1", MsgBoxTitle, "0x36");
+		ret = TimedMsgBox("cancel-try-continue, exclamation, def: 1", MsgBoxTitle, "0x36");
 		Assert.That(ret, Is.EqualTo("Cancel"));
 #endif
 		(sender as Form)?.Close();
 	}
+
+	private static string TimedMsgBox(object text, object title, object options)
+	{
+#if WINDOWS
+		var expired = 0;
+		using var watchdog = new System.Threading.Timer(_ =>
+		{
+			Interlocked.Exchange(ref expired, 1);
+			_ = TryAcceptDefaultMsgBox(WindowsAPI.FindWindow(null, MsgBoxTitle));
+		}, null, 3000, 100);
+		var result = Dialogs.MsgBox(text, title, options);
+		Assert.That(Volatile.Read(ref expired), Is.Zero, "The normal responder must accept each MsgBox before the watchdog.");
+		return result;
+#else
+		return Dialogs.MsgBox(text, title, options);
+#endif
+	}
+
+#if WINDOWS
+	private static bool TryAcceptDefaultMsgBox(nint window)
+	{
+		if (window == 0)
+			return false;
+		_ = WindowsAPI.GetWindowThreadProcessId(window, out var owner);
+		if (owner != (uint)Environment.ProcessId)
+			return false;
+		return WindowsAPI.PostMessage(window, WindowsAPI.WM_KEYDOWN, 0x0D, 0)
+			&& WindowsAPI.PostMessage(window, WindowsAPI.WM_KEYUP, 0x0D, 0);
+	}
+#endif
 
 	private static void TimeoutForm_Shown(object sender, EventArgs e)
 	{
@@ -2812,13 +2860,10 @@ public class GuiTests : TestRunner
 			{
 				var wnd = WindowsAPI.FindWindow(null, MsgBoxTitle);
 
-				if (wnd != 0)
+				if (TryAcceptDefaultMsgBox(wnd))
 				{
-					_ = WindowsAPI.SetForegroundWindow(wnd);
-					SendKeys.SendWait(" ");
-
 					// Wait for this box to close rather than a fixed time, so the same one is not pressed twice.
-					// A keystroke that went nowhere is simply sent again once the wait gives up.
+					// A command that raced initialization is retried once the wait gives up.
 					for (var i = 0; i < 60 && WindowsAPI.IsWindow(wnd); i++)
 						Thread.Sleep(5);
 				}

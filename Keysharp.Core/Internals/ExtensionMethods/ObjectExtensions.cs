@@ -185,7 +185,7 @@ namespace Keysharp.Internals.ExtensionMethods
 		// for no value. What the ToString raises propagates.
 		private static bool ToStringCore(object obj, out string text)
 		{
-			if (Script.CompatV20 && obj is Any)
+			if (Script.CompatV20 && obj is Any && obj is not Ks.Clr.ManagedInstance)
 			{
 				text = null;
 				return false;

@@ -21,6 +21,14 @@ Jump directly to:
 
 ## Windows Platform Support
 
+`Clr.ManagedInstance` uses its wrapped CLR object's `ToString()` for implicit string conversion, including concatenation and built-in String parameters, in both compatibility modes. This is a Keysharp CLR extension; ordinary AutoHotkey objects remain invalid as implicit strings in v2.0. The regression is validated locally on Windows; native Mac/Linux validation is pending.
+
+`DriveGetList(Type)` filters every enumerated drive, including the first. Windows returns drive letters; Linux and macOS return semicolon-separated mount paths. The first-drive regression has a local Windows test; native macOS/Linux revalidation is pending.
+
+`SoundBeep` treats frequencies outside 37 through 32767 as silent no-ops, matching the local AutoHotkey 2.0.31 comparison. Nonnumeric inputs still raise `TypeError`. A Windows call/duration check does not establish audible output or native macOS/Linux playback.
+
+`FileRecycleEmpty(Drive)` scopes the operation to a volume on Windows. Linux ignores the argument and empties the session trash through GIO; macOS ignores it and empties the user's `~/.Trash`, without covering per-volume trash folders. Test this function only on a disposable Windows volume or inside an isolated OS account off Windows.
+
 Windows has the best feature implementation rate and very high AutoHotkey v2 compatibility. The largest differences are:
 * Object destruction outside the migrated named-variable ownership paths, which still depends on C# garbage collection
 * GUI rendering, because WinForms is used as the backend. WinForms uses lazy initialization which means for example that GUIs render blank before they've been showed. Additionally WinForms has some differences concerning Z-ordering of controls and label rendering.
@@ -215,6 +223,8 @@ macOS support is in active development. The following table summarises what work
 Permissions are requested automatically when first needed, or up front with `#Requires capability` (see [Additions and Improvements](#additions-and-improvements) below). Grant them in **System Settings → Privacy & Security**.
 
 On macOS, every top-level window uses its window-server ID (`CGWindowID`) as its Keysharp handle. `Gui.Hwnd`, `WinActive()`, `WinExist()`, `WinGetID()`, `WinGetList()`, point queries, and `WinEvent` callbacks agree on that ID. Own GUI IDs are validated against CoreGraphics at creation and remain unchanged through hiding, showing, minimizing, and restoring. `Gui.Hwnd` is not an `NSWindow` pointer; native AppKit access goes through the backing form returned by `Gui.ToClr()`.
+
+`Gui.Hwnd` reads a cached native handle without dispatching to the UI thread. This lets a `#HotIf` predicate read its GUI handle while the UI thread is waiting for the keyboard hook. Window registration refreshes the cache, Windows handle recreation updates it, and destruction clears it. This change still needs native macOS/Linux validation.
 
 For foreign windows on macOS, `WinHide()`/`WinShow()` hide/unhide the owning application. `WinMaximize()` uses fullscreen; minimizing leaves fullscreen, and the same script's `WinRestore()` or `WinActivate()` restores it. `WinMinimize()` and `WinRestore()` wait for AppKit's animation. After `SetWinDelay(-1)` minimizing or restoring a window that is not fullscreen is only requested: a further `WinMinimize()` or `WinRestore()` builds on the pending one, and other actions on that application's windows wait for the animation. While an application is animating or does not answer, `WinGetMinMax()` reports the state last seen. Foreign title changes require writable `AXTitle`. Foreign level, opacity, enabled state, frame style, lowering and redraw are unsupported.
 

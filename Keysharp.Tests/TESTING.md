@@ -79,6 +79,101 @@ For nested Wayland tests, point both Keysharp and keysharp-desktop at the nested
 
 The full suite includes interactive and permission-sensitive fixtures. Run the curated filter from the repository `AGENTS.md`, a narrower category, or a specific test. Never add `[Parallelizable]`; the suite shares `Script.TheScript` state.
 
+### Timer scheduling and loop cleanup
+
+`TimerSchedulerTests` and `FlowTests.LoopCleanupAfterDisposeFailure` are included in the curated selection. The timer fixture checks blocked admission, overdue callback coalescing, nested callbacks during `Sleep`, callback periods, notifications during a pump, and visible-menu scheduling. Loop cleanup checks that a failing enumerator `Dispose` still restores the outer loop. The tests do not require keyboard hooks, user input, or screen access.
+
+Run this scope locally, without starting a GitHub workflow:
+
+```powershell
+dotnet test Keysharp.Tests/Keysharp.Tests.csproj -c Release -p:PublishReadyToRun=false --no-build --no-restore --nologo --filter 'FullyQualifiedName~TimerSchedulerTests|FullyQualifiedName~FlowTests.LoopCleanupAfterDisposeFailure' --logger 'trx;LogFileName=timer-loop-cleanup.trx' --blame-hang --blame-hang-timeout 60s -- NUnit.NumberOfTestWorkers=1
+```
+
+The filter selects nine cases: seven scheduling/cleanup regressions plus two existing `MenuVisible` cases. `LongTimerCoalescing` first uses the queued test transport and explicit overdue deadlines to check one queued callback, no reentry during a callback, preservation of an overdue deadline at completion, one subsequent callback and no accumulated catch-up queue. Its script then completes four callbacks whose 140 ms waits exceed the 80 ms timer period, disables the timer from the fourth callback and checks completion, serialization and callback duration. A five-second watchdog detects missing progress; there is no fixed callback count within a wall-clock sleep or maximum inter-callback latency assertion. `Sleep` may return late while native messages dispatch callbacks, so those bounds cannot establish coalescing. The other real-time timer scripts retain bounded waits; elapsed-time checks do not guarantee real-time scheduling. A Windows result does not establish native macOS behavior; run the same selection locally on each Mac architecture before claiming native validation.
+
+### Processes, launcher, and environment
+
+`RunnerTests`, the three process behavior scripts, and `EnvGet`/`EnvSet`/`EnvUpdate` belong to the curated selection. Ten launcher cases test Windows-only daemon authentication and remain inside `#if WINDOWS`. Their results do not establish macOS daemon behavior. The process scripts launch their own bounded child processes and clean up their scratch files.
+
+`SysGet` is curated on Windows only. It still needs a graphical session; its macOS/Linux testhost guard and `UI` category remain intact. `ClipboardAll` and `ClipWait` are outside this scope and are not promoted. Environment scripts use process-specific variable names; `EnvSet` removes its test variable in `finally`.
+
+Run the related curated cases locally after building:
+
+```powershell
+dotnet test Keysharp.Tests/Keysharp.Tests.csproj -c Release -p:PublishReadyToRun=false --no-build --no-restore --nologo --filter 'Category=Curated&(FullyQualifiedName~RunnerTests|FullyQualifiedName~ProcessTests|FullyQualifiedName~EnvTests.EnvGet|FullyQualifiedName~EnvTests.EnvSet|FullyQualifiedName~EnvTests.EnvUpdate|FullyQualifiedName~EnvTests.SysGet)' --logger 'trx;LogFileName=process-runner-environment.trx' --blame-hang --blame-hang-timeout 60s -- NUnit.NumberOfTestWorkers=1
+```
+
+This selection also includes existing curated cases in these fixtures. A Windows run covers 21 newly selected cases: 14 launcher cases, three process cases, and four environment/system cases. Native macOS validation remains a separate step.
+
+### Desktop input, clipboard, monitors, and capture
+
+`Category=Desktop` explicitly selects tests that use native hooks, the session clipboard, monitor enumeration, a graphics backend, GUI windows/dialogs, temporary capture windows, or recycling of generated scratch files. These tests stay outside the default curated filter. The Windows selection contains 72 cases. Pure coordinate/image calculations are curated separately.
+
+Clipboard tests capture the original formats before probing and restore them in teardown, including after assertion failures. A compiled script may have disposed its clipboard-owner window; restoration creates a fresh script context when needed. The snapshot stays in memory. The hotstring callback test disables backspacing and feeds simulated events into the installed hook; it does not prove physical keyboard delivery. The F12 script activates its own window and verifies that its local callback actually runs under `#HotIf WinActive("ahk_id " fixture.Hwnd)`.
+
+Run the desktop selection on Windows with an unlocked interactive session:
+
+```powershell
+dotnet test Keysharp.Tests/Keysharp.Tests.csproj -c Release -p:PublishReadyToRun=false --no-build --no-restore --nologo --filter 'Category=Desktop' --logger 'trx;LogFileName=desktop.trx' --blame-hang --blame-hang-timeout 60s -- NUnit.NumberOfTestWorkers=1
+```
+
+For a combined local run, parenthesize the normal curated filter (including its hook and recycle exclusions), then append `|Category=Desktop`. This explicitly opts into hooks while preserving the ordinary curated filter. Tests remain serialized. Do not add this desktop selection to headless CI: native macOS GUI tests need an AppKit main-thread-capable host and the relevant permissions. Headless skips are not successful native validation.
+
+### Drives, audio, and recycling
+
+The seven read-only `DriveTests` cases are curated. They query the system drive on Windows and `/` off Windows, without assuming the drive letter, filesystem, minimum free space, or a nonzero serial number. `DriveGetList` also checks its type-filtered result.
+
+`Category=Audio` explicitly opts into `SoundBeep`: two short tones, argument validation, and a lower bound on synchronous duration. A successful call does not prove audible output, physical pitch, or a working macOS player. `ToneWav` remains the separate curated, device-free synthesis check.
+
+`FileRecycle` belongs to `Desktop` and only recycles its own uniquely named temporary files and directories. It never empties the session trash. Generated recycled items remain in that trash.
+
+`DriveGetSetLabel` and `FileRecycleEmpty` have `Category=DisposableVolume`. They skip before executing a script unless `KEYSHARP_TEST_VOLUME` identifies an explicitly prepared disposable Windows drive root such as `R:\`. The system drive is rejected. The volume must be labeled `KEYSHARP_TEST` and contain `.keysharp-disposable-test-volume` with the exact content `Keysharp disposable test volume`, without a newline. Use a disposable NTFS virtual disk; do not mark a volume containing personal data. The label test also requires an elevated test host and restores the label in `finally`. The empty test queries the recycled item count before and after its volume-scoped call. It never calls the default global empty operation. Both scripts repeat the guard when launched directly.
+
+Off Windows, the empty test skips: the implementation ignores its volume argument and would empty the user's trash. Native validation requires an isolated OS account. These skips are pending native validation, not passes.
+
+From an elevated Windows PowerShell, `scripts/test-disposable-volume.ps1 -Dotnet <dotnet.exe>` creates its own new 256 MiB VHD, verifies its disk association, size and boot/system flags before partitioning, formats only that image, sets the test marker and runs exactly the two `DisposableVolume` cases. It detaches the image in `finally` and deletes it after successful tests and detach. Logs, a TRX and `result.json` remain under a fresh `Keysharp.Tests/TestResults/disposable-volume-*` directory. Failed images are retained for inspection. `-Preflight` prints the plan without creating or mounting a disk. The script does not request elevation itself and refuses an existing session directory or image.
+
+```powershell
+dotnet test Keysharp.Tests/Keysharp.Tests.csproj -c Release -p:PublishReadyToRun=false --no-build --no-restore --nologo --filter 'FullyQualifiedName~Keysharp.Tests.DriveTests.|FullyQualifiedName=Keysharp.Tests.SoundTests.SoundBeep|FullyQualifiedName=Keysharp.Tests.FileAndDirTests.FileRecycle|FullyQualifiedName=Keysharp.Tests.FileAndDirTests.FileRecycleEmpty' --logger 'trx;LogFileName=drives-audio-recycle.trx' --blame-hang --blame-hang-timeout 60s -- NUnit.NumberOfTestWorkers=1
+```
+
+For a combined local run, append `|Category=Audio` to the existing curated-or-Desktop filter. Do not include `DisposableVolume` in unattended CI.
+
+### CLR and Windows interop
+
+`ExternalTests.Clr` is curated on all platforms. Its script covers the managed bridge, callbacks, collections, spans and string conversion; a CLR `ManagedInstance` supplies its wrapped `ToString` even in v2.0 mode, while ordinary AHK objects still fail implicit string conversion in that mode.
+
+`Category=WindowsInterop` explicitly selects ten additional Windows-only cases: COM dispatch, synchronous COM events, SAFEARRAY storage/conversion, type libraries, reference ownership on packing failure, and native `OnMessage`. They remain compiled only under `#if WINDOWS`. A missing registered type library remains an explicit skip. `OnMessage` registers a unique message and posts/sends only to the test script's own hidden window, using a bounded wait for asynchronous delivery.
+
+```powershell
+dotnet test Keysharp.Tests/Keysharp.Tests.csproj -c Release -p:PublishReadyToRun=false --no-build --no-restore --nologo --filter 'Category=WindowsInterop|FullyQualifiedName=Keysharp.Tests.ExternalTests.Clr' --logger 'trx;LogFileName=interop.trx' --blame-hang --blame-hang-timeout 45s -- NUnit.NumberOfTestWorkers=1
+```
+
+Append `|Category=WindowsInterop` to the combined local curated/Desktop/Audio filter to include these cases. Native Windows COM/SAFEARRAY and Win32 message results do not establish macOS COM emulation; validate the CLR correction separately on each Mac architecture.
+
+### GUI selection and bounded dialogs
+
+The four `GuiTests` coordinate/topology cases (`DisplaySelection`, `ExtremeDisplayInput`, `WindowsCaptureScale`, `DenseCaptureScale`) are curated and use synthetic display data. Thirty-eight additional Windows GUI cases belong to `Desktop`: windows, controls, menus, DPI, event dispatch, overlays, themes, native dialogs and WebView. Existing per-platform compilation and AppKit/headless guards remain intact.
+
+The fixture sends unexpected script errors to stderr. `MsgBox` uses a unique title, verifies the owning PID and posts Return messages directly to that dialog. It neither injects global keystrokes nor changes foreground focus in its responder. Numeric and text option inputs remain distinct. A three-second watchdog marks the test as failed if it must intervene; assertions from `Shown` callbacks are returned to NUnit, and responder shutdown has a bounded wait. The separate dialog timeout check remains 0.2 seconds. `NativeInputBox` retains its own typed-value responder and two-second close watchdog.
+
+`gui-webview.ahk` must create a real WebView and run its assertions. Creation errors fail the case; the script never reports pass because a browser engine is missing. The GUI is destroyed in `finally`. This script checks the synchronous control surface, not page rendering, JavaScript execution after document load or browser navigation timing.
+
+A local Windows run checks native API behavior and programmatic assertions. It does not establish visual quality, actual multi-monitor DPI transitions, Linux compositor behavior or native AppKit operation. Run the corresponding cases on each target platform with a suitable desktop runner before claiming native validation.
+
+### Packages and providers
+
+The three offline deployment cases in `ProviderDeploymentTests` are curated: the bundled provider's isolated payload, copying only required providers, and authenticated extraction/repair of an embedded provider. They use owned temporary directories and a generated fake provider; they do not restore third-party packages. The existing inline-name case remains selected through `Directives`.
+
+The 22 cases with `Category=NuGet` remain an explicit opt-in because some require nuget.org, advisory metadata or a populated package cache. They cover batched/imperative restore, version conflicts and rollback, optional/offline requests, warm-cache validation and repair, manifests/deployment, inline C#, `.cks`, `exe`, `exe-min`, lazy transitive loading, RID-specific SQLite assets, target-supplied WebView2 assemblies, restore-lock cancellation and vulnerability diagnostics. `ProviderAudit` requires an actual `NU1901` through `NU1904` advisory for its deliberately vulnerable fixture package; an unavailable audit service (`NU1900`) cannot satisfy it. This old package is a test fixture, not a recommended application dependency.
+
+```powershell
+$env:KEYSHARP_DAEMON = '0'
+dotnet test Keysharp.Tests/Keysharp.Tests.csproj -c Release -p:PublishReadyToRun=false --no-build --no-restore --nologo --filter 'Category=NuGet|FullyQualifiedName=Keysharp.Tests.ProviderDeploymentTests.BundledNuGetProviderIsAnIsolatedExplicitPayload|FullyQualifiedName=Keysharp.Tests.ProviderDeploymentTests.FullArtifactCopiesOnlyRequiredProviders|FullyQualifiedName=Keysharp.Tests.ProviderDeploymentTests.MinimalArtifactAuthenticatesAndRepairsEmbeddedProvider' --logger 'trx;LogFileName=packages-providers.trx' --blame-hang --blame-hang-timeout 4min -- NUnit.NumberOfTestWorkers=1
+```
+
+The filter selects exactly 25 Windows cases. Child launchers inherit daemon disablement and use redirected output with a bounded exit wait. A warm run does not prove a fresh-machine download. Append `|Category=NuGet` to the combined local selection only when deliberately testing package feeds; do not silently add it to the default curated CI filter. Windows SQLite loading and Windows executable deployment do not establish macOS native library resolution, app-host execution, signing or quarantine behavior. Re-run on both Mac architectures locally.
+
 On Windows in a restricted sandbox, run tests through `scripts/test-sandbox.ps1` from the repository root:
 
 ```powershell

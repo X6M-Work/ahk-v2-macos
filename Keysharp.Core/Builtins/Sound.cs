@@ -17,7 +17,7 @@
 				return DefaultObject;
 
 			if (freq is < SoundPlayback.MinFrequency or > SoundPlayback.MaxFrequency)
-				return Errors.ValueErrorOccurred($"Frequency must be from {SoundPlayback.MinFrequency} through {SoundPlayback.MaxFrequency}.", frequency);
+				return DefaultObject;
 			if (time < 0)
 				time = 150;
 

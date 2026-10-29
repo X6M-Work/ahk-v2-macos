@@ -3,6 +3,7 @@ using System.Reflection.PortableExecutable;
 
 namespace Keysharp.Tests;
 
+[Category("Curated")]
 public class RunnerTests : TestRunner
 {
 	[TestCase("Debug", "net10.0-windows", "")]

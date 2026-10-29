@@ -3908,7 +3908,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Platform-independent managed object instance wrapper."
+                     "notes":  "Platform-independent managed object instance wrapper. String concatenation and built-in String parameters invoke the wrapped CLR ToString in v2.0 and v2.1 modes. Ordinary AHK objects remain rejected as implicit strings in v2.0. Local Windows regression validated; native macOS/Linux revalidation pending.",
+                     "tested-by":  "external-clr.ahk"
                  },
                  {
                      "category":  "Interop/Memory",
@@ -4896,7 +4897,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Returns a string of letters, one character for each drive letter in the system.",
+                     "notes":  "Windows returns drive letters; Linux and macOS return semicolon-separated mount paths. An optional drive-type filter includes every matching drive, including the first enumerated drive. Local Windows regression validated; native macOS/Linux revalidation pending.",
                      "tested-by":  "drive-getlist.ahk"
                  },
                  {
@@ -6348,8 +6349,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Native window handle of the GUI. On macOS this is the window-server ID (CGWindowID), validated against CoreGraphics at creation and retained while hidden or minimized; window queries, point queries and WinEvent callbacks use the same ID.",
-                     "tested-by":  "gui-window-from-point.ahk; Gui/guitest.ks"
+                     "notes":  "Native window handle of the GUI. On macOS this is the window-server ID (CGWindowID), validated against CoreGraphics at creation and retained while hidden or minimized; window queries, point queries and WinEvent callbacks use the same ID. Read from a cached native handle without a UI-thread rendezvous, so #HotIf can read Gui.Hwnd while the UI waits for its keyboard hook. Registration and Windows handle recreation refresh the cache; destruction clears it. Native macOS/Linux revalidation of this change is pending.",
+                     "tested-by":  "func-hotkey-local.ahk; gui-window-from-point.ahk; Gui/guitest.ks"
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -10396,8 +10397,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Emits a tone at the requested frequency and duration on every platform. Frequency must be from 37 through 32767; another value raises ValueError. Windows uses the Win32 Beep API. Linux and macOS synthesize the sine wave to an in-memory WAV and play it through the same backend as SoundPlay, so Frequency and Duration are honoured there too; Linux needs one of the players listed under SoundPlay to be installed.",
-                     "tested-by":  "Gui/guitest.ks"
+                     "notes":  "Emits a tone at the requested frequency and duration. Frequencies outside 37 through 32767 are silent no-ops, matching AutoHotkey 2.0.31 on Windows; nonnumeric inputs still raise TypeError. Windows uses Win32 Beep. Linux and macOS synthesize a WAV and use the SoundPlay backend; Linux needs an available supported player. Local Windows call and duration checks passed; native macOS/Linux playback and audible pitch remain unverified.",
+                     "tested-by":  "sound-soundbeep.ahk, clamp-validation.ahk, finite-inputs.ahk, SoundTests.ToneWav"
                  },
                  {
                      "category":  "Sound",

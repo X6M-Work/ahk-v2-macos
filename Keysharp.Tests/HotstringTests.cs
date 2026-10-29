@@ -352,16 +352,17 @@ public partial class HotstringTests : TestRunner
 	// RequiresHook: exercises real hotstring firing, which needs the global keyboard/mouse hook to install
 	// (keysharp-input on Linux). Excluded from the non-interactive curated CI set; the full interactive
 	// run still executes it and may prompt for input-access permission.
-	[Test, Category("Hotstring"), Category("RequiresHook"), NonParallelizable]
+	[Test, Category("Hotstring"), Category("RequiresHook"), Category("Desktop"), NonParallelizable]
 	public void CreateHotstring()
 	{
+		s.ErrorStdOut = true;
 		//Can't seem to simulate uppercase here, so we can't test case sensitive hotstrings.
 		btwtyped = false;
 		btwTypedEvent.Reset();
 		hsm.ClearHotstrings();
 		hsm.RestoreDefaults(true);
 		_ = Keyboard.Hotstring("Reset");
-		_ = Keysharp.Runtime.Keyboard.HotstringManager.AddHotstring("::btw", Functions.Func(Label_9F201721, null), ":btw", "btw", "", false);
+		_ = Keysharp.Runtime.Keyboard.HotstringManager.AddHotstring(":B0:btw", Functions.Func(Label_9F201721, null), ":btw", "btw", "", false);
 		_ = HotkeyDefinition.ManifestAllHotkeysHotstringsHooks(Script.TheScript);
 		Assert.That(A_KeybdHookInstalled & 1L, Is.EqualTo(1L), "The script's keyboard hook must be installed.");
 		Assert.That(A_MouseHookInstalled & 1L, Is.EqualTo(1L), "Hotstring mouse reset requires the script's mouse hook.");

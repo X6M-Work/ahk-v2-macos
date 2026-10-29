@@ -18,12 +18,13 @@ public class EnvTests : TestRunner
 #endif
 	}
 
-	[Test, Category("Env"), Category("Clipboard"), NonParallelizable]
+	[Test, Category("Env"), Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
 	public void ClipboardAll()
 	{
+		using var saved = PreserveClipboard();
 		RequireClipboard();
 		Assert.IsTrue(TestScript("env-clipboardall", true));
 	}
@@ -32,20 +33,21 @@ public class EnvTests : TestRunner
 	/// This can fail periodically, but mostly works.
 	/// If it fails in a batch, try running on its own.
 	/// </summary>
-	[Test, Category("Env"), Category("Clipboard"), NonParallelizable]
+	[Test, Category("Env"), Category("Clipboard"), Category("Desktop"), NonParallelizable]
 #if WINDOWS
 	[Apartment(ApartmentState.STA)]
 #endif
 	public void ClipWait()
 	{
+		using var saved = PreserveClipboard();
 		RequireClipboard();
 		Assert.IsTrue(TestScript("env-clipwait", true));
 	}
 
-	[Test, Category("Env"), NonParallelizable]
+	[Test, Category("Env"), Category("Curated"), NonParallelizable]
 	public void EnvGet() => Assert.IsTrue(TestScript("env-envget", true));
 
-	[Test, Category("Env"), NonParallelizable]
+	[Test, Category("Env"), Category("Curated"), NonParallelizable]
 	public void EnvSet() => Assert.IsTrue(TestScript("env-envset", true));
 
 #if !WINDOWS
@@ -109,10 +111,13 @@ public class EnvTests : TestRunner
 	}
 #endif
 
-	[Test, Category("Env"), NonParallelizable]
+	[Test, Category("Env"), Category("Curated"), NonParallelizable]
 	public void EnvUpdate() => Assert.IsTrue(TestScript("env-envupdate", true));
 
 	[Test, Category("Env"), Category("UI"), NonParallelizable]
+#if WINDOWS
+	[Category("Curated")]
+#endif
 	public void SysGet()
 	{
 		SkipIfUiInitializationBlocked("SysGet relies on Eto screen enumeration, which is unavailable when UI initialization is blocked (macOS testhost cannot drive AppKit).");

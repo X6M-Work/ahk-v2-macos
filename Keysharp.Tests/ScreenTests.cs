@@ -5,7 +5,7 @@ public partial class ScreenTests : TestRunner
 	[Test, Category("Screen"), Category("Curated")]
 	public void ImageSearchOptions() => Assert.IsTrue(TestScript("screen-imagesearch-options", false));
 
-	[Test, Category("Screen")]
+	[Test, Category("Screen"), Category("Desktop")]
 	public void ImageSearch()
 	{
 		if (Script.IsHeadless)
@@ -16,7 +16,7 @@ public partial class ScreenTests : TestRunner
 
 #if WINDOWS
 
-	[Test, Category("Screen")]
+	[Test, Category("Screen"), Category("Curated")]
 	public void ImageSearchDirection()
 	{
 		// Headless, deterministic check of the *Dir scan-order ranking in ImageFinder: build a
@@ -64,7 +64,7 @@ public partial class ScreenTests : TestRunner
 
 #endif
 
-	[Test, Category("Screen")]
+	[Test, Category("Screen"), Category("Desktop")]
 	public void PixelGetColor()
 	{
 		if (Script.IsHeadless)
@@ -73,7 +73,7 @@ public partial class ScreenTests : TestRunner
 		Assert.IsTrue(TestScript("screen-pixelgetcolor", true));
 	}
 
-	[Test, Category("Screen")]
+	[Test, Category("Screen"), Category("Desktop")]
 	public void PixelSearch()
 	{
 		if (Script.IsHeadless)

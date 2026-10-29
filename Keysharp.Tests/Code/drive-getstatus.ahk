@@ -1,14 +1,14 @@
+#ErrorStdOut
+#Warn All, StdOut
 #NoTrayIcon
 #Include <assert>
 
 #if WINDOWS
-	val := DriveGetStatus("C:\")
-#elif OSX
-	val := DriveGetStatus("/")
+root := EnvGet("SystemDrive") "\"
 #else
-	val := DriveGetStatus("/dev") ; /dev seems to work better than /dev/sda on VMs.
+root := "/"
 #endif
-			
-AssertEq(val, "Ready", A_LineNumber)
+
+AssertEq(DriveGetStatus(root), "Ready", A_LineNumber)
 
 FileAppend "pass", "*"

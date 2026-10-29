@@ -280,11 +280,15 @@ public class FileAndDirTests : TestRunner
 	[Test, Category("FileAndDir")]
 	public void FileRead() => Assert.IsTrue(TestScript("file-fileread", true));
 
-	[Test, Category("FileAndDir"), NonParallelizable]
+	[Test, Category("FileAndDir"), Category("Desktop"), NonParallelizable]
 	public void FileRecycle() => Assert.IsTrue(TestScript("file-filerecycle", true));
 
-	[Test, Category("FileAndDir"), NonParallelizable]
-	public void FileRecycleEmpty() => Assert.IsTrue(TestScript("file-filerecycleempty", true));
+	[Test, Category("FileAndDir"), Category("DisposableVolume"), NonParallelizable]
+	public void FileRecycleEmpty()
+	{
+		RequireDisposableTestVolume();
+		Assert.IsTrue(TestScript("file-filerecycleempty", true));
+	}
 
 	[Test, Category("FileAndDir")]
 	public void FileSetAttrib() => Assert.IsTrue(TestScript("file-filesetattrib", true));

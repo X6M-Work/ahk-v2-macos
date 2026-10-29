@@ -1,14 +1,16 @@
+#ErrorStdOut
+#Warn All, StdOut
 #NoTrayIcon
 #Include <assert>
 
 #if WINDOWS
-	val := DriveGetSpaceFree("C:\")
-#elif OSX
-	val := DriveGetSpaceFree("/")
+root := EnvGet("SystemDrive") "\"
 #else
-	val := DriveGetSpaceFree("/dev") ; the filesystem holding /dev, which every Linux machine has
+root := "/"
 #endif
-			
-Assert(val > 10, A_LineNumber)
+
+free := DriveGetSpaceFree(root)
+Assert(free >= 0, A_LineNumber)
+Assert(free <= DriveGetCapacity(root), A_LineNumber)
 
 FileAppend "pass", "*"

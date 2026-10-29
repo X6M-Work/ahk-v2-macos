@@ -4,8 +4,7 @@
 #Include <assert>
 
 DetectHiddenWindows true
-WM_MY_BROADCAST := DllCall("RegisterWindowMessage", "Str", "MyUniqueBroadcastMessage", "UInt")
-HWND_BROADCAST := 0xFFFF
+WM_MY_BROADCAST := DllCall("RegisterWindowMessage", "Str", "KeysharpMessageTest-" ProcessExist() "-" A_TickCount, "UInt")
 OnMessage(WM_MY_BROADCAST, HandleMyBroadcast)
 
 HandleMyBroadcast(wParam, lParam, Msg, Hwnd) {
@@ -15,8 +14,10 @@ HandleMyBroadcast(wParam, lParam, Msg, Hwnd) {
 }
 
 result := 0, received := []
-PostMessage(WM_MY_BROADCAST, 123, 456,, HWND_BROADCAST)
-Sleep 200
+PostMessage(WM_MY_BROADCAST, 123, 456,, A_ScriptHwnd)
+deadline := A_TickCount + 2000
+while !result && A_TickCount < deadline
+    Sleep(10)
 
 AssertEq(result, 1, A_LineNumber)
 AssertEq(received[1], 123, A_LineNumber)

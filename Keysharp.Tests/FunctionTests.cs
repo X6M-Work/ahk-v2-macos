@@ -245,7 +245,7 @@ public class FunctionTests : TestRunner
 
 	// RequiresHook: registers a real global hotkey, which needs the keysharp-input hook and, on a desktop
 	// with the daemon, prompts for input-access permission. Excluded from the non-interactive curated CI set.
-	[Test, Category("Function"), Category("RequiresHook"), NonParallelizable]
+	[Test, Category("Function"), Category("RequiresHook"), Category("Desktop"), NonParallelizable]
 	public void HotkeyLocalFunc() => Assert.IsTrue(TestScript("func-hotkey-local", false));
 
 	[Test, Category("Function"), NonParallelizable]
