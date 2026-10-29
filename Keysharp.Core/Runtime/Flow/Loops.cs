@@ -544,8 +544,12 @@ namespace Keysharp.Runtime
         {
             var numOfVars = args.Length;
             var ke = MakeEnumerator(obj, numOfVars == 0 ? 1 : numOfVars);
+            return Enumerate(ke, args);
+        }
 
-			if (numOfVars == 0)
+        private static IEnumerable Enumerate(Enumerator ke, object[] args)
+        {
+			if (args.Length == 0)
 			{
 				object temp = null;
 				args = new object[] { new VarRef(() => temp, (v) => temp = v) };

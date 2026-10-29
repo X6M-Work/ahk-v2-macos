@@ -1866,6 +1866,12 @@ namespace Keysharp.Compilation.Syntax
 
 		private StatementSyntax LowerStmt(Stmt s)
 		{
+			var lowered = LowerStmtCore(s);
+			return s is ExpressionStmt or ReturnStmt or ThrowStmt or DeclStmt ? ExpressionLifetime(lowered) : lowered;
+		}
+
+		private StatementSyntax LowerStmtCore(Stmt s)
+		{
 			switch (s)
 			{
 				case ExpressionStmt es:
@@ -1889,7 +1895,7 @@ namespace Keysharp.Compilation.Syntax
 					return SyntaxFactory.Block(LowerStmtList(b.Body));
 				case IfStmt iff:
 					var elseClause = iff.Else != null ? SyntaxFactory.ElseClause(LowerBody(iff.Else)) : null;
-					return SyntaxFactory.IfStatement(IfTest(LowerExpr(iff.Cond)), LowerBody(iff.Then), elseClause);
+					return SyntaxFactory.IfStatement(EvaluateLifetime(IfTest(LowerExpr(iff.Cond))), LowerBody(iff.Then), elseClause);
 				case WhileStmt w: return LowerWhile(w);
 				case DeclStmt d: return LowerDecl(d);
 				case LoopStmt lp: return LowerLoop(lp);
@@ -4050,7 +4056,7 @@ namespace Keysharp.Compilation.Syntax
 					return BorrowValue(MayYieldUnset(dr.Name)
 						? NullCondWrap(dr.Name, name => Op("DerefGetOrNull", DerefScope, name))
 						: DerefGet(dr.Name));
-				case CallExpr c: return EscapingValue(LowerCall(c, statement: false));
+				case CallExpr c: return LowerCall(c, statement: false);
 				default: Diag($"expression not yet lowerable: {e.GetType().Name}"); return Str("");
 			}
 		}
@@ -4874,7 +4880,7 @@ namespace Keysharp.Compilation.Syntax
 				exit.Add(ExprStmt(SyntaxFactory.PostfixUnaryExpression(SyntaxKind.PostDecrementExpression, Member(Id("KS_loop" + id), "index"))));
 			exit.Add(SyntaxFactory.BreakStatement());
 			var test = SyntaxFactory.IfStatement(
-				SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, Inv(Access("Keysharp.Runtime.Flow.IsTrueAndRunning"), LowerExpr(w.Cond))),
+				SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, EvaluateLifetime(Inv(Access("Keysharp.Runtime.Flow.IsTrueAndRunning"), LowerExpr(w.Cond)))),
 				SyntaxFactory.Block(exit));
 			body = body.WithStatements(body.Statements.InsertRange(0, [CallStmt("Keysharp.Runtime.Loops.Inc"), test]));
 			var loop = SyntaxFactory.WhileStatement(SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression), body);
@@ -5042,7 +5048,7 @@ namespace Keysharp.Compilation.Syntax
 			}
 
 			if (until != null)
-				body = body.AddStatements(Stamp(until), SyntaxFactory.IfStatement(IfTest(LowerExpr(until)), SyntaxFactory.BreakStatement()));
+				body = body.AddStatements(Stamp(until), SyntaxFactory.IfStatement(EvaluateLifetime(IfTest(LowerExpr(until))), SyntaxFactory.BreakStatement()));
 			return body.AddStatements(Stamp(loop));
 		}
 
@@ -5300,6 +5306,13 @@ namespace Keysharp.Compilation.Syntax
 			var info = "KS_loop" + id;
 			var push = Inv(Access("Keysharp.Runtime.Loops.Push"), Access("Keysharp.Runtime.LoopType." + loopType));
 			var block = _scratchListStatements.Get();
+			if (header is { Count: > 0 })
+			{
+				var lifetime = "KS_header" + id;
+				block.Add(((LocalDeclarationStatementSyntax)LocalDeclVar(lifetime, Inv(Access("Keysharp.Runtime.Lifetime.BeginExpression"))))
+					.WithUsingKeyword(SyntaxFactory.Token(SyntaxKind.UsingKeyword)));
+				loop = loop.WithStatements(loop.Statements.Insert(1, ExprStmt(Inv(Member(Id(lifetime), "Dispose")))));
+			}
 			if (header != null) block.AddRange(header);
 			if (disposedEnumerator != null) block.Add(DeclLocal(Ty("System.Collections.IEnumerator"), disposedEnumerator, Null));
 			block.Add(elseStmt != null ? LocalDeclVar(info, push) : ExprStmt(push));
@@ -5383,7 +5396,7 @@ namespace Keysharp.Compilation.Syntax
 				var test = switchValue == null ? IfTest(LowerExpr(v)) : Op("SwitchCase", Id(switchValue), LowerExpr(v));
 				return SyntaxFactory.CasePatternSwitchLabel(
 					SyntaxFactory.ConstantPattern(SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression)),
-					SyntaxFactory.WhenClause(CaseGuard(v, test)), SyntaxFactory.Token(SyntaxKind.ColonToken));
+					SyntaxFactory.WhenClause(CaseGuard(v, EvaluateLifetime(test))), SyntaxFactory.Token(SyntaxKind.ColonToken));
 			}
 
 			SwitchSectionSyntax Section(IEnumerable<SwitchLabelSyntax> labels, List<StatementSyntax> body)
@@ -5412,12 +5425,12 @@ namespace Keysharp.Compilation.Syntax
 				return sw;
 
 			if (s.CaseSense == null)
-				return SyntaxFactory.Block(LocalDeclVar(switchValue, Op("Switch", LowerExpr(s.Value))), sw);
+				return SyntaxFactory.Block(LocalDeclVar(switchValue, EvaluateLifetime(Op("Switch", LowerExpr(s.Value)))), sw);
 
 			// A continued CaseSense error skips the switch body.
 			var run = SyntaxFactory.IfStatement(
 				SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, Member(Id(switchValue), "Failed")), sw);
-			return SyntaxFactory.Block(LocalDeclVar(switchValue, Op("Switch", LowerExpr(s.Value), LowerExpr(s.CaseSense))), run);
+			return SyntaxFactory.Block(LocalDeclVar(switchValue, EvaluateLifetime(Op("Switch", LowerExpr(s.Value), LowerExpr(s.CaseSense)))), run);
 		}
 
 		private StatementSyntax LowerTry(TryStmt tr)
@@ -5882,7 +5895,7 @@ namespace Keysharp.Compilation.Syntax
 			var saved = _inMethod; _inMethod = true;
 			var v = LowerExpr(f.Init);
 			_inMethod = saved;
-			return ExprStmt(Op("SetPropertyValue", LocalValue(Receiver()), Str(f.Name), v));
+			return ExpressionLifetime(ExprStmt(Op("SetPropertyValue", LocalValue(Receiver()), Str(f.Name), v)));
 		}
 
 		private static string OperatorMethodName(bool isStatic, Keysharp.Runtime.OperatorKind kind) =>
@@ -6412,7 +6425,7 @@ namespace Keysharp.Compilation.Syntax
 						var rid = LocalValue(scope.Find(p.Name));
 						var deflt = p.Default != null ? LowerParamDefault(p.Default) : Null;
 						if (p.Default != null) body.Add(Stamp(p.Default));
-						body.Add(ExprStmt(SyntaxFactory.AssignmentExpression(SyntaxKind.CoalesceAssignmentExpression, rid, NewBox(deflt))));
+						body.Add(ExpressionLifetime(ExprStmt(SyntaxFactory.AssignmentExpression(SyntaxKind.CoalesceAssignmentExpression, rid, NewBox(deflt)))));
 					}
 
 			// Non-literal parameter defaults: the param is declared [Optional, DefaultParameterValue(null)],
@@ -6429,15 +6442,15 @@ namespace Keysharp.Compilation.Syntax
 							var parameter = scope.Find(p.Name);
 							var current = LocalValue(parameter);
 							body.Add(Stamp(p.Default));
-							body.Add(SyntaxFactory.IfStatement(
+							body.Add(ExpressionLifetime(SyntaxFactory.IfStatement(
 								SyntaxFactory.BinaryExpression(SyntaxKind.EqualsExpression, current, Null),
-								ExprStmt(WriteVariable(parameter, current, defaultExpr))));
+								ExprStmt(WriteVariable(parameter, current, defaultExpr)))));
 						}
 					}
 
 			// A fat-arrow `=> expr` propagates the unset result of a call rather than raising (unlike an explicit
 			// `return f()`), so its outermost call uses the non-raising *OrNull form - see ArrowOrNull.
-			if (arrowBody != null) body.AddRange([Stamp(arrowBody), SyntaxFactory.ReturnStatement(ReturnValue(RewriteToOrNull(LowerExpr(arrowBody), ArrowOrNull)))]);
+			if (arrowBody != null) body.AddRange([Stamp(arrowBody), ExpressionLifetime(SyntaxFactory.ReturnStatement(ReturnValue(RewriteToOrNull(LowerExpr(arrowBody), ArrowOrNull))))]);
 			else if (bodyBlock != null) body.AddRange(LowerStmtList(bodyBlock.Body));
 
 			// Roslyn reports a default return after a body which cannot complete as unreachable.

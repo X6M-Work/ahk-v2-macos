@@ -9,6 +9,9 @@ public class ClassTests : TestRunner
 	public void DestructorScopes() => Assert.IsTrue(TestScript("class-destructor-scopes", false));
 
 	[Test, Category("Class")]
+	public void DestructorTemporaries() => Assert.IsTrue(TestScript("class-destructor-temporaries", false));
+
+	[Test, Category("Class")]
 	public void BuiltInTypeVisibility() => Assert.IsTrue(TestScript("class-builtin-visibility", false));
 
 	[Test, Category("Class")]

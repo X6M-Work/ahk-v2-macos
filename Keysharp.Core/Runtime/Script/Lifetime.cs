@@ -4,7 +4,7 @@ namespace Keysharp.Runtime
 {
 	// Group lifetime roots so generated finally blocks stay small without allocating argument arrays.
 	[PublicHiddenFromUser]
-	public static class Lifetime
+	public static partial class Lifetime
 	{
 		public static Keysharp.Builtins.VarRef Box(object value) => new(value, scoped: true);
 
@@ -50,7 +50,7 @@ namespace Keysharp.Runtime
 
 		public static object Return(object value) => value is Keysharp.Builtins.Any owned
 			&& owned.ReferenceState is Keysharp.Builtins.ReferenceLifeState.Constructing or Keysharp.Builtins.ReferenceLifeState.Deleting
-			? value : Escape(value);
+			? value : returnScope != null ? returnScope.Track(value) : Escape(value);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void ReleaseScope(object a)

@@ -2,13 +2,13 @@
 
 ## Verdict
 
-**La fidélité stricte à AHK 2.0.31 reste bloquée par la migration incomplète de la durée de vie des objets.** Le backend macOS ne corrige pas ce problème commun au moteur. Les cinq contre-exemples exécutables de `compat/phase15-architecture` passent avec AutoHotkey officiel 2.0.31. La CI `40774644855` valide `file-scope-close` sur Windows, Intel et Apple Silicon. Le socle de comptage et la libération de portée font désormais passer `destructor-alias` et `destructor-scope` localement sur Windows ; leur validation native est en attente.
+**La fidélité stricte à AHK 2.0.31 reste bloquée par la migration incomplète de la durée de vie des objets.** Le backend macOS ne corrige pas ce problème commun au moteur. Les cinq contre-exemples exécutables de `compat/phase15-architecture` passent avec AutoHotkey officiel 2.0.31. La CI `40774644855` valide `file-scope-close` sur Windows, Intel et Apple Silicon. La CI `40803366218` valide alias, portée et fichier sur Windows et les deux Mac (889 tests NUnit Windows, 945 par Mac). Le suivi des temporaires fait passer `destructor-temporary` localement sur Windows ; sa validation native est en attente.
 
 | Contrat observable | AutoHotkey 2.0.31 | Keysharp observé |
 |---|---|---|
-| Dernier alias libéré | `__Delete` avant l'instruction suivante | Passe sur Windows pour les affectations suivies ; validation native en attente |
-| Variable locale en fin de fonction | `__Delete` avant le retour à l'appelant | Passe sur Windows pour les variables locales et paramètres suivis ; validation native en attente |
-| Argument temporaire libéré | `__Delete` avant l'instruction suivante | Aucun appel à cet instant |
+| Dernier alias libéré | `__Delete` avant l'instruction suivante | Passe sur Windows et les deux Mac pour les affectations suivies |
+| Variable locale en fin de fonction | `__Delete` avant le retour à l'appelant | Passe sur Windows et les deux Mac pour les variables locales et paramètres suivis |
+| Argument temporaire libéré | `__Delete` avant l'instruction suivante | Passe localement sur Windows ; validation native en attente |
 | Objet ressuscité puis libéré à nouveau | Deux appels à `__Delete` | Premier appel présent sur Windows ; second encore manquant après un emprunt non migré |
 | Fichier local en fin de fonction | Données lisibles, handle libéré | Passe sur Windows et les deux architectures Mac pour le cas prouvé local |
 
@@ -63,3 +63,9 @@ Ces scénarios passent avec AutoHotkey 2.0.31. Les rapports actualisés confirme
 `compat/phase15-reload/run_reload.py` ajoute un processus contrôleur qui reste vivant pendant un Reload réel. Le cas vérifie OnExit avec la raison Reload, le renouvellement de l'état, la fin du processus précédent, un timer dans son remplaçant, puis sa sortie effective. Il passe avec AutoHotkey 2.0.31 et Keysharp Windows, puis sur Intel et Apple Silicon dans la CI `40761878577`. Les descendants sont contenus par un Job Object sur Windows ou un groupe de processus POSIX ; l'entrée standard est fermée et le délai total est borné. Cela ne valide pas la conservation des arguments ni du répertoire de travail initial.
 
 La phase 5 demeure partielle : les neuf scénarios runtime, trois processus et Reload passent sur les deux architectures Mac. Interruption sous charge, menus, hotkeys et nettoyage déterministe des ressources ne sont pas entièrement validés. La fermeture de fichiers prouvés locaux passe sur Windows et les deux architectures Mac ; la gestion générale des fichiers exportés dépend encore du gate de durée de vie ci-dessus. Les corrections de bibliothèque standard et les résultats de leurs corpus sont suivis séparément.
+
+## Étape 4 : propriétaires temporaires des expressions
+
+`Lifetime.ExpressionScope` empile une portée par thread managé. Les résultats suivis des appels script et constructeurs sont retenus une fois par identité, puis libérés dans l'ordre inverse à la fin de l'expression complète, y compris sur exception. Une liste séparée sert à chaque appel imbriqué ; une séquence avec virgules conserve une seule frontière. `InvocationScope` mémorise la portée de l'appelant : `Lifetime.Return` y transfère l'objet ou la cellule `VarRef` avant les `finally` et la libération des variables du callee. Les conditions sont converties dans leur portée avant le corps de branche ou boucle. Les en-têtes restent protégés jusqu'à l'initialisation de l'énumérateur ; `MakeEnumerable` prépare `__Enum` avant de rendre son itérateur.
+
+`class-destructor-temporaries.ahk` compare ces contrats à AHK 2.0.31 : arguments multiples, ordre inverse, virgules, retours locaux et fat-arrows, références retournées, exceptions d'appel et d'argument, conditions `if`/`while`/`until`/`switch`, choix courts, récepteurs temporaires, en-têtes et destructeurs réentrants. Le fixture strict et son golden restent inchangés. Le corpus strict local atteint 4/5 ; seule la résurrection générale échoue encore. Les tableaux variadiques, conteneurs et captures non migrés gardent leur repli GC ; ce résultat ne prouve pas toutes les durées de vie AHK.
