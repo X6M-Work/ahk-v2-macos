@@ -24,6 +24,9 @@ public class ClassTests : TestRunner
 	public void DestructorMapExtensions() => Assert.IsTrue(TestScript("class-destructor-map-extensions", false));
 
 	[Test, Category("Class")]
+	public void DestructorConstruction() => Assert.IsTrue(TestScript("class-destructor-construction", false));
+
+	[Test, Category("Class")]
 	public void BuiltInTypeVisibility() => Assert.IsTrue(TestScript("class-builtin-visibility", false));
 
 	[Test, Category("Class")]

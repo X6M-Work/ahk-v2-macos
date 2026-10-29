@@ -96,3 +96,10 @@ Les sondes officielles montrent que `Clear` retire une entrée avant son callbac
 Les interfaces CLR conservent leurs clés brutes et leurs règles de doublons/null. Leurs mutations équilibrent les propriétaires, mais les lectures exportées, vues de clés/valeurs et partages de dictionnaires opaques transfèrent les références vers le GC : le moteur ne peut pas compter les alias détenus par du code CLR arbitraire. Les sous-classes natives non migrées gardent ce même repli. Les propriétés propres, dont `Map.Default`, et les captures ne font pas partie des entrées comptées.
 
 `class-destructor-maps.ahk` couvre alias, auto-affectation, clés objets, ordre de destruction, remplacement, transfert de suppression, casse, clone, retours, tableaux imbriqués, boucles, exceptions, énumérateurs, `unset`, réentrance et résurrection. Il est confronté à AHK 2.0.31. Les extensions et la robustesse réentrante ont leurs tests séparés. Un cas où le destructeur de la précédente clé de sortie vide la Map avant l’affectation de la valeur fait retourner à AHK un objet déjà détruit ; sa lecture échoue. Le moteur protège les deux sorties avant la première affectation et n’utilise pas cette défaillance native comme golden portable. La preuve reste dans `work/map-enumeration-reentry-{probe.ahk,ahk.json}`. Aucune validation native macOS de cette migration n’est encore disponible.
+
+
+## Construction interrompue
+
+La finalisation de `Class.Call` enregistre l’instance complétée parmi les temporaires de l’expression même si `__Init`, `__New` ou la liaison de ses paramètres lève. L’exception ne doit pas contourner le propriétaire qui libère l’instance avant le bloc `catch`. L’enregistrement du succès est dédoublonné par le même propriétaire d’expression. Une instance conservée par son constructeur reste vivante, et son destructeur peut la ressusciter normalement.
+
+`class-destructor-construction.ahk` confronte ces cinq scénarios à AHK 2.0.31 : échec de `__New`, initialiseur de champ en erreur, argument requis absent, conservation avant l’échec et résurrection après l’échec. Cela n’étend pas encore le protocole aux valeurs des propriétés possédées par ces instances.

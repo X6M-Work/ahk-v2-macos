@@ -87,7 +87,11 @@ namespace Keysharp.Builtins
 				Script.InvokeMeta(kso, "__Init");
 				Script.InvokeMeta(kso, "__New", args);
 			}
-			finally { kso.CompleteReferenceConstruction(); }
+			finally
+			{
+				kso.CompleteReferenceConstruction();
+				Lifetime.Temporary(kso);
+			}
             return kso;
 		}
 

@@ -1559,3 +1559,6 @@ Compiler-created exact arrays, variadic parameter arrays and their native enumer
 
 
 Compiler-prepared exact Maps retain both entry keys and values. Primitive replacements, Delete results, clones, loops and exported native enumerators preserve counted owners. Clear removes one entry before each destructor, in reverse key order, and handles reentrant mutations. The stable v2.0 enumeration remains live; the v2.1 extension preserves its snapshot lifetime. Native CLR exports/shared dictionaries retain conservative GC ownership. Map own properties (including Default), closures and native subclasses remain outside this entry-ownership migration. Windows differential coverage is recorded in [validation.md](validation.md); native macOS execution remains pending.
+
+
+An instance whose initialization or constructor argument binding fails is still registered with its caller's expression lifetime. It receives synchronous cleanup before the exception reaches the caller's catch block, unless retained; resurrection remains possible. Failed-construction regressions match AHK 2.0.31 locally on Windows. Own-property values still require their separate ownership migration.
