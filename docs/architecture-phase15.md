@@ -2,14 +2,14 @@
 
 ## Verdict
 
-**La fidélité stricte à AHK 2.0.31 reste bloquée par la migration incomplète de la durée de vie des objets.** Le backend macOS ne corrige pas ce problème commun au moteur. Les cinq contre-exemples exécutables de `compat/phase15-architecture` passent avec AutoHotkey officiel 2.0.31. La CI `40774644855` valide `file-scope-close` sur Windows, Intel et Apple Silicon. La CI `40803366218` valide alias, portée et fichier sur Windows et les deux Mac (889 tests NUnit Windows, 945 par Mac). Le suivi des temporaires fait passer `destructor-temporary` localement sur Windows ; sa validation native est en attente.
+**La fidélité stricte à AHK 2.0.31 reste bloquée par la migration incomplète de la durée de vie des objets.** Le backend macOS ne corrige pas ce problème commun au moteur. Les cinq contre-exemples exécutables de `compat/phase15-architecture` passent avec AutoHotkey officiel 2.0.31. La CI `40774644855` valide `file-scope-close` sur Windows, Intel et Apple Silicon. La CI `40803366218` valide alias, portée et fichier sur Windows et les deux Mac (889 tests NUnit Windows, 945 par Mac). Les propriétaires temporaires et les emprunts après résurrection font désormais passer les cinq fixtures stricts localement sur Windows ; leur validation native est en attente.
 
 | Contrat observable | AutoHotkey 2.0.31 | Keysharp observé |
 |---|---|---|
 | Dernier alias libéré | `__Delete` avant l'instruction suivante | Passe sur Windows et les deux Mac pour les affectations suivies |
 | Variable locale en fin de fonction | `__Delete` avant le retour à l'appelant | Passe sur Windows et les deux Mac pour les variables locales et paramètres suivis |
 | Argument temporaire libéré | `__Delete` avant l'instruction suivante | Passe localement sur Windows ; validation native en attente |
-| Objet ressuscité puis libéré à nouveau | Deux appels à `__Delete` | Premier appel présent sur Windows ; second encore manquant après un emprunt non migré |
+| Objet ressuscité puis libéré à nouveau | Deux appels à `__Delete` | Deux appels observés localement sur Windows ; validation native en attente |
 | Fichier local en fin de fonction | Données lisibles, handle libéré | Passe sur Windows et les deux architectures Mac pour le cas prouvé local |
 
 Les anciens rapports ahk-v2-macos-validation/current-official/phase15-architecture.json et current-windows/phase15-architecture.json, livrés à côté du checkout, décrivent les cinq échecs avant le correctif de portée. La CI `40761878577` les confirme sur Windows et les deux architectures Mac avant ce correctif. Le rapport local `compat/reports/file-lifetime/architecture.json` conserve quatre échecs et un succès, avec les sources et goldens inchangés. Les rapports incluent les empreintes des assemblages, les sorties et les délais.
@@ -69,3 +69,9 @@ La phase 5 demeure partielle : les neuf scénarios runtime, trois processus et R
 `Lifetime.ExpressionScope` empile une portée par thread managé. Les résultats suivis des appels script et constructeurs sont retenus une fois par identité, puis libérés dans l'ordre inverse à la fin de l'expression complète, y compris sur exception. Une liste séparée sert à chaque appel imbriqué ; une séquence avec virgules conserve une seule frontière. `InvocationScope` mémorise la portée de l'appelant : `Lifetime.Return` y transfère l'objet ou la cellule `VarRef` avant les `finally` et la libération des variables du callee. Les conditions sont converties dans leur portée avant le corps de branche ou boucle. Les en-têtes restent protégés jusqu'à l'initialisation de l'énumérateur ; `MakeEnumerable` prépare `__Enum` avant de rendre son itérateur.
 
 `class-destructor-temporaries.ahk` compare ces contrats à AHK 2.0.31 : arguments multiples, ordre inverse, virgules, retours locaux et fat-arrows, références retournées, exceptions d'appel et d'argument, conditions `if`/`while`/`until`/`switch`, choix courts, récepteurs temporaires, en-têtes et destructeurs réentrants. Le fixture strict et son golden restent inchangés. Le corpus strict local atteint 4/5 ; seule la résurrection générale échoue encore. Les tableaux variadiques, conteneurs et captures non migrés gardent leur repli GC ; ce résultat ne prouve pas toutes les durées de vie AHK.
+
+## Étape 5 : emprunts après résurrection
+
+`Borrow` conserve les états `Alive` et `Resurrected` lorsqu'un propriétaire compté existe. `IsObject(saved)`, `Type(saved)`, un appel de méthode ou un transfert de retour n'abandonnent donc plus le protocole après le premier `__Delete`. Le compteur peut revenir à zéro, invoquer le destructeur à nouveau, puis disposer la ressource uniquement lorsqu'aucun propriétaire ni échappement ne subsiste. Les règles de réentrance dans `Deleting` restent identiques.
+
+La régression des alias vérifie trois passages à zéro du même objet, les prédicats, un récepteur de méthode, l'auto-affectation et un retour vers un autre alias. Le test interne de résurrection conserve également son contrôle de `Dispose` après emprunt. Les cinq fixtures stricts passent inchangés localement. Cela ne prouve pas la résurrection à travers les conteneurs, captures et interfaces non migrés : ces chemins conservent le repli GC, ainsi que les classes sans instrumentation et les bases natives.

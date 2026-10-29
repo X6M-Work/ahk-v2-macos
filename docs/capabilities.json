@@ -962,7 +962,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Instrumented Object-rooted user instances count variable, callable-scope and full-expression owners. Alias/scope/file fixtures pass Windows and both Mac architectures in CI 40803366218. Temporary arguments, receivers, return transfers, exceptions and loop headers pass local Windows differential tests against AHK 2.0.31; native temporary revalidation pending. Self-assignment and reentrant __Delete are protected. General resurrection, unconverted containers (including variadic arrays), captures, legacy/inline-C# classes and native bases remain partial or GC-managed.",
+                     "notes":  "Instrumented Object-rooted user instances count variable, callable-scope and full-expression owners. Alias/scope/file fixtures pass Windows and both Mac architectures in CI 40803366218. All five strict fixtures now pass locally on Windows against AHK 2.0.31: alias, scope, temporary, resurrection and file cleanup; native revalidation pending. Retained resurrection survives predicates, methods and return transfers; self-assignment and __Delete reentry are protected. Unconverted containers (including variadic arrays), captures, legacy/inline-C# classes and native bases remain partial or GC-managed.",
                      "tested-by":  "class-special-funcs.ahk; class-destructor-aliases.ahk; class-destructor-scopes.ahk; class-destructor-temporaries.ahk; ReferenceLifetimeTests; compat/phase15-architecture/; FileAndDirTests.FileLocalLifetime"
                  },
                  {

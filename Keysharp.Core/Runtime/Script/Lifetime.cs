@@ -44,7 +44,7 @@ namespace Keysharp.Runtime
 
 		public static object Borrow(object value) => value is Keysharp.Builtins.Any owned
 			&& (owned.ReferenceState is Keysharp.Builtins.ReferenceLifeState.Constructing or Keysharp.Builtins.ReferenceLifeState.Deleting
-				|| owned.ReferenceState == Keysharp.Builtins.ReferenceLifeState.Alive && owned.HasReferences)
+				|| owned.ReferenceState is Keysharp.Builtins.ReferenceLifeState.Alive or Keysharp.Builtins.ReferenceLifeState.Resurrected && owned.HasReferences)
 			|| value is Keysharp.Builtins.VarRef { HasBoxReferences: true }
 			? value : Escape(value);
 

@@ -153,18 +153,30 @@ Check(trace, "D", "no recursive delete")
 savedAlias := 0
 deletes := 0
 class ResurrectedAlias {
+    Read() => Type(this)
     __Delete() {
         global deletes, savedAlias
         deletes += 1
-        if deletes == 1
+        if deletes < 3
             savedAlias := this
     }
 }
 a := ResurrectedAlias()
 a := 0
 Check(deletes, 1, "resurrected")
+Check(IsObject(savedAlias), true, "resurrected object survives predicate")
+Check(Type(savedAlias), "ResurrectedAlias", "resurrected object survives type lookup")
+Check(savedAlias.Read(), "ResurrectedAlias", "resurrected receiver survives method")
+savedAlias := savedAlias
 savedAlias := 0
 Check(deletes, 2, "released again")
+ReturnResurrected(value) => value
+secondAlias := ReturnResurrected(savedAlias)
+savedAlias := 0
+Check(deletes, 2, "returned resurrected alias retains ownership")
+Check(IsObject(secondAlias), true, "returned resurrected object remains usable")
+secondAlias := 0
+Check(deletes, 3, "third destruction after returned alias released")
 
 class OverwritesIncomingAlias {
     __Delete() {

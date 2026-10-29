@@ -52,6 +52,9 @@ trace := ""
 Consume(Identity(Temporary("I")))
 Check(trace, "CI|DI|", "identity returns argument without duplicate destruction")
 trace := ""
+Consume.Call(Temporary("call"))
+Check(trace, "Ccall|Dcall|", "explicit Call forwards temporary ownership")
+trace := ""
 held := Factory()
 Check(trace, "", "factory return retained by destination")
 held := 0

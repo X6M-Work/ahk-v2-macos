@@ -53,6 +53,9 @@ public class ReferenceLifetimeTests : TestRunner
 		Lifetime.Replace(ref slot, null);
 		Assert.That(probe.ReferenceState, Is.EqualTo(ReferenceLifeState.Resurrected));
 		Assert.That((probe.Deletes, probe.Disposes), Is.EqualTo((1, 0)));
+		Assert.That(Lifetime.Borrow(probe), Is.SameAs(probe));
+		Assert.That(probe.ReferenceState, Is.EqualTo(ReferenceLifeState.Resurrected));
+		Assert.That((probe.Deletes, probe.Disposes), Is.EqualTo((1, 0)));
 		Lifetime.Release(probe);
 		Assert.That(probe.ReferenceState, Is.EqualTo(ReferenceLifeState.Released));
 		Assert.That((probe.Deletes, probe.Disposes), Is.EqualTo((2, 1)));
