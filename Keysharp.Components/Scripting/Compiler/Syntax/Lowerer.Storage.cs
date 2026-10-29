@@ -8,7 +8,10 @@ namespace Keysharp.Compilation.Syntax
 	internal sealed partial class Lowerer
 	{
 		private int _boxCounter;
-		private static ExpressionSyntax NewBox(ExpressionSyntax value) => Inv(Access("Keysharp.Runtime.Lifetime.Box"), value);
+		private static readonly TypeSyntax BoxType = Ty("Keysharp.Builtins.VarRef");
+		private static ExpressionSyntax NewBox(ExpressionSyntax value) =>
+			SyntaxFactory.ObjectCreationExpression(BoxType).WithArgumentList(
+				SyntaxFactory.ArgumentList(SyntaxFactory.SingletonSeparatedList(Arg(value))));
 
 		private sealed class LocalStorage
 		{

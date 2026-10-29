@@ -18,7 +18,7 @@ namespace Keysharp.Builtins
 
 		protected VarRef() : base(null) { }
 
-		public VarRef(object x) : this(x, false) { }
+		public VarRef(object x) : this(x, true) { }
 
 		internal VarRef(object x, bool scoped) : base(null)
 		{

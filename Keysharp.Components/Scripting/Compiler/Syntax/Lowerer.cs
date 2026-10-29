@@ -4421,7 +4421,7 @@ namespace Keysharp.Compilation.Syntax
 				updated = SyntaxFactory.ParenthesizedExpression(updated);
 			if (u.Postfix)
 			{
-				ExpressionSyntax[] seq = [..setup, Assign(Id(old), read), updated, Id(old)];
+				ExpressionSyntax[] seq = [..setup, Assign(Id(old), EscapingValue(read)), updated, Id(old)];
 				return Op("MultiStatement", seq);
 			}
 			if (setup.Count == 0) return updated;
