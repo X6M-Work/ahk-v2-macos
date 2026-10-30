@@ -1,5 +1,10 @@
 # AHK v2 for macOS
 
+[![macOS compatibility](https://github.com/X6M-Work/ahk-v2-macos/actions/workflows/macos-compatibility.yml/badge.svg)](https://github.com/X6M-Work/ahk-v2-macos/actions/workflows/macos-compatibility.yml)
+[![Release](https://img.shields.io/github/v/release/X6M-Work/ahk-v2-macos?include_prereleases&color=blue)](https://github.com/X6M-Work/ahk-v2-macos/releases)
+[![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](license.txt)
+[![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
+
 Run AutoHotkey v2-style scripts on macOS with the complete [Keysharp](https://github.com/keysharp-org/Keysharp) engine. This source fork adds reproducible dependency pins, macOS tooling, and a compatibility test corpus against official AutoHotkey on Windows.
 
 **Experimental. 100% AutoHotkey compatibility is a goal, not an achieved or guaranteed property.** Windows DLLs, registry APIs, native COM interfaces, and some language behaviors cannot run unchanged. See the [compatibility notes and French quickstart](docs/macos-compatibility.md).
@@ -17,7 +22,7 @@ bash scripts/macos/ahk doctor
 bash scripts/macos/ahk run examples/macos/hello.ahk
 ```
 
-The launcher also supports `validate your-script.ahk`. Input automation requires macOS Accessibility and Input Monitoring permissions; screen capture requires Screen Recording permission. More examples: [hotkeys](examples/macos/hotkeys.ahk), [timers](examples/macos/timer.ahk), and [GUI](examples/macos/gui.ahk).
+The launcher also supports `validate your-script.ahk`. Input automation requires macOS Accessibility and Input Monitoring permissions; screen capture requires Screen Recording permission. More examples: [hotkeys & text expansion](examples/macos/mac-shortcuts.ahk), [window management](examples/macos/window-management.ahk), [pixel color picker](examples/macos/color-picker.ahk), [timers](examples/macos/timer.ahk), and [GUI](examples/macos/gui.ahk).
 
 ## What is included
 
