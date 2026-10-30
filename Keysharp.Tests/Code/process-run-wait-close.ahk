@@ -2,6 +2,7 @@
 #Warn All, StdOut
 #NoTrayIcon
 #Include <assert>
+#Include <testpaths>
 
 pid := 123
 AssertEq(Run("", "", "", &pid), 1, A_LineNumber)
@@ -121,12 +122,13 @@ closeSecond := () => ProcessClose(secondWaitPid)
 
 try
 {
-	FileCopy(sleeper, waitProgram, true)
 #if OSX
-	; /bin/sleep is a platform binary, and AMFI kills a copy of one that runs from outside the signed
-	; system volume however valid its signature reads. Re-signing ad hoc drops the platform identifier
-	; the copy has no claim to, which is what the kernel objects to.
-	RunWait('/usr/bin/codesign --force --sign - "' waitProgram '"', , "Hide")
+	; Build a test-owned executable instead of copying an Apple platform binary.
+	compilerArgs := '-std=c11 -Wall -Wextra -Werror "' _TestFixturePath("Lib/process-wait.c") '" -o "' waitProgram '"'
+	if RunWait("/usr/bin/clang", , "Hide", , compilerArgs) != 0
+		throw Error("Could not compile the process-wait fixture; Xcode Command Line Tools are required.")
+#else
+	FileCopy(sleeper, waitProgram, true)
 #endif
 	dirBefore := A_WorkingDir
 	AssertEq(RunWait(waitProgram, waitDir, "Hide", , sleeperArgs), 0, A_LineNumber)

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       extended:
-        description: Run full conformance and native ABI audit, retaining known failures
+        description: Run full conformance, PixelSearch desktop capture and native ABI audit, retaining known failures
         type: boolean
         default: false
       arm_runner:
@@ -116,6 +116,10 @@ jobs:
         if: ${{ !cancelled() && steps.build_runtime.outcome == 'success' }}
         shell: pwsh
         run: python compat/run.py --engine keysharp --timeout 120 --executable bin/Release/net10.0-windows/Keysharp.exe --output compat/reports/keysharp-windows.json --baseline compat/reports/reference/ahk-windows.json
+      - name: Run extended PixelSearch desktop capture
+        if: ${{ !cancelled() && inputs.extended && steps.build_runtime.outcome == 'success' }}
+        shell: pwsh
+        run: python compat/run_screen.py --executable bin/Release/net10.0-windows/Keysharp.exe --output compat/reports/desktop/pixelsearch-windows.json --timeout 120
       - name: Run extended Windows conformance audit
         if: ${{ !cancelled() && inputs.extended && steps.build_runtime.outcome == 'success' }}
         shell: pwsh
@@ -186,6 +190,15 @@ jobs:
           if [[ ! -x "$engine" ]]; then engine="$PWD/bin/Release/net10.0/$TARGET_RID/Keysharp"; fi
           test -x "$engine"
           python compat/run.py --engine keysharp --timeout 120 --executable "$engine" --output compat/reports/keysharp-macos.json --baseline compat/reports/reference/ahk-windows.json
+      - name: Run extended PixelSearch desktop capture
+        if: ${{ !cancelled() && inputs.extended && steps.build_runtime.outcome == 'success' }}
+        shell: bash
+        env:
+          TARGET_RID: ${{ matrix.rid }}
+        run: |
+          engine="$PWD/bin/Release/net10.0/$TARGET_RID/Keysharp.app/Contents/MacOS/Keysharp"
+          if [[ ! -x "$engine" ]]; then engine="$PWD/bin/Release/net10.0/$TARGET_RID/Keysharp"; fi
+          python compat/run_screen.py --executable "$engine" --output "compat/reports/desktop/pixelsearch-$TARGET_RID.json" --timeout 120
       - name: Run extended native conformance and ABI audit
         if: ${{ !cancelled() && inputs.extended && steps.build_runtime.outcome == 'success' }}
         shell: bash
