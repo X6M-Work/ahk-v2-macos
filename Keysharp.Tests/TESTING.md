@@ -109,6 +109,8 @@ This selection also includes existing curated cases in these fixtures. A Windows
 
 `Category=Desktop` explicitly selects tests that use native hooks, the session clipboard, monitor enumeration, a graphics backend, GUI windows/dialogs, temporary capture windows, or recycling of generated scratch files. These tests stay outside the default curated filter. The Windows selection contains 72 cases. Pure coordinate/image calculations are curated separately.
 
+The pixel/image screen fixture uses an always-on-top window shown with `NoActivate`. It requires the swatch and background colors to be visible within three seconds, rather than requiring foreground focus or assuming a fixed paint delay. It restores the caller's pixel coordinate mode on success and failure, and destroys its window if setup fails. The fixture still requires an unlocked graphical session with an unobscured capture region; failure to render is a failure, not a skipped assertion or fabricated pass.
+
 Clipboard tests capture the original formats before probing and restore them in teardown, including after assertion failures. A compiled script may have disposed its clipboard-owner window; restoration creates a fresh script context when needed. The snapshot stays in memory. The hotstring callback test disables backspacing and feeds simulated events into the installed hook; it does not prove physical keyboard delivery. The F12 script activates its own window and verifies that its local callback actually runs under `#HotIf WinActive("ahk_id " fixture.Hwnd)`.
 
 Run the desktop selection on Windows with an unlocked interactive session:
