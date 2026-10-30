@@ -30,7 +30,7 @@ namespace Keysharp.Builtins
 					if (!root.IsDefined(typeof(Keysharp.Runtime.ReferenceCountedAttribute), false)) return;
 					root = root.BaseType;
 				}
-				if (root != typeof(KeysharpObject)) return;
+				if (root != typeof(KeysharpObject) && root != typeof(Map) && root != typeof(Array)) return;
 			}
 			referenceGate = new();
 			referenceState = (int)ReferenceLifeState.Constructing;

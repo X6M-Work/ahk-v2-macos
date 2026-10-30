@@ -33,7 +33,7 @@ public class ReferenceLifetimeTests : TestRunner
 	[Test]
 	public void UninstrumentedInstancesKeepTheirExistingLifetime()
 	{
-		foreach (Any value in new Any[] { new Any(null), new Ks.HashMap(null) })
+		foreach (Any value in new Any[] { new Any(null), new Ks.HashMap(null), new LegacyMap(), new LegacyArray(), new MarkedLegacyMap(), new MarkedHashMap() })
 		{
 			value.BeginReferenceConstruction();
 			value.CompleteReferenceConstruction();
@@ -42,6 +42,13 @@ public class ReferenceLifetimeTests : TestRunner
 			Assert.That(value.ReferenceState, Is.EqualTo(ReferenceLifeState.Untracked));
 		}
 	}
+
+	private class LegacyMap() : Keysharp.Builtins.Map(null);
+	private sealed class LegacyArray() : Keysharp.Builtins.Array(null);
+	[ReferenceCounted]
+	private sealed class MarkedLegacyMap() : LegacyMap;
+	[ReferenceCounted]
+	private sealed class MarkedHashMap() : Ks.HashMap(null);
 
 	[Test]
 	public void MapDictionaryMutationsBalanceOwnedEdges()

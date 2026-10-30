@@ -25,6 +25,9 @@ Jump directly to:
 
 Indexed setters reread variable index slots after RHS effects. Compound indexed/dynamic-property assignments read the old value before the RHS and resolve variable index/name slots again for writing; computed receivers, indices and names execute once. Positional spread calls resolve ordinary variable arguments after expansion, including custom enumerator effects. This evaluation-order correction is covered against AutoHotkey 2.0.31 on Windows; native macOS/Linux revalidation remains pending.
 
+Script classes derived from Map or Array count native storage and own-property references when every user class in their CLR inheritance chain is instrumented. Constructors, clones, built-in enumerators, failed construction and resurrection use the same owner protocol as prepared native containers. A missing instrumentation marker, inline C# or an unsupported native root keeps the conservative GC fallback; this does not opt Ks.HashMap or arbitrary CLR subclasses into deterministic destruction. The portable inheritance regression is compared with AutoHotkey 2.0.31 on Windows; native validation is recorded separately.
+
+
 
 `DriveGetList(Type)` filters every enumerated drive, including the first. Windows returns drive letters; Linux and macOS return semicolon-separated mount paths. The first-drive regression has a local Windows test; native macOS/Linux revalidation is pending.
 
