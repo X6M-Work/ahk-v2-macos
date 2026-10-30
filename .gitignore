@@ -7,7 +7,6 @@
 /obj
 /dist
 /Keysharp.Install/payload/obj/
-/.claude/worktrees
 /native/*/build
 /.vs/ProjectEvaluation
 /Keysharp.Install/Debug
@@ -43,7 +42,6 @@ demos/*.gif
 # Nix build outputs stay local.
 /result
 /result-*
-.claude
 /.deps/
 /compat/reports/
 __pycache__/

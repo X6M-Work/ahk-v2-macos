@@ -2,7 +2,7 @@
 
 ## Verdict
 
-**La fidélité stricte à AHK 2.0.31 reste bloquée par la migration incomplète de la durée de vie des objets.** Le backend macOS ne corrige pas ce problème commun au moteur. Les cinq contre-exemples exécutables de `compat/phase15-architecture` passent avec AutoHotkey officiel 2.0.31. La CI `40774644855` valide `file-scope-close` sur Windows, Intel et Apple Silicon. La CI `40803366218` valide alias, portée et fichier sur Windows et les deux Mac (889 tests NUnit Windows, 945 par Mac). Les propriétaires temporaires et les emprunts après résurrection font désormais passer les cinq fixtures stricts localement sur Windows ; leur validation native est en attente.
+**Le modèle de comptage déterministe des références valide les 5 fixtures stricts d'architecture sur Windows, avec validation native macOS sous CI en attente.** Les cinq contre-exemples exécutables de `compat/phase15-architecture` passent avec AutoHotkey officiel 2.0.31 et passent désormais sous Keysharp sur Windows. La CI `40774644855` valide `file-scope-close` sur Windows, Intel et Apple Silicon. La CI `40803366218` valide alias, portée et fichier sur Windows et les deux Mac (889 tests NUnit Windows, 945 par Mac). Les étapes 4 à 11 (propriétaires temporaires, résurrection, tableaux, maps, propriétés propres, résolution tardive et héritage) complètent le modèle sur le périmètre instrumenté, tandis que la validation native sous CI Mac et les frontières CLR/closures non instrumentées restent le périmètre d'extension ouvert.
 
 | Contrat observable | AutoHotkey 2.0.31 | Keysharp observé |
 |---|---|---|
