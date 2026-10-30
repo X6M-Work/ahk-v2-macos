@@ -23,6 +23,9 @@ Jump directly to:
 
 `Clr.ManagedInstance` uses its wrapped CLR object's `ToString()` for implicit string conversion, including concatenation and built-in String parameters, in both compatibility modes. This is a Keysharp CLR extension; ordinary AutoHotkey objects remain invalid as implicit strings in v2.0. The regression is validated locally on Windows; native Mac/Linux validation is pending.
 
+Indexed setters reread variable index slots after RHS effects. Compound indexed/dynamic-property assignments read the old value before the RHS and resolve variable index/name slots again for writing; computed receivers, indices and names execute once. Positional spread calls resolve ordinary variable arguments after expansion, including custom enumerator effects. This evaluation-order correction is covered against AutoHotkey 2.0.31 on Windows; native macOS/Linux revalidation remains pending.
+
+
 `DriveGetList(Type)` filters every enumerated drive, including the first. Windows returns drive letters; Linux and macOS return semicolon-separated mount paths. The first-drive regression has a local Windows test; native macOS/Linux revalidation is pending.
 
 `SoundBeep` treats frequencies outside 37 through 32767 as silent no-ops, matching the local AutoHotkey 2.0.31 comparison. Nonnumeric inputs still raise `TypeError`. A Windows call/duration check does not establish audible output or native macOS/Linux playback.

@@ -358,5 +358,146 @@ mapping := Map("x", 10)
 mapping[ReplaceNumberSpread()*] := 30
 Check(mapping["x"], 30, "spread setter resolves receiver after argument expansion")
 mapping := 0
+key := "old"
+mapping := Map("old", 10, "new", 20)
+mapping[key] := ChangeMapKey()
+Check(mapping["old"], 10, "simple setter preserves old slot")
+Check(mapping["new"], 40, "simple setter rereads variable index after RHS")
+key := "old"
+mapping[key] += ChangeMapKey()
+Check(mapping["old"], 10, "compound setter preserves old slot")
+Check(mapping["new"], 50, "compound setter reads old slot and writes current index")
+key := "old"
+mapping.old := 10
+mapping.new := 20
+mapping.%key% += ChangeMapKey()
+Check(mapping.old, 10, "dynamic compound preserves old property")
+Check(mapping.new, 50, "dynamic compound rereads variable name after RHS")
+key := "old"
+mapping := Map()
+mapping.Set(key, ChangeMapKey(), ["tail", 0]*)
+Check(mapping.Has("old"), 0, "spread call defers ordinary variable arguments")
+Check(mapping["new"], 40, "spread call uses current key")
+key := "old"
+mapping := Map()
+ReadMapReceiver().Set(key, ChangeMapKey(), ["tail", 0]*)
+Check(mapping["new"], 40, "computed receiver keeps deferred spread call arguments")
+key := "old"
+mapping := Map()
+mapping.Set((key := "first"), ChangeMapKey(), ["tail", 0]*)
+Check(mapping.Has("first"), 0, "spread assignment argument is not reevaluated")
+Check(mapping["new"], 40, "spread assignment argument rereads its slot")
+keys := ["old"]
+ChangeMapIndices() {
+    global keys
+    keys := ["new"]
+    return 40
+}
+mapping := Map("old", 10, "new", 20)
+mapping[keys*] := ChangeMapIndices()
+Check(mapping["old"], 10, "spread setter preserves old slot")
+Check(mapping["new"], 40, "spread setter resolves variable source after RHS")
+class ChangingMapSpread {
+    __Enum(count) {
+        global key
+        key := "new"
+        return ["tail", 0].__Enum(count)
+    }
+}
+key := "old"
+mapping := Map()
+mapping.Set(key, 1, ChangingMapSpread()*)
+Check(mapping.Has("old"), 0, "custom spread runs before deferred variable reads")
+Check(mapping["new"], 1, "custom spread can replace earlier variable argument")
+key := "old"
+mapping := Map("old", 10, "new", 20)
+ReadMapReceiver()[key] += ChangeMapKey()
+Check(mapping["old"], 10, "computed receiver compound preserves old slot")
+Check(mapping["new"], 50, "computed receiver compound rereads index")
+mapping.old := 10
+mapping.new := 20
+key := "old"
+ReadMapReceiver().%key% := ChangeMapKey()
+Check(mapping.old, 10, "computed receiver dynamic setter preserves old property")
+Check(mapping.new, 40, "computed receiver dynamic setter rereads name")
+key := "old"
+ReadMapReceiver().%key% += ChangeMapKey()
+Check(mapping.old, 10, "computed receiver dynamic compound preserves old property")
+Check(mapping.new, 50, "computed receiver dynamic compound rereads name")
+indexReads := 0
+ComputedMapIndex() {
+    global indexReads
+    indexReads += 1
+    return "old"
+}
+key := "old"
+mapping := Map("old", 10, "new", 20)
+mapping[ComputedMapIndex()] += ChangeMapKey()
+Check(indexReads, 1, "computed compound index is evaluated once")
+Check(mapping["old"], 50, "computed compound index keeps its evaluated result")
+indexReads := 0
+mapping.old := 10
+mapping.new := 20
+mapping.%ComputedMapIndex()% += ChangeMapKey()
+Check(indexReads, 1, "computed dynamic name is evaluated once")
+Check(mapping.old, 50, "computed dynamic name keeps its evaluated result")
+FailMapRhs() {
+    ChangeMapKey()
+    throw Error("expected Map RHS failure")
+}
+indexReads := 0
+mapping := Map("old", 10, "new", 20)
+try mapping[ComputedMapIndex()] := FailMapRhs()
+catch {
+}
+Check(indexReads, 1, "computed index runs once when RHS throws")
+Check(mapping["old"], 10, "failed RHS leaves old entry unchanged")
+Check(mapping["new"], 20, "failed RHS performs no deferred write")
+class IndexedMapSlots {
+    __New() {
+        this.Values := Map("old", 10, "new", 20)
+    }
+    Item[index] {
+        get => this.Values[index]
+        set => this.Values[index] := value
+    }
+}
+holder := IndexedMapSlots()
+key := "old"
+holder.Item[key] := ChangeMapKey()
+Check(holder.Values["old"], 10, "indexed property setter preserves old slot")
+Check(holder.Values["new"], 40, "indexed property setter rereads variable index")
+key := "old"
+holder.Item[key] += ChangeMapKey()
+Check(holder.Values["old"], 10, "indexed property compound preserves old slot")
+Check(holder.Values["new"], 50, "indexed property compound rereads variable index")
+ChangeLocalMapKey(&slot) {
+    slot := "new"
+    return 40
+}
+WriteLocalMapKey(target) {
+    local slot := "old"
+    target[(slot)] := ChangeLocalMapKey(&slot)
+    slot := "old"
+    target[slot] += ChangeLocalMapKey(&slot)
+}
+mapping := Map("old", 10, "new", 20)
+WriteLocalMapKey(mapping)
+Check(mapping["old"], 10, "boxed local index preserves old slot")
+Check(mapping["new"], 50, "boxed local index is reread after byref mutation")
+trace := ""
+objectKey := MapValue("old-index")
+ReplaceObjectMapKey() {
+    global objectKey
+    objectKey := MapValue("new-index")
+    return MapValue("indexed-value")
+}
+mapping := Map()
+mapping[objectKey] := ReplaceObjectMapKey()
+Check(trace, "old-index|", "deferred object index releases replaced owner before setter")
+Check(mapping[objectKey].Label, "indexed-value", "setter retains replacement object index and value")
+mapping := 0
+objectKey := 0
+holder := 0
 FileAppend("pass`n", "*", "UTF-8-RAW")
 ExitApp()

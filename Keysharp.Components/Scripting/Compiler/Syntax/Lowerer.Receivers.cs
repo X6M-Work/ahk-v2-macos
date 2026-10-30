@@ -29,7 +29,8 @@ internal sealed partial class Lowerer
 		var arguments = call.ArgumentList.Arguments;
 		var variable = NakedVariable(receiver);
 		var deferred = !packed && sourceArguments?.Count == arguments.Count - argumentStart && sourceArguments.All(a => !a.IsNamed);
-		if (variable == null && !(deferred && sourceArguments.Any(a => NakedVariable(a.Value) != null))) return operation;
+		if (variable == null && NakedVariable(dynamicName) == null
+			&& !(deferred && sourceArguments.Any(a => NakedVariable(a.Value) != null))) return operation;
 		var setup = new List<ExpressionSyntax>();
 		void Capture(int index, bool array)
 		{
@@ -62,5 +63,32 @@ internal sealed partial class Lowerer
 		if (setup.Count == 0) return operation;
 		setup.Add(call.WithArgumentList(call.ArgumentList.WithArguments(arguments)));
 		return Op("MultiStatement", setup.ToArray());
+	}
+
+	private ExpressionSyntax LateSpreadParams(List<Argument> args, ExpressionSyntax trailing)
+	{
+		var setup = new List<ExpressionSyntax>();
+		var values = args.Select(a => a.Value == null ? Null : ReceiverValue(a.Value, setup)).ToArray();
+		if (trailing != null)
+		{
+			var value = Id(NewTemp());
+			setup.Add(Assign(value, trailing));
+			trailing = value;
+		}
+		var elements = new List<CollectionElementSyntax>();
+		for (var i = 0; i < args.Count; i++)
+		{
+			if (args[i].Spread)
+			{
+				var expanded = Id(NewTemp());
+				setup.Add(Assign(expanded, Op("FlattenValues", values[i])));
+				elements.Add(SyntaxFactory.SpreadElement(SyntaxFactory.CastExpression(ObjArrayType, expanded)));
+			}
+			else elements.Add(SyntaxFactory.ExpressionElement(values[i]));
+		}
+		if (trailing != null) elements.Add(SyntaxFactory.ExpressionElement(trailing));
+		setup.Add(SyntaxFactory.CastExpression(ObjArrayType,
+			SyntaxFactory.CollectionExpression(SyntaxFactory.SeparatedList(elements))));
+		return SyntaxFactory.CastExpression(ObjArrayType, Op("MultiStatement", setup.ToArray()));
 	}
 }
