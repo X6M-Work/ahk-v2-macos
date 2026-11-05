@@ -450,8 +450,8 @@ namespace Keysharp.Internals
 		public bool TryGetPrimarySize(out int width, out int height)
 		{
 			var size = Window.MacOS.MacNativeWindows.PrimaryDisplaySize();
-			width = size.Width;
-			height = size.Height;
+			width = (int)Math.Round(size.Width);
+			height = (int)Math.Round(size.Height);
 			return width > 0 && height > 0;
 		}
 
