@@ -2414,6 +2414,9 @@ namespace Keysharp.Builtins
 		public object Hide()
 		{
 			form.Hide();
+#if OSX
+			MacNativeWindows.RequestActivationPolicyUpdate();
+#endif
 			return DefaultObject;
 		}
 
@@ -2961,6 +2964,9 @@ namespace Keysharp.Builtins
 				form.Show();
 			form.WindowState = FormWindowState.Normal;
 			ReassertWindowStateOnWayland(FormWindowState.Normal);
+#if OSX
+			MacNativeWindows.RequestActivationPolicyUpdate();
+#endif
 			return DefaultObject;
 		}
 
@@ -3414,7 +3420,13 @@ namespace Keysharp.Builtins
 			if (hide)
 				form.Hide();
 			else
+			{
+#if OSX
+				if (!form.showWithoutActivation && !min && form.ShowInTaskbar)
+					MacNativeWindows.SetActivationPolicy(accessory: false);
+#endif
 				form.Show();
+			}
 
 			if (min)
 				form.WindowState = FormWindowState.Minimized;
@@ -3432,6 +3444,9 @@ namespace Keysharp.Builtins
 
 				form.BringToFront();
 			}
+#if OSX
+			MacNativeWindows.RequestActivationPolicyUpdate();
+#endif
 #if LINUX
 			// Wayland: a client cannot set its own top-level position (form.SetLocation above is a no-op
 			// there), so once the window is mapped, ask the compositor backend to place it. We only position

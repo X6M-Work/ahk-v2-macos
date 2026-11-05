@@ -447,9 +447,29 @@ namespace Keysharp.Internals
 #elif OSX
 	internal sealed class MacScreen : IScreen
 	{
+		public bool TryGetPrimarySize(out int width, out int height)
+		{
+			var size = Window.MacOS.MacNativeWindows.PrimaryDisplaySize();
+			width = size.Width;
+			height = size.Height;
+			return width > 0 && height > 0;
+		}
+
 		public IReadOnlyList<DisplayInfo> GetDisplays()
 		{
-			var screens = Forms.Screen.Screens?.ToArray() ?? [];
+			Forms.Screen[] screens;
+			try
+			{
+				var app = Eto.Forms.Application.Instance;
+				screens = app != null && Script.TheScript is { IsOnMainThread: false }
+					? app.Invoke(() => Forms.Screen.Screens?.ToArray() ?? [])
+					: Forms.Screen.Screens?.ToArray() ?? [];
+			}
+			catch
+			{
+				screens = [];
+			}
+
 			var result = new List<DisplayInfo>(screens.Length);
 
 			for (var i = 0; i < screens.Length; i++)
@@ -467,21 +487,48 @@ namespace Keysharp.Internals
 				// shows for a display. Eto's Screen.ID is kept only as the fallback: no Cocoa screen handler sets
 				// it, so before this it was always the synthetic display-N that reached scripts.
 				var name = MacScreenNames.LocalizedName(screen);
+				var nativeId = MacMonitorDetails.TryResolveDisplayId(bounds, out var displayId) ? (ulong)displayId : 0UL;
 				result.Add(new DisplayInfo(
 					name.Length > 0 ? name : screen.ID is { Length: > 0 } id ? id : $"display-{i + 1}",
-					bounds, workArea, 1.0, screen.IsPrimary));
+					bounds, workArea, 1.0, screen.IsPrimary, nativeId));
 			}
 
-			return result;
+			return result.Count > 0 ? result : MacMonitorDetails.GetCoreGraphicsDisplays();
 		}
 
 		public DisplayDetails GetDisplayDetails(DisplayInfo display) => MacMonitorDetails.Get(display);
+
+		public ScreenRect GetWorkArea(DisplayInfo display)
+		{
+			foreach (var current in GetDisplays())
+				if ((display.NativeId != 0 && current.NativeId == display.NativeId)
+					|| current.Bounds == display.Bounds
+					|| string.Equals(current.Name, display.Name, StringComparison.OrdinalIgnoreCase))
+					return current.WorkArea;
+
+			return display.WorkArea;
+		}
 
 		public ScreenRect GetVirtualScreenBounds() => DisplayTopology.ToolkitUnion();
 
 		public bool TryCaptureRegion(ScreenRect bounds, out Bitmap bmp)
 			=> EtoScreenCapture.TryCapture(bounds.X, bounds.Y, bounds.Width, bounds.Height, out bmp);
-		public bool TryCaptureWindow(nint h, bool includeDecoration, out Bitmap bmp, out PixelScale pixelScale) { bmp = null; pixelScale = PixelScale.One; return false; }
+
+		public bool TryCaptureWindow(nint h, bool includeDecoration, out Bitmap bmp, out PixelScale pixelScale)
+		{
+			pixelScale = PixelScale.One;
+			bmp = Window.MacOS.MacNativeWindows.TryCaptureWindow(unchecked((uint)h.ToInt64()));
+
+			if (bmp == null)
+				return false;
+
+			// The window-server image is physical pixels; the window's logical (point) width comes
+			// from its bounds, so their ratio is the HiDPI scale.
+			if (Window.MacOS.MacNativeWindows.TryGetWindowInfo(h, out var info))
+				pixelScale = PixelScale.From(bmp, ScreenRect.FromRectangle(info.Bounds));
+
+			return true;
+		}
 	}
 #endif
 }

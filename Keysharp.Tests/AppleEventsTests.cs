@@ -384,6 +384,19 @@ public class AppleEventsTests : TestRunner
 		Assert.That(dict.PropertyNamesByCode[AEFourCharCode.Pack("ppth")], Is.EqualTo("file name"));
 	}
 
+	[Test]
+	public void AppNameWithDotAppSuffixNormalizesToApplicationName()
+	{
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(AESdef.NormalizeTargetName("Finder.app"), Is.EqualTo("Finder"));
+			Assert.That(AESdef.NormalizeTargetName("  Visual Studio Code.APP "), Is.EqualTo("Visual Studio Code"));
+			Assert.That(AESdef.NormalizeTargetName("/System/Library/CoreServices/Finder.app"), Is.EqualTo("/System/Library/CoreServices/Finder.app"));
+			Assert.That(AESdef.NormalizeTargetName("com.apple.finder"), Is.EqualTo("com.apple.finder"));
+			Assert.That(AESdef.NormalizeTargetName("pid:1234"), Is.EqualTo("pid:1234"));
+		}
+	}
+
 #if OSX
 	[Test]
 	public void IndependentTargets()

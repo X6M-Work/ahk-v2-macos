@@ -211,6 +211,10 @@ namespace Keysharp.Builtins
 				base.Visible = value;
 				if (beenShown && !value && prev != value)
 					Form_VisibleChanged(this, EventArgs.Empty);
+#if OSX
+				if (prev != value)
+					MacNativeWindows.RequestActivationPolicyUpdate();
+#endif
 			}
 		}
 #endif
@@ -307,9 +311,16 @@ namespace Keysharp.Builtins
 					});
 				}
 #endif
+#if OSX
+				MacNativeWindows.RequestActivationPolicyUpdate();
+#endif
 			};
 #if OSX
-			Closed += (o, e) => ApplyClickThrough(false);
+			Closed += (o, e) =>
+			{
+				ApplyClickThrough(false);
+				MacNativeWindows.RequestActivationPolicyUpdate();
+			};
 #endif
 		}
 
@@ -414,7 +425,14 @@ namespace Keysharp.Builtins
 
 #if !WINDOWS
 		// A tool or owned window has no taskbar button, as in AutoHotkey.
-		private void UpdateTaskbarButton() => ShowInTaskbar = !toolWindow && ownerHwnd == 0;
+		private void UpdateTaskbarButton()
+		{
+			ShowInTaskbar = !toolWindow && ownerHwnd == 0;
+#if OSX
+			if (beenShown)
+				MacNativeWindows.RequestActivationPolicyUpdate();
+#endif
+		}
 #endif
 
 		private void SetStyleFlag(ref bool flag, bool enable)

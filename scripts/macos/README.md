@@ -9,6 +9,7 @@ bash scripts/macos/bootstrap.sh
 bash scripts/macos/build.sh
 bash scripts/macos/ahk validate path/to/script.ahk
 bash scripts/macos/ahk run path/to/script.ahk "argument with spaces"
+bash scripts/macos/ahk daemon path/to/script.ahk
 bash scripts/macos/ahk doctor
 ```
 

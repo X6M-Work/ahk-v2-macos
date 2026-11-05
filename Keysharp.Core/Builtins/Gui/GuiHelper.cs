@@ -205,25 +205,10 @@ namespace Keysharp.Builtins
 #if WINDOWS
 				// Windows captures in device pixels (no Retina-style doubling), so scale 1.
 				return (CaptureWindowWin(handle, mode), PixelScale.One);
-#elif OSX
-				var bmp = Keysharp.Internals.Window.MacOS.MacNativeWindows.TryCaptureWindow(unchecked((uint)handle.ToInt64()));
-
-				if (bmp == null)
-					return (null, PixelScale.One);
-
-				// The window-server image is physical pixels; the window's logical (point) width comes
-				// from its bounds, so their ratio is the HiDPI scale.
-				var pixelScale = PixelScale.One;
-
-				if (Keysharp.Internals.Window.MacOS.MacNativeWindows.TryGetWindowInfo(handle, out var info))
-					pixelScale = PixelScale.From(bmp, ScreenRect.FromRectangle(info.Bounds));
-
-				return (bmp, pixelScale);
-#elif LINUX
-				// Per-compositor window capture, resolved once inside Platform.Screen: X11 (incl. Cinnamon) uses
-				// XGetImage + XComposite so occluded windows still capture; GNOME images the window actor's buffer
-				// via the Keysharp Shell extension; KWin uses ScreenShot2; wlroots/unknown return false so the
-				// caller falls back to a rectangle grab of the window's on-screen bounds.
+#elif OSX || LINUX
+				// Platform-specific window capture delegated through Platform.Screen:
+				// - macOS: CGWindowListCreateImage via MacScreen.TryCaptureWindow (physical pixels + Retina PixelScale).
+				// - Linux: X11 uses XGetImage + XComposite; GNOME uses the Keysharp Shell extension; KWin uses ScreenShot2.
 				return Platform.Screen.TryCaptureWindow(handle, includeDecoration, out var wbmp, out var pixelScale)
 					? (wbmp, pixelScale)
 					: (null, PixelScale.One);

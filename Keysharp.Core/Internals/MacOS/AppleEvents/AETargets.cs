@@ -44,7 +44,7 @@ namespace Keysharp.Internals.AppleEvents
 
 		internal static AETarget Resolve(string target)
 		{
-			target = (target ?? "").Trim();
+			target = AESdef.NormalizeTargetName(target);
 
 			if (target.Length == 0)
 				throw new ArgumentException("ComObject needs an application to address: a bundle id, a name, a path, or \"pid:1234\".");

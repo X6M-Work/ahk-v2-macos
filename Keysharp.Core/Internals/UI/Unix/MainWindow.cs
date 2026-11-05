@@ -465,6 +465,9 @@ namespace Keysharp.Internals.UI.Unix
 					WindowState = WindowState.Normal;
 					this.Hide();
 					beenShown = true;
+#if OSX
+					MacNativeWindows.RequestActivationPolicyUpdate();
+#endif
 				});
 			}
 
@@ -479,6 +482,9 @@ namespace Keysharp.Internals.UI.Unix
 			if (WindowState == FormWindowState.Minimized)
 			{
 				this.Hide();
+#if OSX
+				MacNativeWindows.RequestActivationPolicyUpdate();
+#endif
 			}
 			else
 				lastWindowState = WindowState;
@@ -490,6 +496,9 @@ namespace Keysharp.Internals.UI.Unix
 			{
 				e.Cancel = true;
 				this.Hide();
+#if OSX
+				MacNativeWindows.RequestActivationPolicyUpdate();
+#endif
 				return;
 			}
 
@@ -521,10 +530,17 @@ namespace Keysharp.Internals.UI.Unix
 			if (beenShown && (!Visible || !AllowShowDisplay || WindowState == WindowState.Minimized))
 			{
 				AllowShowDisplay = true;
+#if OSX
+				MacNativeWindows.SetActivationPolicy(accessory: false);
+#endif
 				Show();
 				Visible = true;
 				BringToFront();
 				WindowState = WindowState.Normal;
+#if OSX
+				_ = MacNativeWindows.ActivateAppByPid(Environment.ProcessId);
+				MacNativeWindows.RequestActivationPolicyUpdate();
+#endif
 			}
 		}
 

@@ -183,6 +183,23 @@ namespace Keysharp.Internals.AppleEvents
 		}
 
 		/// <summary>
+		/// Normalizes a target application string by stripping a trailing <c>.app</c> bundle extension when the
+		/// target is an application name rather than a filesystem path (e.g. <c>"Finder.app"</c> -> <c>"Finder"</c>),
+		/// so it is looked up as an application name instead of being mistaken for a bundle identifier.
+		/// </summary>
+		internal static string NormalizeTargetName(string target)
+		{
+			target = (target ?? "").Trim();
+
+			if (target.Length > 4
+				&& !target.Contains('/', StringComparison.Ordinal)
+				&& target.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
+				return target[..^4].Trim();
+
+			return target;
+		}
+
+		/// <summary>
 		/// Parses sdef XML. <paramref name="resolveInclude"/> maps an xi:include href to that file's text; when it
 		/// is null or returns null the include is skipped, which costs the standard suite but still yields a usable
 		/// dictionary for the application's own terminology.

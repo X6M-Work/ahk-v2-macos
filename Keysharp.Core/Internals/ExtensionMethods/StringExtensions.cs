@@ -158,7 +158,7 @@ namespace System
 		/// <param name="script">The AppleScript to run.</param>
 		/// <param name="wait">Whether to wait for completion before returning. Default: true.</param>
 		/// <returns>The process exit code (0 on success).</returns>
-		internal static int AppleScript(this string script, bool wait = true) => AppleScript(script, out _, wait);
+		internal static int AppleScript(this string script, bool wait = true) => RunOsascript(script, out _, out _, wait: wait);
 
 		/// <summary>
 		/// Runs a string as an AppleScript command via osascript.
@@ -167,9 +167,22 @@ namespace System
 		/// <param name="output">Standard output from osascript when wait is true, else empty.</param>
 		/// <param name="wait">Whether to wait for completion before returning. Default: true.</param>
 		/// <returns>The process exit code (0 on success, -1 on launch/runtime failure).</returns>
-		internal static int AppleScript(this string script, out string output, bool wait = true)
+		internal static int AppleScript(this string script, out string output, bool wait = true) => RunOsascript(script, out output, out _, wait: wait);
+
+		/// <summary>
+		/// Runs an AppleScript or JavaScript for Automation (JXA) script via <c>/usr/bin/osascript</c>.
+		/// </summary>
+		/// <param name="script">The script source to run.</param>
+		/// <param name="output">Standard output from osascript when wait is true, else empty.</param>
+		/// <param name="error">Standard error from osascript when wait is true, else empty.</param>
+		/// <param name="language">Optional OSA language name (e.g. <c>"AppleScript"</c> or <c>"JavaScript"</c>).</param>
+		/// <param name="arguments">Optional arguments forwarded to the script handler.</param>
+		/// <param name="wait">Whether to wait for completion before returning. Default: true.</param>
+		/// <returns>The process exit code (0 on success, -1 on launch/runtime failure).</returns>
+		internal static int RunOsascript(this string script, out string output, out string error, string language = null, IReadOnlyList<string> arguments = null, bool wait = true)
 		{
 			output = DefaultObject;
+			error = DefaultObject;
 
 			try
 			{
@@ -186,25 +199,41 @@ namespace System
 					}
 				};
 
+				if (!string.IsNullOrWhiteSpace(language))
+				{
+					process.StartInfo.ArgumentList.Add("-l");
+					process.StartInfo.ArgumentList.Add(language);
+				}
+
 				process.StartInfo.ArgumentList.Add("-e");
 				process.StartInfo.ArgumentList.Add(normalizedScript);
+
+				if (arguments != null)
+				{
+					foreach (var arg in arguments)
+						process.StartInfo.ArgumentList.Add(arg ?? string.Empty);
+				}
+
 				_ = process.Start();
 
 				if (!wait)
 					return 0;
 
-				output = process.StandardOutput.ReadToEnd().Trim(CrLf);
-				var err = process.StandardError.ReadToEnd().Trim(CrLf);
+				var stdoutTask = process.StandardOutput.ReadToEndAsync();
+				var stderrTask = process.StandardError.ReadToEndAsync();
 				process.WaitForExit();
+				output = stdoutTask.GetAwaiter().GetResult().Trim(CrLf);
+				error = stderrTask.GetAwaiter().GetResult().Trim(CrLf);
 
-				if (process.ExitCode != 0 && !err.IsNullOrEmpty())
-					Diagnostics.Debug.WriteLine($"AppleScript failed with exit code {process.ExitCode}: {err}");
+				if (process.ExitCode != 0 && !error.IsNullOrEmpty())
+					Diagnostics.Debug.WriteLine($"osascript failed with exit code {process.ExitCode}: {error}");
 
 				return process.ExitCode;
 			}
 			catch (Exception ex)
 			{
-				Diagnostics.Debug.WriteLine($"AppleScript launch failed: {ex.Message}");
+				error = ex.Message;
+				Diagnostics.Debug.WriteLine($"osascript launch failed: {ex.Message}");
 				return -1;
 			}
 		}

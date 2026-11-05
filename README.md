@@ -22,7 +22,7 @@ bash scripts/macos/ahk doctor
 bash scripts/macos/ahk run examples/macos/hello.ahk
 ```
 
-The launcher also supports `validate your-script.ahk`. Input automation requires macOS Accessibility and Input Monitoring permissions; screen capture requires Screen Recording permission. More examples: [hotkeys & text expansion](examples/macos/mac-shortcuts.ahk), [window management](examples/macos/window-management.ahk), [pixel color picker](examples/macos/color-picker.ahk), [timers](examples/macos/timer.ahk), and [GUI](examples/macos/gui.ahk).
+The launcher also supports `validate your-script.ahk` and `daemon your-script.ahk` for detached background execution. Input automation requires macOS Accessibility and Input Monitoring permissions; screen capture requires Screen Recording permission. More examples: [hotkeys & text expansion](examples/macos/mac-shortcuts.ahk), [window management](examples/macos/window-management.ahk), [Apple Events, AppleScript & JXA](examples/macos/apple-events.ahk), [pixel color picker](examples/macos/color-picker.ahk), [timers](examples/macos/timer.ahk), and [GUI](examples/macos/gui.ahk).
 
 ## What is included
 

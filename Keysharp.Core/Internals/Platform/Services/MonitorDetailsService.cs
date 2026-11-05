@@ -634,6 +634,9 @@ namespace Keysharp.Internals
 		private static extern int CGGetActiveDisplayList(uint maxDisplays, [Out] uint[] displays, out uint count);
 
 		[DllImport(CoreGraphics)]
+		private static extern uint CGMainDisplayID();
+
+		[DllImport(CoreGraphics)]
 		private static extern CGRect CGDisplayBounds(uint display);
 
 		[DllImport(CoreGraphics)]
@@ -744,10 +747,57 @@ namespace Keysharp.Internals
 		}
 
 		/// <summary>
+		/// Enumerates active displays directly via CoreGraphics when AppKit/Eto screen objects are unavailable
+		/// (for example in headless sessions or before the UI loop has initialized).
+		/// </summary>
+		internal static IReadOnlyList<DisplayInfo> GetCoreGraphicsDisplays()
+		{
+			try
+			{
+				var ids = new uint[16];
+
+				if (CGGetActiveDisplayList((uint)ids.Length, ids, out var count) != 0 || count == 0)
+					return [];
+
+				var mainId = CGMainDisplayID();
+				var list = new List<DisplayInfo>((int)Math.Min(count, (uint)ids.Length));
+
+				for (var i = 0; i < count && i < ids.Length; i++)
+				{
+					var id = ids[i];
+					var rect = CGDisplayBounds(id);
+					var bounds = new ScreenRect(
+						(int)Math.Round(rect.X),
+						(int)Math.Round(rect.Y),
+						Math.Max(1, (int)Math.Round(rect.Width)),
+						Math.Max(1, (int)Math.Round(rect.Height)));
+					list.Add(new DisplayInfo($"display-{i + 1}", bounds, bounds, 1.0, id == mainId || (mainId == 0 && i == 0), id));
+				}
+
+				return list;
+			}
+			catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+			{
+				return [];
+			}
+		}
+
+		/// <summary>
 		/// Finds the CGDirectDisplayID whose bounds match this display. Matching on geometry rather than asking
 		/// AppKit for NSScreenNumber keeps the lookup on the thread-safe CoreGraphics path.
 		/// </summary>
 		internal static bool TryResolveDisplayId(DisplayInfo display, out uint id)
+		{
+			if (display.NativeId is > 0 and <= uint.MaxValue)
+			{
+				id = (uint)display.NativeId;
+				return true;
+			}
+
+			return TryResolveDisplayId(display.Bounds, out id);
+		}
+
+		internal static bool TryResolveDisplayId(ScreenRect displayBounds, out uint id)
 		{
 			id = 0;
 
@@ -764,8 +814,8 @@ namespace Keysharp.Internals
 				for (var i = 0; i < count && i < ids.Length; i++)
 				{
 					var bounds = CGDisplayBounds(ids[i]);
-					var error = Math.Abs(bounds.X - display.Bounds.X) + Math.Abs(bounds.Y - display.Bounds.Y)
-						+ Math.Abs(bounds.Width - display.Bounds.Width) + Math.Abs(bounds.Height - display.Bounds.Height);
+					var error = Math.Abs(bounds.X - displayBounds.X) + Math.Abs(bounds.Y - displayBounds.Y)
+						+ Math.Abs(bounds.Width - displayBounds.Width) + Math.Abs(bounds.Height - displayBounds.Height);
 
 					if (error < bestError)
 					{
