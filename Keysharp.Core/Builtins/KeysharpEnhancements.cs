@@ -109,7 +109,7 @@ namespace Keysharp.Builtins
 			if (exitCode != 0)
 			{
 				var detail = !string.IsNullOrEmpty(error) ? error : $"osascript exited with code {exitCode}.";
-				return Errors.OSErrorOccurred("", detail, DefaultErrorObject);
+				return Errors.OSErrorOccurred("", detail, DefaultObject);
 			}
 			return DefaultObject;
 #else

@@ -125,7 +125,7 @@ namespace Keysharp.Internals.Window.Unix
 #if OSX
 				_ = Ks.TryShowMacNotification(text, title);
 #endif
-				_ = Keysharp.Diagnostics.Debug.WriteLine(ex);
+				_ = Diagnostics.Debug.WriteLine(ex);
 			}
 		}
 

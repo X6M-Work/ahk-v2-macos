@@ -454,7 +454,7 @@ namespace Keysharp.Internals.Input.MacOS
 			{
 				using var pool = new MonoMac.Foundation.NSAutoreleasePool();
 				var data1 = FormatSystemMediaKeyData1(nxKeyType, keyDown, autoRepeat);
-				var mask = (MonoMac.AppKit.NSEventModifierMask)((ulong)(keyDown ? 0xA00 : 0xB00) | (flags & 0xFFFF0000UL));
+				var mask = (MonoMac.AppKit.NSEventModifierMask)((keyDown ? 0xA00UL : 0xB00UL) | (flags & 0xFFFF0000UL));
 				var nsEvent = MonoMac.AppKit.NSEvent.OtherEvent(
 					MonoMac.AppKit.NSEventType.SystemDefined,
 					System.Drawing.PointF.Empty,
