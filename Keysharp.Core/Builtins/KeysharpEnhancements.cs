@@ -156,6 +156,201 @@ namespace Keysharp.Builtins
 #endif
 		}
 
+		internal static List<string> BuildMacKeychainGetArgs(string service, string account)
+			=> ["find-generic-password", "-s", service ?? "", "-a", account ?? "", "-w"];
+
+		internal static List<string> BuildMacKeychainSetArgs(string service, string account, string password)
+			=> ["add-generic-password", "-U", "-s", service ?? "", "-a", account ?? "", "-w", password ?? ""];
+
+		internal static List<string> BuildMacKeychainDeleteArgs(string service, string account)
+			=> ["delete-generic-password", "-s", service ?? "", "-a", account ?? ""];
+
+		internal static List<string> BuildMacSpotlightArgs(string query, string folder = null)
+			=> !string.IsNullOrWhiteSpace(folder)
+				? ["-onlyin", folder, query ?? ""]
+				: [query ?? ""];
+
+		internal static List<string> ParseSpotlightOutput(string output)
+		{
+			if (string.IsNullOrWhiteSpace(output))
+				return [];
+
+			var list = new List<string>();
+			foreach (var line in output.SplitLines())
+			{
+				var trimmed = line.Trim();
+				if (trimmed.Length > 0)
+					list.Add(trimmed);
+			}
+			return list;
+		}
+
+		/// <summary>
+		/// Reads a generic password from the user's macOS Keychain via <c>/usr/bin/security find-generic-password</c>.
+		/// </summary>
+		/// <param name="service">The Keychain service name (<c>-s</c>).</param>
+		/// <param name="account">The Keychain account name (<c>-a</c>).</param>
+		/// <returns>The secret password string.</returns>
+		public static object KeychainGet(object service, object account)
+		{
+			if (!service.CoerceString(out var svc) || !account.CoerceString(out var acct))
+				return DefaultObject;
+
+			if (string.IsNullOrWhiteSpace(svc) || string.IsNullOrWhiteSpace(acct))
+				return Errors.ValueErrorOccurred("Keychain service and account cannot be empty.", $"{svc}:{acct}", DefaultErrorString);
+
+#if OSX
+			var exitCode = "/usr/bin/security".RunMacCommand(BuildMacKeychainGetArgs(svc, acct), out var output, out var error, wait: true);
+			if (exitCode != 0)
+			{
+				var detail = !string.IsNullOrEmpty(error) ? error : $"security exited with code {exitCode}.";
+				return Errors.OSErrorOccurred("", detail, DefaultErrorString);
+			}
+
+			return output ?? DefaultErrorString;
+#else
+			return Errors.ErrorOccurred("Ks.KeychainGet is only supported on macOS.", DefaultErrorString);
+#endif
+		}
+
+		/// <summary>
+		/// Stores or updates a generic password in the user's macOS Keychain via <c>/usr/bin/security add-generic-password -U</c>.
+		/// </summary>
+		/// <param name="service">The Keychain service name (<c>-s</c>).</param>
+		/// <param name="account">The Keychain account name (<c>-a</c>).</param>
+		/// <param name="password">The secret password to store (<c>-w</c>).</param>
+		public static object KeychainSet(object service, object account, object password)
+		{
+			if (!service.CoerceString(out var svc) || !account.CoerceString(out var acct) || !password.CoerceString(out var pwd))
+				return DefaultObject;
+
+			if (string.IsNullOrWhiteSpace(svc) || string.IsNullOrWhiteSpace(acct))
+				return Errors.ValueErrorOccurred("Keychain service and account cannot be empty.", $"{svc}:{acct}", DefaultObject);
+
+#if OSX
+			var exitCode = "/usr/bin/security".RunMacCommand(BuildMacKeychainSetArgs(svc, acct, pwd), out _, out var error, wait: true);
+			if (exitCode != 0)
+			{
+				var detail = !string.IsNullOrEmpty(error) ? error : $"security exited with code {exitCode}.";
+				return Errors.OSErrorOccurred("", detail, DefaultObject);
+			}
+
+			return 1L;
+#else
+			return Errors.ErrorOccurred("Ks.KeychainSet is only supported on macOS.", DefaultObject);
+#endif
+		}
+
+		/// <summary>
+		/// Deletes a generic password from the user's macOS Keychain via <c>/usr/bin/security delete-generic-password</c>.
+		/// </summary>
+		/// <param name="service">The Keychain service name (<c>-s</c>).</param>
+		/// <param name="account">The Keychain account name (<c>-a</c>).</param>
+		public static object KeychainDelete(object service, object account)
+		{
+			if (!service.CoerceString(out var svc) || !account.CoerceString(out var acct))
+				return DefaultObject;
+
+			if (string.IsNullOrWhiteSpace(svc) || string.IsNullOrWhiteSpace(acct))
+				return Errors.ValueErrorOccurred("Keychain service and account cannot be empty.", $"{svc}:{acct}", DefaultObject);
+
+#if OSX
+			var exitCode = "/usr/bin/security".RunMacCommand(BuildMacKeychainDeleteArgs(svc, acct), out _, out var error, wait: true);
+			if (exitCode != 0)
+			{
+				var detail = !string.IsNullOrEmpty(error) ? error : $"security exited with code {exitCode}.";
+				return Errors.OSErrorOccurred("", detail, DefaultObject);
+			}
+
+			return 1L;
+#else
+			return Errors.ErrorOccurred("Ks.KeychainDelete is only supported on macOS.", DefaultObject);
+#endif
+		}
+
+		/// <summary>
+		/// Searches the macOS Spotlight metadata index via <c>/usr/bin/mdfind</c> and returns an <see cref="Array"/> of matching file paths.
+		/// </summary>
+		/// <param name="query">The Spotlight query expression or search string.</param>
+		/// <param name="folder">Optional directory path to restrict the search (<c>-onlyin</c>).</param>
+		public static object Spotlight(object query, object folder = null)
+		{
+			if (!query.CoerceString(out var q))
+				return DefaultObject;
+
+			if (string.IsNullOrWhiteSpace(q))
+				return Errors.ValueErrorOccurred("Spotlight query cannot be empty.", query, DefaultObject);
+
+			string dir = null;
+			if (folder != null && !folder.CoerceString(out dir))
+				return DefaultObject;
+
+#if OSX
+			var exitCode = "/usr/bin/mdfind".RunMacCommand(BuildMacSpotlightArgs(q, dir), out var output, out var error, wait: true);
+			if (exitCode != 0)
+			{
+				var detail = !string.IsNullOrEmpty(error) ? error : $"mdfind exited with code {exitCode}.";
+				return Errors.OSErrorOccurred("", detail, DefaultObject);
+			}
+
+			var matches = ParseSpotlightOutput(output);
+			var arr = new Array { Capacity = matches.Count };
+			var list = arr as IList;
+			foreach (var item in matches)
+				list.Add(item);
+			return arr;
+#else
+			return Errors.ErrorOccurred("Ks.Spotlight is only supported on macOS.", DefaultObject);
+#endif
+		}
+
+		/// <summary>
+		/// Reveals a file or directory in the desktop file manager (Finder on macOS via <c>/usr/bin/open -R</c>,
+		/// File Explorer on Windows via <c>explorer.exe /select</c>, or <c>xdg-open</c> on Linux).
+		/// </summary>
+		/// <param name="path">The file or directory path to reveal.</param>
+		public static object RevealInFinder(object path)
+		{
+			if (!path.CoerceString(out var p))
+				return DefaultObject;
+
+			if (string.IsNullOrWhiteSpace(p))
+				return Errors.ValueErrorOccurred("Path cannot be empty.", path, DefaultObject);
+
+			var fullPath = Path.GetFullPath(p);
+			if (!File.Exists(fullPath) && !Directory.Exists(fullPath))
+				return Errors.TargetErrorOccurred($"Path does not exist: {fullPath}");
+
+#if OSX
+			var exitCode = "/usr/bin/open".RunMacCommand(["-R", fullPath], out _, out var error, wait: true);
+			if (exitCode != 0)
+			{
+				var detail = !string.IsNullOrEmpty(error) ? error : $"open -R exited with code {exitCode}.";
+				return Errors.OSErrorOccurred("", detail, DefaultObject);
+			}
+			return 1L;
+#elif WINDOWS
+			using var proc = Process.Start(new ProcessStartInfo
+			{
+				FileName = "explorer.exe",
+				Arguments = $"/select,\"{fullPath}\"",
+				UseShellExecute = false,
+				CreateNoWindow = true
+			});
+			return 1L;
+#else
+			var parent = Directory.Exists(fullPath) ? fullPath : (Path.GetDirectoryName(fullPath) ?? fullPath);
+			using var proc = Process.Start(new ProcessStartInfo
+			{
+				FileName = "xdg-open",
+				ArgumentList = { parent },
+				UseShellExecute = false,
+				CreateNoWindow = true
+			});
+			return 1L;
+#endif
+		}
+
 		private static object RunOsascriptBuiltIn(object script, string language, object[] args)
 		{
 			if (!script.CoerceString(out var code))

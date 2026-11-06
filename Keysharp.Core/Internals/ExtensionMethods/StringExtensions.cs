@@ -300,6 +300,55 @@ namespace System
 				return -1;
 			}
 		}
+
+		/// <summary>
+		/// Executes a native macOS command-line utility with an explicit argument list (no shell interpolation)
+		/// and captures standard output and standard error.
+		/// </summary>
+		internal static int RunMacCommand(this string executablePath, IReadOnlyList<string> arguments, out string output, out string error, bool wait = true)
+		{
+			output = DefaultObject;
+			error = DefaultObject;
+
+			try
+			{
+				using var process = new Process()
+				{
+					StartInfo = new ProcessStartInfo
+					{
+						FileName = executablePath,
+						RedirectStandardOutput = true,
+						RedirectStandardError = true,
+						UseShellExecute = false,
+						CreateNoWindow = true,
+					}
+				};
+
+				if (arguments != null)
+				{
+					foreach (var arg in arguments)
+						process.StartInfo.ArgumentList.Add(arg ?? string.Empty);
+				}
+
+				_ = process.Start();
+
+				if (!wait)
+					return 0;
+
+				var stdoutTask = process.StandardOutput.ReadToEndAsync();
+				var stderrTask = process.StandardError.ReadToEndAsync();
+				process.WaitForExit();
+				output = stdoutTask.GetAwaiter().GetResult().Trim(CrLf);
+				error = stderrTask.GetAwaiter().GetResult().Trim(CrLf);
+				return process.ExitCode;
+			}
+			catch (Exception ex)
+			{
+				error = ex.Message;
+				Diagnostics.Debug.WriteLine($"{executablePath} launch failed: {ex.Message}");
+				return -1;
+			}
+		}
 #endif
 
 		/// <summary>

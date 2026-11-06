@@ -441,6 +441,18 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override long ControlGetChecked(object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetControlChecked(nativeWin, selector, out var isChecked, out var foundControl))
+					return isChecked ? 1L : 0L;
+
+				if (!foundControl)
+					return (long)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorLong);
+
+				return 0L;
+			}
+#endif
 			//As BM_GETCHECK, only a checked state counts; another control is unchecked.
 			return OwnControl(ctrl, title, text, excludeTitle, excludeText) switch
 			{
@@ -449,6 +461,37 @@ namespace Keysharp.Internals.Os.Unix
 				_ => 0L
 			};
 		}
+
+#if OSX
+		internal override string ControlGetClassNN(object ctrl, object title, object text, object excludeTitle, object excludeText)
+		{
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetControlClassNN(nativeWin, selector, out var classNN))
+					return classNN;
+
+				return (string)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorString);
+			}
+
+			return base.ControlGetClassNN(ctrl, title, text, excludeTitle, excludeText);
+		}
+
+		internal override long ControlGetEnabled(object ctrl, object title, object text, object excludeTitle, object excludeText)
+		{
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetControlEnabled(nativeWin, selector, out var enabled, out var foundControl))
+					return enabled ? 1L : 0L;
+
+				if (!foundControl)
+					return (long)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorLong);
+
+				return 0L;
+			}
+
+			return base.ControlGetEnabled(ctrl, title, text, excludeTitle, excludeText);
+		}
+#endif
 
 		internal override string ControlGetChoice(object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
@@ -511,6 +554,27 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override void ControlGetPos(ref object outX, ref object outY, ref object outWidth, ref object outHeight, object ctrl = null, object title = null, object text = null, object excludeTitle = null, object excludeText = null)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetControlPos(nativeWin, selector, out var relBounds, out var foundControl))
+				{
+					outX = (long)relBounds.X;
+					outY = (long)relBounds.Y;
+					outWidth = (long)relBounds.Width;
+					outHeight = (long)relBounds.Height;
+					return;
+				}
+
+				outX = 0L;
+				outY = 0L;
+				outWidth = 0L;
+				outHeight = 0L;
+				if (!foundControl)
+					_ = Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+				return;
+			}
+#endif
 			if (WindowSearch.TrySearchControl(ctrl, title, text, excludeTitle, excludeText, out var item, out var target, true)
 				&& item != null && Control.FromHandle(item.Handle) is Control control)
 			{
@@ -619,6 +683,21 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override void ControlSetChecked(object val, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				var toggle = Conversions.ConvertOnOffToggle(val);
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TrySetControlChecked(nativeWin, selector, toggle, out var foundControl))
+				{
+					WindowInfoBase.DoControlDelay();
+					return;
+				}
+
+				if (!foundControl)
+					_ = Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+				return;
+			}
+#endif
 			if (OwnControl(ctrl, title, text, excludeTitle, excludeText) is not Control control)
 				return;
 

@@ -159,6 +159,57 @@ namespace Keysharp.Internals.Window.MacOS
 		}
 
 		/// <summary>
+		/// Builds the 1-based <c>AXRoleN</c> <c>ClassNN</c> list for all candidates that have a non-empty role.
+		/// </summary>
+		internal static List<string> BuildClassNNs(IReadOnlyList<MacControlCandidate> candidates)
+		{
+			var result = new List<string>(candidates?.Count ?? 0);
+
+			if (candidates == null || candidates.Count == 0)
+				return result;
+
+			var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+			for (var i = 0; i < candidates.Count; i++)
+			{
+				var role = candidates[i].Role;
+
+				if (string.IsNullOrWhiteSpace(role))
+					continue;
+
+				var next = counts.GetValueOrDefault(role) + 1;
+				counts[role] = next;
+				result.Add($"{role}{next.ToString(CultureInfo.InvariantCulture)}");
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Computes the canonical 1-based <c>AXRoleN</c> <c>ClassNN</c> for the candidate at <paramref name="matchIndex"/>.
+		/// </summary>
+		internal static string GetClassNNAt(IReadOnlyList<MacControlCandidate> candidates, int matchIndex)
+		{
+			if (candidates == null || matchIndex < 0 || matchIndex >= candidates.Count)
+				return string.Empty;
+
+			var targetRole = candidates[matchIndex].Role;
+
+			if (string.IsNullOrWhiteSpace(targetRole))
+				return string.Empty;
+
+			var count = 0;
+
+			for (var i = 0; i <= matchIndex; i++)
+			{
+				if (string.Equals(candidates[i].Role, targetRole, StringComparison.OrdinalIgnoreCase))
+					count++;
+			}
+
+			return $"{targetRole}{count.ToString(CultureInfo.InvariantCulture)}";
+		}
+
+		/// <summary>
 		/// Finds the 0-based index of the matching control in <paramref name="candidates"/> for <paramref name="selector"/>,
 		/// or <c>-1</c> if no candidate matches.
 		/// </summary>

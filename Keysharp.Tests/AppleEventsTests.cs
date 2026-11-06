@@ -450,6 +450,30 @@ public class AppleEventsTests : TestRunner
 			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndex(candidates, "NoSuchControl"), Is.EqualTo(-1));
 			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.ExtractControlText(candidates[1]), Is.EqualTo("alice"));
 			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.ExtractControlText(candidates[3]), Is.EqualTo("OK"));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.BuildClassNNs(candidates),
+				Is.EqualTo(new[] { "AXStaticText1", "AXTextField1", "AXButton1", "AXButton2", "AXTable1" }));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.GetClassNNAt(candidates, 3), Is.EqualTo("AXButton2"));
+		}
+	}
+
+	[Test]
+	public void MacKeychainAndSpotlightHelpersFormatArgumentsAndParsePaths()
+	{
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(Ks.BuildMacKeychainGetArgs("MyService", "alice"),
+				Is.EqualTo(new[] { "find-generic-password", "-s", "MyService", "-a", "alice", "-w" }));
+			Assert.That(Ks.BuildMacKeychainSetArgs("MyService", "alice", "s3cr3t"),
+				Is.EqualTo(new[] { "add-generic-password", "-U", "-s", "MyService", "-a", "alice", "-w", "s3cr3t" }));
+			Assert.That(Ks.BuildMacKeychainDeleteArgs("MyService", "alice"),
+				Is.EqualTo(new[] { "delete-generic-password", "-s", "MyService", "-a", "alice" }));
+			Assert.That(Ks.BuildMacSpotlightArgs("kMDItemFSName == '*.ahk'"),
+				Is.EqualTo(new[] { "kMDItemFSName == '*.ahk'" }));
+			Assert.That(Ks.BuildMacSpotlightArgs("report", "/Users/alice/Documents"),
+				Is.EqualTo(new[] { "-onlyin", "/Users/alice/Documents", "report" }));
+			Assert.That(Ks.ParseSpotlightOutput("/Users/alice/a.ahk\n/Users/alice/b.ahk\n\n"),
+				Is.EqualTo(new[] { "/Users/alice/a.ahk", "/Users/alice/b.ahk" }));
+			Assert.That(Ks.ParseSpotlightOutput(""), Is.Empty);
 		}
 	}
 

@@ -176,6 +176,24 @@ namespace Keysharp.Builtins
 
 			if (win != null)
 			{
+#if OSX
+				if (nn && Control.FromHandle(win.Handle) == null
+					&& Keysharp.Internals.Window.MacOS.MacNativeWindows.TryGetWindowInfo(win.Handle, out var nativeWin)
+					&& nativeWin.OwnerPid != Environment.ProcessId
+					&& Keysharp.Internals.Window.MacOS.MacAccessibility.TryEnumerateControlClassNNs(nativeWin, out var axClassNNs))
+				{
+					var axArr = new Array()
+					{
+						Capacity = axClassNNs.Count
+					};
+					var axList = axArr as IList;
+
+					foreach (var cnn in axClassNNs)
+						axList.Add(cnn);
+
+					return axArr;
+				}
+#endif
 				if (!Platform.Window.TryEnumerateChildren(win.Handle, out var controls) || controls.Count == 0)
 					return DefaultObject;
 

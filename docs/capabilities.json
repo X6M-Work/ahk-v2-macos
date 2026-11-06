@@ -4270,7 +4270,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlGetChecked function returns 1 if a check box or radio button is checked, or 0 if unchecked.",
+                     "notes":  "The ControlGetChecked function returns non-zero if the checkbox or radio button is checked. On macOS, supports both script-owned controls and foreign application controls via Accessibility (AXValue).",
                      "tested-by":  "Gui/guitest.ks"
                  },
                  {
@@ -4292,7 +4292,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Returns the class name and sequence number among the resolved target window\u0027s descendants. A direct control handle uses its containing top-level window for numbering.",
+                     "notes":  "The ControlGetClassNN function returns the ClassNN (class name and sequence number) of the specified control. On macOS, returns AXRoleN (e.g. AXButton1) for foreign application controls inspected via Accessibility.",
                      "tested-by":  "ControlTests/control_get_classNN.ahk; window-functions.ahk"
                  },
                  {
@@ -4303,7 +4303,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlGetEnabled function returns 1 if a control is enabled, or 0 if disabled.",
+                     "notes":  "The ControlGetEnabled function returns non-zero if the specified control is enabled. On macOS, supports both script-owned controls and foreign application controls via Accessibility (AXEnabled).",
                      "tested-by":  "ControlTests/control_get_enabled.ahk"
                  },
                  {
@@ -4369,7 +4369,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Retrieves a control\u0027s position relative to the resolved target window\u0027s client area and its size. A direct control handle or omitted ControlID uses the control\u0027s containing top-level window\u0027s client area. Nested container offsets are included. Off Windows, position queries cover script-owned toolkit controls only.",
+                     "notes":  "The ControlGetPos function retrieves the position and size of a control. On macOS, supports both script-owned controls and foreign application controls via Accessibility (AXPosition/AXSize relative to window bounds).",
                      "tested-by":  "ControlTests/control_get_pos.ahk; window-functions.ahk; control-coordinates.ahk"
                  },
                  {
@@ -4468,7 +4468,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlSetChecked function checks or unchecks a check box or radio button.",
+                     "notes":  "The ControlSetChecked function checks or unchecks a checkbox or radio button. On macOS, supports both script-owned controls and foreign application controls via Accessibility (AXPress/AXValue).",
                      "tested-by":  "ControlTests/control_set_checked.ahk"
                  },
                  {
@@ -11333,7 +11333,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Returns the ClassNN of the controls in a window. Off Windows only windows created by this script have real controls; for a foreign application X11 enumerates child X windows (which a client-side-drawn GTK/Qt app does not have), and Wayland and macOS report none. Use the bundled AtSpi (Linux) or Ax (macOS) library for cross-process control access."
+                     "notes":  "Returns an array of names (ClassNNs) for all controls in the specified window. On macOS, enumerates foreign application controls via Accessibility (AXRoleN)."
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -12220,6 +12220,39 @@
                      "macos":  "full",
                      "notes":  "Runs a macOS Shortcut from Shortcuts.app via /usr/bin/shortcuts run \u003cName\u003e, optionally piping Input to standard input (-i -), and returns trimmed standard output.",
                      "tested-by":  "AppleEventsTests.MacShortcutArgsFormatRunAndStdinFlags"
+                 },
+                 {
+                     "category":  "Keysharp Module (Ks)",
+                     "feature":  "KeychainGet() / KeychainSet() / KeychainDelete()",
+                     "syntax":  "Ks.KeychainGet(Service, Account) / Ks.KeychainSet(Service, Account, Password) / Ks.KeychainDelete(Service, Account)",
+                     "windows":  "unsupported",
+                     "linux_x11":  "unsupported",
+                     "linux_wayland":  "unsupported",
+                     "macos":  "full",
+                     "notes":  "Reads, creates/updates (-U), or deletes generic passwords in the user\u0027s macOS Keychain via /usr/bin/security.",
+                     "tested-by":  "AppleEventsTests.MacKeychainAndSpotlightHelpersFormatArgumentsAndParsePaths"
+                 },
+                 {
+                     "category":  "Keysharp Module (Ks)",
+                     "feature":  "Spotlight()",
+                     "syntax":  "Ks.Spotlight(Query [, Folder])",
+                     "windows":  "unsupported",
+                     "linux_x11":  "unsupported",
+                     "linux_wayland":  "unsupported",
+                     "macos":  "full",
+                     "notes":  "Queries the macOS Spotlight metadata index via /usr/bin/mdfind (with optional -onlyin Folder) and returns an Array of matching file paths.",
+                     "tested-by":  "AppleEventsTests.MacKeychainAndSpotlightHelpersFormatArgumentsAndParsePaths"
+                 },
+                 {
+                     "category":  "Keysharp Module (Ks)",
+                     "feature":  "RevealInFinder()",
+                     "syntax":  "Ks.RevealInFinder(Path)",
+                     "windows":  "full",
+                     "linux_x11":  "full",
+                     "linux_wayland":  "full",
+                     "macos":  "full",
+                     "notes":  "Reveals a file or directory in the desktop file manager (Finder via open -R on macOS, File Explorer via explorer.exe /select on Windows, or xdg-open on Linux).",
+                     "tested-by":  "AppleEventsTests"
                  }
              ]
 }

@@ -107,6 +107,7 @@ namespace Keysharp.Internals.Window.MacOS
 			private static readonly nint attrDescription = CreateCFString("AXDescription");
 			private static readonly nint attrIdentifier = CreateCFString("AXIdentifier");
 			private static readonly nint attrFocused = CreateCFString("AXFocused");
+			private static readonly nint attrEnabled = CreateCFString("AXEnabled");
 			private const int MaxControlSearchDepth = 16;
 			private const int MaxControlSearchNodes = 512;
 
@@ -896,16 +897,174 @@ namespace Keysharp.Internals.Window.MacOS
 			}
 		}
 
-		private static bool TryFindControlElement(nint windowElement, string selector, out nint controlElement, out MacControlCandidate matchedCandidate)
+		internal static bool TryGetControlPos(MacNativeWindow info, string selector, out Rectangle relativeBounds, out bool foundControl)
 		{
-			controlElement = 0;
-			matchedCandidate = default;
+			relativeBounds = Rectangle.Empty;
+			foundControl = false;
+			using var window = ResolveWindowElement(info, "query control bounds");
 
-			if (windowElement == 0 || string.IsNullOrWhiteSpace(selector))
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out _))
 				return false;
 
-			var elements = new List<nint>();
-			var candidates = new List<MacControlCandidate>();
+			foundControl = true;
+
+			try
+			{
+				if (!TryReadRect(ctrl, out var screenRect))
+					return false;
+
+				relativeBounds = new Rectangle(
+					screenRect.X - window.Info.Bounds.X,
+					screenRect.Y - window.Info.Bounds.Y,
+					screenRect.Width,
+					screenRect.Height);
+				return true;
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryGetControlEnabled(MacNativeWindow info, string selector, out bool enabled, out bool foundControl)
+		{
+			enabled = false;
+			foundControl = false;
+			using var window = ResolveWindowElement(info, "query control enabled state");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out _))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (!TryReadBool(ctrl, attrEnabled, out enabled))
+					enabled = true;
+
+				return true;
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryGetControlChecked(MacNativeWindow info, string selector, out bool isChecked, out bool foundControl)
+		{
+			isChecked = false;
+			foundControl = false;
+			using var window = ResolveWindowElement(info, "query control checked state");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out var candidate))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (TryReadBool(ctrl, attrValue, out var boolVal))
+				{
+					isChecked = boolVal;
+					return true;
+				}
+
+				isChecked = string.Equals(candidate.Value, "1", StringComparison.Ordinal)
+					|| string.Equals(candidate.Value, "true", StringComparison.OrdinalIgnoreCase);
+				return true;
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TrySetControlChecked(MacNativeWindow info, string selector, ToggleValueType toggle, out bool foundControl)
+		{
+			foundControl = false;
+			using var window = ResolveWindowElement(info, "set control checked state");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out var candidate))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				var current = TryReadBool(ctrl, attrValue, out var boolVal)
+					? boolVal
+					: string.Equals(candidate.Value, "1", StringComparison.Ordinal)
+						|| string.Equals(candidate.Value, "true", StringComparison.OrdinalIgnoreCase);
+
+				var target = toggle == ToggleValueType.Toggle ? !current : toggle == ToggleValueType.On;
+
+				if (current == target)
+					return true;
+
+				if (AXUIElementPerformAction(ctrl, actionPress) == kAXErrorSuccess)
+					return true;
+
+				return IsAttributeSettable(ctrl, attrValue) && TryWriteBool(ctrl, attrValue, target);
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryGetControlClassNN(MacNativeWindow info, string selector, out string classNN)
+		{
+			classNN = string.Empty;
+			using var window = ResolveWindowElement(info, "query control ClassNN");
+
+			if (window == null || !TryCollectControlCandidates(window.Element, out var elements, out var candidates))
+				return false;
+
+			try
+			{
+				var matchIndex = MacControlSelector.FindMatchIndex(candidates, selector);
+
+				if (matchIndex < 0)
+					return false;
+
+				classNN = MacControlSelector.GetClassNNAt(candidates, matchIndex);
+				return !string.IsNullOrEmpty(classNN);
+			}
+			finally
+			{
+				for (var i = 0; i < elements.Count; i++)
+					CFRelease(elements[i]);
+			}
+		}
+
+		internal static bool TryEnumerateControlClassNNs(MacNativeWindow info, out List<string> classNNs)
+		{
+			classNNs = null;
+			using var window = ResolveWindowElement(info, "enumerate window controls", prompt: false);
+
+			if (window == null || !TryCollectControlCandidates(window.Element, out var elements, out var candidates))
+				return false;
+
+			try
+			{
+				classNNs = MacControlSelector.BuildClassNNs(candidates);
+				return classNNs.Count > 0;
+			}
+			finally
+			{
+				for (var i = 0; i < elements.Count; i++)
+					CFRelease(elements[i]);
+			}
+		}
+
+		private static bool TryCollectControlCandidates(nint windowElement, out List<nint> elements, out List<MacControlCandidate> candidates)
+		{
+			elements = new List<nint>();
+			candidates = new List<MacControlCandidate>();
+
+			if (windowElement == 0)
+				return false;
+
 			var queue = new Queue<(nint Element, int Depth)>();
 			queue.Enqueue((CFRetain(windowElement), 0));
 
@@ -953,6 +1112,28 @@ namespace Keysharp.Internals.Window.MacOS
 					}
 				}
 
+				return elements.Count > 0;
+			}
+			finally
+			{
+				while (queue.Count > 0)
+					CFRelease(queue.Dequeue().Element);
+			}
+		}
+
+		private static bool TryFindControlElement(nint windowElement, string selector, out nint controlElement, out MacControlCandidate matchedCandidate)
+		{
+			controlElement = 0;
+			matchedCandidate = default;
+
+			if (windowElement == 0 || string.IsNullOrWhiteSpace(selector))
+				return false;
+
+			if (!TryCollectControlCandidates(windowElement, out var elements, out var candidates))
+				return false;
+
+			try
+			{
 				var matchIndex = MacControlSelector.FindMatchIndex(candidates, selector);
 
 				if (matchIndex < 0)
@@ -965,9 +1146,6 @@ namespace Keysharp.Internals.Window.MacOS
 			}
 			finally
 			{
-				while (queue.Count > 0)
-					CFRelease(queue.Dequeue().Element);
-
 				for (var i = 0; i < elements.Count; i++)
 					CFRelease(elements[i]);
 			}
