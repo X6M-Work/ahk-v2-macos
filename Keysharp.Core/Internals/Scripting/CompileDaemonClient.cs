@@ -30,7 +30,7 @@ internal static class CompileDaemonClient
 	// Wait for a recorded owner's pipe between requests, without delaying local compilation when no daemon exists.
 	internal static DaemonReply TryCompile(ScriptCompileRequest request, int connectTimeoutMs = 50) =>
 		CompileDaemonOwner.Read() is { } owner && installedEndpoint.Value is { } endpoint && owner.Pipe == endpoint.PipeName
-			? TryCompile(request, endpoint, connectTimeoutMs) : DaemonReply.Unavailable;
+			? TryCompile(request, endpoint, owner.IsAlive() ? Math.Max(connectTimeoutMs, 2000) : connectTimeoutMs) : DaemonReply.Unavailable;
 
 	internal static DaemonReply TryCompile(ScriptCompileRequest request, CompileDaemonEndpoint endpoint,
 		int connectTimeoutMs = 0, string workingDirectory = null)
@@ -40,28 +40,49 @@ internal static class CompileDaemonClient
 #if WINDOWS
 		if (CompileDaemonSecurity.IsElevated && Path.GetFileNameWithoutExtension(Environment.ProcessPath).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
 			return DaemonReply.Unavailable;
-		using var client = new NamedPipeClientStream(".", endpoint.PipeName, PipeDirection.InOut,
-			PipeOptions.None, TokenImpersonationLevel.Identification);
-#else
-		using var client = new NamedPipeClientStream(".", endpoint.PipeName, PipeDirection.InOut, PipeOptions.CurrentUserOnly);
 #endif
-		try
+		var deadlineMs = Math.Max(0, connectTimeoutMs);
+		var sw = deadlineMs > 0 ? Stopwatch.StartNew() : null;
+		NamedPipeClientStream client = null;
+
+		while (true)
 		{
-			client.Connect(connectTimeoutMs);
 #if WINDOWS
-			if (!CompileDaemonSecurity.IsExpectedServer(client, endpoint.PipeName, endpoint.ImagePath, endpoint.LauncherAssembly, endpoint.AlternateImagePath))
-				return DaemonReply.Unavailable;
+			client = new NamedPipeClientStream(".", endpoint.PipeName, PipeDirection.InOut,
+				PipeOptions.None, TokenImpersonationLevel.Identification);
+#else
+			client = new NamedPipeClientStream(".", endpoint.PipeName, PipeDirection.InOut, PipeOptions.CurrentUserOnly);
 #endif
-		}
-		catch (Exception ex) when (ex is TimeoutException or IOException)
-		{
-			return null;
-		}
-		catch (Exception ex) when (ex is UnauthorizedAccessException or Win32Exception or ArgumentException or InvalidOperationException or EntryPointNotFoundException or DllNotFoundException)
-		{
-			return DaemonReply.Unavailable;
+			try
+			{
+				var remaining = sw == null ? 0 : Math.Max(1, deadlineMs - (int)sw.ElapsedMilliseconds);
+				client.Connect(remaining);
+#if WINDOWS
+				if (!CompileDaemonSecurity.IsExpectedServer(client, endpoint.PipeName, endpoint.ImagePath, endpoint.LauncherAssembly, endpoint.AlternateImagePath))
+				{
+					client.Dispose();
+					return DaemonReply.Unavailable;
+				}
+#endif
+				break;
+			}
+			catch (Exception ex) when (ex is TimeoutException or IOException)
+			{
+				client.Dispose();
+				client = null;
+				if (sw == null || sw.ElapsedMilliseconds >= deadlineMs)
+					return null;
+
+				Thread.Sleep(15);
+			}
+			catch (Exception ex) when (ex is UnauthorizedAccessException or Win32Exception or ArgumentException or InvalidOperationException or EntryPointNotFoundException or DllNotFoundException)
+			{
+				client.Dispose();
+				return DaemonReply.Unavailable;
+			}
 		}
 
+		using var ownedClient = client;
 		using var serialized = new MemoryStream();
 		using var writer = new BinaryWriter(serialized, Encoding.UTF8, leaveOpen: true);
 		using var reader = new BinaryReader(client, Encoding.UTF8, leaveOpen: true);
@@ -226,6 +247,22 @@ internal sealed record CompileDaemonOwner(int Pid, string ProcName, long StartSt
 		}
 		catch { }
 		return null;
+	}
+
+	internal bool IsAlive()
+	{
+		if (Pid <= 0)
+			return false;
+
+		try
+		{
+			using var process = Process.GetProcessById(Pid);
+			return !process.HasExited;
+		}
+		catch
+		{
+			return false;
+		}
 	}
 
 	internal static bool IsOwner(string pipeName, int pid, long startStamp) =>

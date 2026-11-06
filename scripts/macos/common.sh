@@ -41,3 +41,30 @@ resolve_keysharp() {
   done
   return 1
 }
+
+resolve_keyview() {
+  KEYVIEW_PATH=''
+  if [[ -n "${KEYVIEW_EXECUTABLE:-}" ]]; then
+    if [[ -f "${KEYVIEW_EXECUTABLE}" && -x "${KEYVIEW_EXECUTABLE}" ]]; then
+      KEYVIEW_PATH="${KEYVIEW_EXECUTABLE}"
+      return 0
+    fi
+    return 1
+  fi
+  local rid config base candidate
+  rid="$(host_rid)" || return 1
+  local bases=("${KEYSHARP_ROOT}/dist/publish/${rid}/Keyview")
+  for config in Release Debug; do
+    bases+=("${KEYSHARP_ROOT}/bin/${config}/net10.0/${rid}" "${KEYSHARP_ROOT}/bin/${config}/net10.0")
+  done
+  bases+=("${KEYSHARP_ROOT}" "${HOME}/Applications" /Applications)
+  for base in "${bases[@]}"; do
+    for candidate in "${base}/Keyview.app/Contents/MacOS/Keyview" "${base}/Keyview"; do
+      if [[ -f "${candidate}" && -x "${candidate}" ]]; then
+        KEYVIEW_PATH="${candidate}"
+        return 0
+      fi
+    done
+  done
+  return 1
+}

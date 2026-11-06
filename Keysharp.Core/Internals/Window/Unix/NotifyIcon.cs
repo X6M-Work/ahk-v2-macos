@@ -113,10 +113,20 @@ namespace Keysharp.Internals.Window.Unix
 				ContentImage = icon
 			};
 
-			if (notification.RequiresTrayIndicator)
-				notification.Show(indicator);
-			else
-				notification.Show();
+			try
+			{
+				if (notification.RequiresTrayIndicator)
+					notification.Show(indicator);
+				else
+					notification.Show();
+			}
+			catch (Exception ex)
+			{
+#if OSX
+				_ = Ks.TryShowMacNotification(text, title);
+#endif
+				_ = Keysharp.Diagnostics.Debug.WriteLine(ex);
+			}
 		}
 
 		private void Indicator_Activated(object sender, EventArgs e)

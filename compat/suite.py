@@ -12,6 +12,14 @@ CORPORA = ("corpus", "phase15-symbols", "phase15-map-conversions", "phase15-enum
            "phase15-runtime", "phase15-architecture")
 
 
+def is_platform_excluded_report(report):
+    cases = report.get("cases") or []
+    return bool(cases) and all(
+        case.get("status") == "unsupported" and case.get("reasons") == ["platform_not_supported"]
+        for case in cases
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run all local phase 1–5 conformance gates sequentially.")
     parser.add_argument("--engine", required=True, choices=("ahk", "keysharp"))
@@ -39,12 +47,19 @@ def main():
         try:
             report = run_corpus(directory / name, args.engine, executable, args.timeout,
                                 host=args.dotnet, engine_version=args.engine_version)
-            if args.baseline_dir:
+            platform_excluded = is_platform_excluded_report(report)
+            if args.baseline_dir and not platform_excluded:
                 baseline = json.loads((args.baseline_dir / (name + ".json")).read_text(encoding="utf-8"))
                 report["comparison"] = compare_reports(baseline, report)
             write_json(args.output_dir / (name + ".json"), report)
-            success = all(case["status"] == "pass" for case in report["cases"]) and report.get("comparison", {"equal": True})["equal"]
-            summary.append({"corpus": name, "passed": success, "results": report["summary"]})
+            success = platform_excluded or (
+                all(case["status"] == "pass" for case in report["cases"])
+                and report.get("comparison", {"equal": True})["equal"]
+            )
+            gate = {"corpus": name, "passed": success, "results": report["summary"]}
+            if platform_excluded:
+                gate["skipped_platform"] = True
+            summary.append(gate)
             print(f"{name}: {report['summary']}", flush=True)
         except (OSError, ValueError, KeyError, TypeError) as error:
             summary.append({"corpus": name, "passed": False, "error": str(error)})

@@ -2,13 +2,24 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-usage() { printf '%s\n' 'Usage: ahk run SCRIPT [ARGS...] | ahk daemon SCRIPT [ARGS...] | ahk validate SCRIPT [ARGS...] | ahk doctor'; }
+usage() { printf '%s\n' 'Usage: ahk run SCRIPT [ARGS...] | ahk daemon SCRIPT [ARGS...] | ahk validate SCRIPT [ARGS...] | ahk keyview [SCRIPT] | ahk doctor'; }
 (($#)) || { usage >&2; exit 2; }
 action="$1"
 shift
 case "${action}" in
   -h|--help|help) usage; exit 0 ;;
   doctor) (($# == 0)) || die 'doctor takes no arguments.'; exec bash "${MACOS_SCRIPTS_DIR}/doctor.sh" ;;
+  keyview)
+    resolve_keyview || die 'Keyview executable not found. Build with --with-keyview on macOS or set KEYVIEW_EXECUTABLE to its executable path.'
+    if (($# > 0)); then
+      [[ -f "$1" && -r "$1" ]] || die "Script is missing or unreadable: $1"
+      script="$1"
+      shift
+      case "${script}" in /*) ;; *) script="${PWD}/${script}" ;; esac
+      exec "${KEYVIEW_PATH}" "${script}" "$@"
+    fi
+    exec "${KEYVIEW_PATH}"
+    ;;
   run|daemon|background|validate) ;;
   *) usage >&2; exit 2 ;;
 esac

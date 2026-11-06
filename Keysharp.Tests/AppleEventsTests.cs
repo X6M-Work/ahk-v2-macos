@@ -397,6 +397,21 @@ public class AppleEventsTests : TestRunner
 		}
 	}
 
+	[Test]
+	public void MacNotificationArgsPreserveSpecialCharactersAndDefaultTitle()
+	{
+		var args = Ks.BuildMacNotificationArgs("Line with \"quotes\" and \\backslash", "Custom Title", "Sub", "Ping");
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(args, Has.Count.EqualTo(4));
+			Assert.That(args[0], Is.EqualTo("Line with \"quotes\" and \\backslash"));
+			Assert.That(args[1], Is.EqualTo("Custom Title"));
+			Assert.That(args[2], Is.EqualTo("Sub"));
+			Assert.That(args[3], Is.EqualTo("Ping"));
+			Assert.That(Ks.BuildMacNotificationArgs("Body")[1], Is.Not.Empty);
+		}
+	}
+
 #if OSX
 	[Test]
 	public void IndependentTargets()

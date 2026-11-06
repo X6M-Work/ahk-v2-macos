@@ -233,7 +233,26 @@ namespace Keysharp.Internals.Input.MacOS
 		internal static partial bool CFMachPortIsValid(nint port);
 
 		[LibraryImport(CoreFoundation)]
+		internal static partial nint CFRetain(nint cf);
+
+		[LibraryImport(CoreFoundation)]
 		internal static partial void CFRelease(nint cf);
+
+		[LibraryImport("/usr/lib/libobjc.dylib", StringMarshalling = StringMarshalling.Utf8)]
+		private static partial nint sel_registerName(string name);
+
+		[LibraryImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
+		private static partial nint objc_msgSend_nint(nint receiver, nint selector);
+
+		private static readonly nint selCGEvent = sel_registerName("CGEvent");
+
+		internal const int NX_KEYTYPE_SOUND_UP = 0;
+		internal const int NX_KEYTYPE_SOUND_DOWN = 1;
+		internal const int NX_KEYTYPE_MUTE = 7;
+		internal const int NX_KEYTYPE_PLAY = 16;
+		internal const int NX_KEYTYPE_NEXT = 17;
+		internal const int NX_KEYTYPE_PREVIOUS = 18;
+		internal const int NX_KEYTYPE_FAST = 19;
 
 		[LibraryImport(CoreFoundation, StringMarshalling = StringMarshalling.Utf8)]
 		private static partial nint CFStringCreateWithCString(nint allocator, string cStr, uint encoding);
@@ -410,18 +429,84 @@ namespace Keysharp.Internals.Input.MacOS
 			return flags;
 		}
 
+		internal static bool TryGetSystemMediaKeyType(uint vk, out int nxKeyType)
+		{
+			nxKeyType = vk switch
+			{
+				VK_VOLUME_UP => NX_KEYTYPE_SOUND_UP,
+				VK_VOLUME_DOWN => NX_KEYTYPE_SOUND_DOWN,
+				VK_VOLUME_MUTE => NX_KEYTYPE_MUTE,
+				VK_MEDIA_PLAY_PAUSE => NX_KEYTYPE_PLAY,
+				VK_MEDIA_NEXT_TRACK => NX_KEYTYPE_NEXT,
+				VK_MEDIA_PREV_TRACK => NX_KEYTYPE_PREVIOUS,
+				VK_MEDIA_STOP => NX_KEYTYPE_FAST,
+				_ => -1
+			};
+			return nxKeyType >= 0;
+		}
+
+		internal static nint FormatSystemMediaKeyData1(int nxKeyType, bool keyDown, bool autoRepeat = false)
+			=> (nint)(((nxKeyType & 0xFFFF) << 16) | ((keyDown ? 0x0A : 0x0B) << 8) | (autoRepeat ? 1 : 0));
+
+		private static nint TryCreateSystemDefinedMediaCGEvent(int nxKeyType, bool keyDown, ulong flags, bool autoRepeat)
+		{
+			try
+			{
+				using var pool = new MonoMac.Foundation.NSAutoreleasePool();
+				var data1 = FormatSystemMediaKeyData1(nxKeyType, keyDown, autoRepeat);
+				var mask = (MonoMac.AppKit.NSEventModifierMask)((ulong)(keyDown ? 0xA00 : 0xB00) | (flags & 0xFFFF0000UL));
+				var nsEvent = MonoMac.AppKit.NSEvent.OtherEvent(
+					MonoMac.AppKit.NSEventType.SystemDefined,
+					System.Drawing.PointF.Empty,
+					mask,
+					0,
+					0,
+					null,
+					8,
+					data1,
+					-1);
+
+				if (nsEvent != null && nsEvent.Handle != nint.Zero && selCGEvent != nint.Zero)
+				{
+					var cgEvent = objc_msgSend_nint(nsEvent.Handle, selCGEvent);
+					if (cgEvent != nint.Zero)
+						return CFRetain(cgEvent);
+				}
+			}
+			catch
+			{
+			}
+
+			return nint.Zero;
+		}
+
 		internal static nint CreateKeyboardEvent(uint vk, bool keyDown, long extraInfo, uint modifiersLR,
 			bool autoRepeat = false, bool? capsLockOn = null)
 		{
-			if (!KeyCodes.TryMapVkToMacCode(vk, out var keyCode))
-				return nint.Zero;
+			var flags = FlagsForModifiers(modifiersLR, capsLockOn);
+			nint ev = nint.Zero;
+			var isMediaKey = TryGetSystemMediaKeyType(vk, out var nxKeyType);
 
-			var ev = CGEventCreateKeyboardEvent(SharedEventSource(), (ushort)keyCode, keyDown);
+			if (isMediaKey)
+				ev = TryCreateSystemDefinedMediaCGEvent(nxKeyType, keyDown, flags, autoRepeat);
+
+			if (ev == nint.Zero)
+			{
+				if (!KeyCodes.TryMapVkToMacCode(vk, out var keyCode))
+				{
+					if (!isMediaKey)
+						return nint.Zero;
+
+					keyCode = 0;
+				}
+
+				ev = CGEventCreateKeyboardEvent(SharedEventSource(), (ushort)keyCode, keyDown);
+			}
 
 			if (ev != nint.Zero)
 			{
-				CGEventSetFlags(ev, FlagsForModifiers(modifiersLR, capsLockOn));
-				if (keyDown && autoRepeat)
+				CGEventSetFlags(ev, flags);
+				if (keyDown && autoRepeat && !isMediaKey)
 					CGEventSetIntegerValueField(ev, kCGKeyboardEventAutorepeat, 1);
 				var kind = keyDown ? InjectedEventKind.None : InjectedEventKind.KeyUp;
 				CGEventSetIntegerValueField(ev, kCGEventSourceUserData, EncodeInjectedExtraInfo(extraInfo, kind));

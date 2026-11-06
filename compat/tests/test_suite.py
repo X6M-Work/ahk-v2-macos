@@ -19,3 +19,20 @@ class SuiteSafetyTests(unittest.TestCase):
             self.assertIn(b"reference and output directories must differ", result.stderr)
             self.assertEqual(reference.read_bytes(), b"reference")
             self.assertEqual(list(root.iterdir()), [reference])
+
+    def test_platform_excluded_report_detection(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from suite import is_platform_excluded_report
+
+        self.assertTrue(is_platform_excluded_report({
+            "cases": [{"id": "win_only", "status": "unsupported", "reasons": ["platform_not_supported"]}]
+        }))
+        self.assertFalse(is_platform_excluded_report({
+            "cases": [{"id": "failed", "status": "fail", "reasons": ["nonzero_exit"]}]
+        }))
+        self.assertFalse(is_platform_excluded_report({
+            "cases": [
+                {"id": "win_only", "status": "unsupported", "reasons": ["platform_not_supported"]},
+                {"id": "other", "status": "pass", "reasons": []},
+            ]
+        }))

@@ -189,6 +189,45 @@ public class MacInputTests
 	}
 
 	[Test, Category("Input")]
+	public void SystemMediaKeys()
+	{
+		Assert.IsTrue(MacNativeInput.TryGetSystemMediaKeyType(VK_VOLUME_UP, out var volUp));
+		Assert.AreEqual(MacNativeInput.NX_KEYTYPE_SOUND_UP, volUp);
+		Assert.IsTrue(MacNativeInput.TryGetSystemMediaKeyType(VK_VOLUME_DOWN, out var volDown));
+		Assert.AreEqual(MacNativeInput.NX_KEYTYPE_SOUND_DOWN, volDown);
+		Assert.IsTrue(MacNativeInput.TryGetSystemMediaKeyType(VK_VOLUME_MUTE, out var mute));
+		Assert.AreEqual(MacNativeInput.NX_KEYTYPE_MUTE, mute);
+		Assert.IsTrue(MacNativeInput.TryGetSystemMediaKeyType(VK_MEDIA_PLAY_PAUSE, out var play));
+		Assert.AreEqual(MacNativeInput.NX_KEYTYPE_PLAY, play);
+		Assert.IsTrue(MacNativeInput.TryGetSystemMediaKeyType(VK_MEDIA_NEXT_TRACK, out var next));
+		Assert.AreEqual(MacNativeInput.NX_KEYTYPE_NEXT, next);
+		Assert.IsTrue(MacNativeInput.TryGetSystemMediaKeyType(VK_MEDIA_PREV_TRACK, out var prev));
+		Assert.AreEqual(MacNativeInput.NX_KEYTYPE_PREVIOUS, prev);
+		Assert.IsTrue(MacNativeInput.TryGetSystemMediaKeyType(VK_MEDIA_STOP, out var stop));
+		Assert.AreEqual(MacNativeInput.NX_KEYTYPE_FAST, stop);
+		Assert.IsFalse(MacNativeInput.TryGetSystemMediaKeyType((uint)'A', out _));
+
+		Assert.AreEqual((nint)((16 << 16) | (0x0A << 8)), MacNativeInput.FormatSystemMediaKeyData1(16, true, false));
+		Assert.AreEqual((nint)((16 << 16) | (0x0B << 8)), MacNativeInput.FormatSystemMediaKeyData1(16, false, false));
+		Assert.AreEqual((nint)((16 << 16) | (0x0A << 8) | 1), MacNativeInput.FormatSystemMediaKeyData1(16, true, true));
+
+		var down = MacNativeInput.CreateKeyboardEvent(VK_MEDIA_PLAY_PAUSE, true, KeyIgnore, 0);
+		var up = MacNativeInput.CreateKeyboardEvent(VK_MEDIA_PLAY_PAUSE, false, KeyIgnore, 0);
+		try
+		{
+			Assert.AreNotEqual(nint.Zero, down);
+			Assert.AreNotEqual(nint.Zero, up);
+			AssertMetadata(down, KeyIgnore, MacNativeInput.InjectedEventKind.None);
+			AssertMetadata(up, KeyIgnore, MacNativeInput.InjectedEventKind.KeyUp);
+		}
+		finally
+		{
+			if (down != nint.Zero) MacNativeInput.CFRelease(down);
+			if (up != nint.Zero) MacNativeInput.CFRelease(up);
+		}
+	}
+
+	[Test, Category("Input")]
 	public void SidedModifiers()
 	{
 		var state = new MacKeyboardState();

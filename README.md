@@ -22,7 +22,7 @@ bash scripts/macos/ahk doctor
 bash scripts/macos/ahk run examples/macos/hello.ahk
 ```
 
-The launcher also supports `validate your-script.ahk` and `daemon your-script.ahk` for detached background execution. Input automation requires macOS Accessibility and Input Monitoring permissions; screen capture requires Screen Recording permission. More examples: [hotkeys & text expansion](examples/macos/mac-shortcuts.ahk), [window management](examples/macos/window-management.ahk), [Apple Events, AppleScript & JXA](examples/macos/apple-events.ahk), [pixel color picker](examples/macos/color-picker.ahk), [timers](examples/macos/timer.ahk), and [GUI](examples/macos/gui.ahk).
+The launcher also supports `validate your-script.ahk`, `daemon your-script.ahk` for detached background execution, and `keyview [your-script.ahk]` to open the live C# transpiler/editor (built with `--with-keyview`). Input automation requires macOS Accessibility and Input Monitoring permissions; screen capture requires Screen Recording permission. More examples: [hotkeys & text expansion](examples/macos/mac-shortcuts.ahk), [window management](examples/macos/window-management.ahk), [Apple Events, AppleScript & JXA](examples/macos/apple-events.ahk), [pixel color picker](examples/macos/color-picker.ahk), [timers](examples/macos/timer.ahk), and [GUI](examples/macos/gui.ahk).
 
 ## What is included
 
@@ -33,7 +33,7 @@ The launcher also supports `validate your-script.ahk` and `daemon your-script.ah
 - GitHub Actions for native Apple Silicon/Intel builds, selected upstream tests, and compatibility reports.
 - A manual packaging workflow producing unsigned `.app` bundles inside `.pkg` and `.dmg` artifacts, with SHA-256 checksums.
 
-The [native CI run for `68dd8bd4`](https://github.com/X6M-Work/ahk-v2-macos/actions/runs/40722552703) built and executed on Apple Silicon and Intel: each Mac passed 931 NUnit tests, skipped 20, and matched all 14 initial differential cases. Desktop interaction and permission prompts still require manual validation.
+Native CI builds and executes on both Apple Silicon (`osx-arm64`) and Intel (`osx-x64`): each Mac passes 987 NUnit tests (21 skipped, 1,008 total), matches all 61 cross-platform differential, runtime, process, self-Reload, and Phase 15 deterministic reference-counting cases against official AutoHotkey v2.0.31, and passes all 4 native macOS C ABI probes. Desktop permission prompts still require manual validation.
 
 The [validation record](docs/validation.md) documents Windows comparisons, native CI execution, and test conventions.
 

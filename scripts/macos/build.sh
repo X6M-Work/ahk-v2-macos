@@ -5,6 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 configuration=Debug
 rid=''
 action=build
+with_keyview=false
 eto_root="${EtoRoot:-${KEYSHARP_ROOT}/.deps/Eto}"
 while (($#)); do
   case "$1" in
@@ -12,7 +13,8 @@ while (($#)); do
     --rid) (($# >= 2)) || die '--rid requires osx-arm64 or osx-x64.'; rid="$2"; shift 2 ;;
     --eto-root) (($# >= 2)) || die '--eto-root requires a path.'; eto_root="$2"; shift 2 ;;
     --publish) action=publish; shift ;;
-    -h|--help) printf '%s\n' 'Usage: build.sh [--configuration Debug|Release] [--rid osx-arm64|osx-x64] [--publish] [--eto-root PATH]'; exit 0 ;;
+    --with-keyview) with_keyview=true; shift ;;
+    -h|--help) printf '%s\n' 'Usage: build.sh [--configuration Debug|Release] [--rid osx-arm64|osx-x64] [--publish] [--with-keyview] [--eto-root PATH]'; exit 0 ;;
     *) die "Unknown argument: $1" ;;
   esac
 done
@@ -31,5 +33,13 @@ eto_root="$(cd "${eto_root}" && pwd -P)"
 args=("${action}" "${KEYSHARP_ROOT}/Keysharp/Keysharp.csproj" --configuration "${configuration}" --runtime "${rid}" "-p:EtoRoot=${eto_root}" -p:PublishReadyToRun=false --nologo)
 if [[ "${action}" == publish ]]; then
   args+=(--self-contained false --output "${KEYSHARP_ROOT}/dist/publish/${rid}/Keysharp")
+fi
+if [[ "${with_keyview}" == true ]]; then
+  dotnet "${args[@]}"
+  kv_args=("${action}" "${KEYSHARP_ROOT}/Keyview/Keyview.csproj" --configuration "${configuration}" --runtime "${rid}" "-p:EtoRoot=${eto_root}" -p:PublishReadyToRun=false --nologo)
+  if [[ "${action}" == publish ]]; then
+    kv_args+=(--self-contained false --output "${KEYSHARP_ROOT}/dist/publish/${rid}/Keyview")
+  fi
+  exec dotnet "${kv_args[@]}"
 fi
 exec dotnet "${args[@]}"
