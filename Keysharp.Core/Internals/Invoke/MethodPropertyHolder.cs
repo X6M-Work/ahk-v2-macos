@@ -20,16 +20,20 @@ namespace Keysharp.Internals.Invoke
 			var initializes = AhkIdentifierComparer.Instance.Equals(mi?.Name, "__Init") || AhkIdentifierComparer.Instance.Equals(mi?.Name, "__New");
 			var deletes = AhkIdentifierComparer.Instance.Equals(mi?.Name, "__Delete");
 			var constructs = mi?.DeclaringType == typeof(Class) && mi.Name == "Call"
-				|| mi?.DeclaringType == typeof(KeysharpObject) && mi.Name == "staticCall";
+				|| mi?.DeclaringType == typeof(KeysharpObject) && mi.Name == "staticCall"
+				|| mi?.DeclaringType == typeof(KeysharpFunc) && mi.Name == "staticCall";
 			var preservesContainer = mi?.DeclaringType == typeof(Keysharp.Builtins.Array) && mi.Name is
 				"__New" or "__Enum" or "Clone" or "Get" or "Has" or "Contains" or "IndexOf" or "Delete" or "Pop" or "Push" or "InsertAt"
 				or "Remove" or "RemoveAt" or "get_Length" or "set_Length" or "get_Capacity" or "set_Capacity" or "get_Item" or "set_Item"
 				|| mi?.DeclaringType == typeof(Map) && mi.Name is "__New" or "__Enum" or "Clone" or "Get" or "Has" or "Set" or "Delete" or "Clear"
 				or "get_Count" or "get_Capacity" or "set_Capacity" or "get_CaseSense" or "set_CaseSense" or "get_Item" or "set_Item"
 				|| mi?.DeclaringType == typeof(KeysharpObject) && mi.Name is "Clone" or "DefineProp" or "DeleteProp" or "GetOwnPropDesc" or "HasOwnProp" or "OwnProps"
-				|| mi?.DeclaringType == typeof(Any) && mi.Name is "HasBase" or "HasMethod" or "HasProp"
+				|| mi?.DeclaringType == typeof(Any) && mi.Name is "GetMethod" or "HasBase" or "HasMethod" or "HasProp"
 				|| mi?.DeclaringType == typeof(Objects) && mi.Name is "DefineProp" or "ObjHasOwnProp" or "ObjOwnPropCount" or "ObjOwnProps"
-				|| mi?.DeclaringType == typeof(Enumerator) && mi.Name is "Call" or "IsByRef";
+				|| mi?.DeclaringType == typeof(Enumerator) && mi.Name is "Call" or "IsByRef"
+				|| (mi?.DeclaringType == typeof(KeysharpFunc) || mi?.DeclaringType == typeof(BoundFunc)) && mi.Name is "Bind" or "Call" or "IsByRef" or "IsOptional"
+					or "get_Params" or "get_Name" or "get_MinParams" or "get_MaxParams" or "get_IsBuiltIn" or "get_IsVariadic"
+				|| mi?.DeclaringType == typeof(Functions) && mi.Name is "ObjBindMethod" or "GetMethod" or "HasMethod" or "HasProp";
 			var preservesArguments = IsScript || constructs || preservesContainer || mi?.DeclaringType == typeof(Keysharp.Builtins.Types);
 			object ReferencedInvoke(object instance, object[] args)
 			{

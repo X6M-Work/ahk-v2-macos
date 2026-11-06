@@ -237,6 +237,69 @@ namespace System
 				return -1;
 			}
 		}
+
+		/// <summary>
+		/// Runs a macOS Shortcut by name via <c>/usr/bin/shortcuts run</c>.
+		/// </summary>
+		/// <param name="shortcutName">The name of the Shortcut to execute.</param>
+		/// <param name="output">Standard output from the shortcut when wait is true, else empty.</param>
+		/// <param name="error">Standard error from the shortcut when wait is true, else empty.</param>
+		/// <param name="input">Optional text piped to the shortcut's standard input.</param>
+		/// <param name="wait">Whether to wait for completion before returning. Default: true.</param>
+		/// <returns>The process exit code (0 on success, -1 on launch/runtime failure).</returns>
+		internal static int RunShortcut(this string shortcutName, out string output, out string error, string input = null, bool wait = true)
+		{
+			output = DefaultObject;
+			error = DefaultObject;
+
+			try
+			{
+				var hasInput = !string.IsNullOrEmpty(input);
+				using var process = new Process()
+				{
+					StartInfo = new ProcessStartInfo
+					{
+						FileName = "/usr/bin/shortcuts",
+						RedirectStandardInput = hasInput,
+						RedirectStandardOutput = true,
+						RedirectStandardError = true,
+						UseShellExecute = false,
+						CreateNoWindow = true,
+					}
+				};
+
+				foreach (var arg in Keysharp.Builtins.Ks.BuildMacShortcutArgs(shortcutName, hasInput))
+					process.StartInfo.ArgumentList.Add(arg);
+
+				_ = process.Start();
+
+				if (hasInput)
+				{
+					process.StandardInput.Write(input);
+					process.StandardInput.Close();
+				}
+
+				if (!wait)
+					return 0;
+
+				var stdoutTask = process.StandardOutput.ReadToEndAsync();
+				var stderrTask = process.StandardError.ReadToEndAsync();
+				process.WaitForExit();
+				output = stdoutTask.GetAwaiter().GetResult().Trim(CrLf);
+				error = stderrTask.GetAwaiter().GetResult().Trim(CrLf);
+
+				if (process.ExitCode != 0 && !error.IsNullOrEmpty())
+					Diagnostics.Debug.WriteLine($"shortcuts failed with exit code {process.ExitCode}: {error}");
+
+				return process.ExitCode;
+			}
+			catch (Exception ex)
+			{
+				error = ex.Message;
+				Diagnostics.Debug.WriteLine($"shortcuts launch failed: {ex.Message}");
+				return -1;
+			}
+		}
 #endif
 
 		/// <summary>

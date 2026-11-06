@@ -203,4 +203,42 @@ public class ReferenceLifetimeTests : TestRunner
 		}
 		Assert.That((probe.Deletes, probe.Disposes), Is.EqualTo((1, 1)));
 	}
+
+	[Test]
+	public void BoundFuncRetainsAndDeterministicallyReleasesBoundTargets()
+	{
+		var receiver = new Probe();
+		var arg = new Probe();
+		object slot = null;
+
+		using (Lifetime.BeginExpression())
+		{
+			var bf = (BoundFunc)Functions.ObjBindMethod(receiver, "ToString", arg);
+			Lifetime.Replace(ref slot, bf);
+		}
+
+		Assert.That((receiver.Deletes, arg.Deletes), Is.EqualTo((0, 0)));
+		Lifetime.Replace(ref slot, null);
+		Assert.That((receiver.Deletes, arg.Deletes), Is.EqualTo((1, 1)));
+	}
+
+	[Test]
+	public void BoundFuncEscapePropagatesToBoundTargets()
+	{
+		var receiver = new Probe();
+		var arg = new Probe();
+		BoundFunc bf;
+
+		using (Lifetime.BeginExpression())
+		{
+			bf = (BoundFunc)Functions.ObjBindMethod(receiver, "ToString", arg);
+			Lifetime.Escape(bf);
+		}
+
+		Assert.That(bf.ReferenceState, Is.EqualTo(ReferenceLifeState.Untracked));
+		Assert.That(receiver.ReferenceState, Is.EqualTo(ReferenceLifeState.Untracked));
+		Assert.That(arg.ReferenceState, Is.EqualTo(ReferenceLifeState.Untracked));
+		Assert.That((receiver.Deletes, arg.Deletes), Is.EqualTo((0, 0)));
+		GC.KeepAlive(bf);
+	}
 }

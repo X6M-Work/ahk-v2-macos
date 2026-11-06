@@ -851,7 +851,7 @@ namespace Keysharp.Builtins
 			sinkMethods ??= new(StringComparer.OrdinalIgnoreCase);
 
 			if (!sinkMethods.TryGetValue(name, out var method))
-				sinkMethods[name] = method = Functions.ObjBindMethod(eventObj, name) as KeysharpFunc;
+				sinkMethods[name] = method = (KeysharpFunc)Keysharp.Runtime.Lifetime.Escape(Functions.ObjBindMethod(eventObj, name));
 
 			return method;
 		}

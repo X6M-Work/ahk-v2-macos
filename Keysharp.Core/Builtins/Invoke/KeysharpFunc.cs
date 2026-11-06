@@ -30,11 +30,73 @@ namespace Keysharp.Builtins
 
 	public class BoundFunc : KeysharpFunc
 	{
+		private bool ownsBoundReferences;
 		internal object[] boundargs;
 		// Names Bind could not resolve to a slot, or null: a target whose signature is not known until the call
 		// (ObjBindMethod's fake MPH), and names a variadic target absorbs. Re-appended at call time by CreateArgs,
 		// so binding one behaves the same as supplying it at the call.
 		internal Ks.NamedArgs boundnamed;
+
+		internal override bool SupportsOwnedReferences => GetType() == typeof(BoundFunc);
+		internal override bool DisposesWhenCollected => ownsBoundReferences || base.DisposesWhenCollected;
+
+		internal static BoundFunc CreateOwned(MethodPropertyHolder m, object[] ba, object o = null)
+		{
+			var result = new BoundFunc(m, ba, o);
+			result.BeginReferenceConstruction();
+			result.CompleteReferenceConstruction();
+			return (BoundFunc)Keysharp.Runtime.Lifetime.Temporary(result);
+		}
+
+		internal override void BeginOwnedReferences()
+		{
+			ownsBoundReferences = true;
+			Keysharp.Runtime.Lifetime.Retain(Inst);
+			if (boundargs != null)
+				foreach (var arg in boundargs)
+					Keysharp.Runtime.Lifetime.Retain(arg);
+		}
+
+		internal override void ResetOwnedReferences() => ownsBoundReferences = false;
+
+		internal override void EscapeOwnedReferences()
+		{
+			if (!ownsBoundReferences)
+				return;
+
+			ownsBoundReferences = false;
+			Keysharp.Runtime.Lifetime.Escape(Inst);
+			if (boundargs != null)
+				foreach (var arg in boundargs)
+					Keysharp.Runtime.Lifetime.Escape(arg);
+		}
+
+		internal override void ReleaseOwnedReferences()
+		{
+			if (!ownsBoundReferences)
+				return;
+
+			ownsBoundReferences = false;
+			var previousArgs = boundargs;
+			var previousInst = Inst;
+			boundargs = System.Array.Empty<object>();
+			if (previousArgs != null)
+				foreach (var arg in previousArgs)
+					Keysharp.Runtime.Lifetime.Release(arg);
+			Keysharp.Runtime.Lifetime.Release(previousInst);
+		}
+
+		internal override List<Any> GetEnumerableMembersOrEmpty()
+		{
+			var list = base.GetEnumerableMembersOrEmpty();
+			if (Inst is Any instAny)
+				list.Add(instAny);
+			if (boundargs != null)
+				foreach (var arg in boundargs)
+					if (arg is Any argAny)
+						list.Add(argAny);
+			return list;
+		}
 
 		internal BoundFunc(MethodPropertyHolder m, object[] ba, object o = null)
 			: base(m, o)
@@ -163,16 +225,34 @@ namespace Keysharp.Builtins
 			{
 				System.Array.Copy(args, args.Length - leftCount, newbound, boundargs.Length, leftCount);
 			}
-			return new BoundFunc(mph, NamedArgBinder.Append(newbound, boundnamed, named), Inst);
+			return CreateOwned(mph, NamedArgBinder.Append(newbound, boundnamed, named), Inst);
 		}
 
 		/// <summary>
 		/// Calls the target function along with any bound arguments.
 		/// <returns>The return value of the bound function.</returns>
-		public override object Call(params object[] args) => mi == null ? Script.InvokeOrNull(Inst, mph.Name, CreateArgs(args)) : base.Call(CreateArgs(args));
+		public override object Call(params object[] args)
+		{
+			var owned = ownsBoundReferences;
+			if (owned) Keysharp.Runtime.Lifetime.Retain(this);
+			try
+			{
+				return mi == null ? Script.InvokeOrNull(Inst, mph.Name, CreateArgs(args)) : base.Call(CreateArgs(args));
+			}
+			finally { if (owned) Keysharp.Runtime.Lifetime.ReleaseScope(this); }
+		}
 
 		[PublicHiddenFromUser]
-		public override object CallInst(object inst, params object[] args) => mi == null ? Script.InvokeOrNull(Inst, mph.Name, CreateArgs(args, inst, true)) : base.Call(CreateArgs(args, inst, true));
+		public override object CallInst(object inst, params object[] args)
+		{
+			var owned = ownsBoundReferences;
+			if (owned) Keysharp.Runtime.Lifetime.Retain(this);
+			try
+			{
+				return mi == null ? Script.InvokeOrNull(Inst, mph.Name, CreateArgs(args, inst, true)) : base.Call(CreateArgs(args, inst, true));
+			}
+			finally { if (owned) Keysharp.Runtime.Lifetime.ReleaseScope(this); }
+		}
 
 		private object[] CreateArgs(object[] args, object firstArg = null, bool hasFirstArg = false)
 		{
@@ -478,7 +558,7 @@ namespace Keysharp.Builtins
 		// `f.Bind(Name: v)` names a parameter of f, not of Bind (whose only parameter is the variadic tail): the
 		// container rides through into the BoundFunc, which resolves it against f's signature.
 		public virtual KeysharpFunc Bind(params object[] args)
-		=> new BoundFunc(mph, args, Inst);
+		=> BoundFunc.CreateOwned(mph, args, Inst);
 
 		// The call's frame, module and compatibility version are the dispatcher's, which every path to a function shares.
 		public virtual object Call(params object[] obj) => mph.CallFunc(Inst, obj);

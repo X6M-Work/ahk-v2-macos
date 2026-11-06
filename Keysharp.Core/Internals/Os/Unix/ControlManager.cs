@@ -11,6 +11,37 @@ namespace Keysharp.Internals.Os.Unix
 	/// </summary>
 	internal class ControlManager : ControlManagerBase
 	{
+#if OSX
+		private static bool TryResolveForeignMacControlTarget(
+			object ctrl,
+			object title,
+			object text,
+			object excludeTitle,
+			object excludeText,
+			out Keysharp.Internals.Window.MacOS.MacNativeWindow nativeWin,
+			out string selector)
+		{
+			nativeWin = default;
+			selector = null;
+
+			if (ctrl is not string s || string.IsNullOrWhiteSpace(s))
+				return false;
+
+			if (WindowSearch.SearchWindow(title, text, excludeTitle, excludeText, false) is not WindowInfoBase win)
+				return false;
+
+			if (Control.FromHandle(win.Handle) != null)
+				return false;
+
+			if (!Keysharp.Internals.Window.MacOS.MacNativeWindows.TryGetWindowInfo(win.Handle, out nativeWin)
+				|| nativeWin.OwnerPid == Environment.ProcessId)
+				return false;
+
+			selector = s;
+			return true;
+		}
+#endif
+
 		/// <summary>Finds the script's own control, raising TargetError for a foreign control.</summary>
 		private static Control OwnControl(object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
@@ -176,6 +207,43 @@ namespace Keysharp.Internals.Os.Unix
 			}
 			else if (!posoverride)
 			{
+#if OSX
+				if (winx == int.MinValue && winy == int.MinValue
+					&& TryResolveForeignMacControlTarget(ctrlorpos, title, text, excludeTitle, excludeText, out var foreignWin, out var foreignSelector))
+				{
+					var vkIsWheelEarly = MouseUtils.IsWheelVK(vk);
+					if (d || u || vkIsWheelEarly)
+					{
+						_ = Errors.ValueErrorOccurred("macOS native ControlClick supports Left, Right, Middle, X1 and X2 clicks; D/U and wheel input are unsupported.");
+						return;
+					}
+
+					uint foreignButton;
+					if (vk == VK_LBUTTON) foreignButton = 1;
+					else if (vk == VK_RBUTTON) foreignButton = 2;
+					else if (vk == VK_MBUTTON) foreignButton = 3;
+					else if (vk == VK_XBUTTON1) foreignButton = 4;
+					else if (vk == VK_XBUTTON2) foreignButton = 5;
+					else
+					{
+						_ = Errors.ValueErrorOccurred($"Invalid macOS ControlClick button '{whichButton}'. Expected Left, Right, Middle, X1 or X2.");
+						return;
+					}
+
+					if (clickCount < 1)
+						return;
+
+					if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryClickControl(foreignWin, foreignSelector, foreignButton, clickCount, ctrlx, ctrly, out var foundForeign))
+					{
+						WindowInfoBase.DoControlDelay();
+						return;
+					}
+
+					if (!foundForeign)
+						_ = Errors.TargetErrorOccurred($"Could not get control {ctrlorpos}", title, text, excludeTitle, excludeText);
+					return;
+				}
+#endif
 				if (!WindowSearch.TrySearchControl(ctrlorpos, title, text, excludeTitle, excludeText, out item, out target))
 					return;
 
@@ -337,6 +405,22 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override void ControlFocus(object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryFocusControl(nativeWin, selector, out var foundControl))
+				{
+					WindowInfoBase.DoControlDelay();
+					return;
+				}
+
+				if (!foundControl)
+					_ = Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+				else
+					_ = WindowHelper.WindowOperationUnsupported("ControlFocus");
+				return;
+			}
+#endif
 			if (WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText) is not WindowInfoBase item)
 				return;
 
@@ -485,7 +569,40 @@ namespace Keysharp.Internals.Os.Unix
 		internal override long ControlGetStyle(object ctrl, object title, object text, object excludeTitle, object excludeText) => WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText) is WindowInfoBase item ? item.Style : 0L;
 
 		internal override string ControlGetText(object ctrl, object title, object text, object excludeTitle, object excludeText)
-			=> OwnControl(ctrl, title, text, excludeTitle, excludeText)?.Text ?? "";
+		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetControlText(nativeWin, selector, out var axText))
+					return axText;
+
+				return (string)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorString);
+			}
+#endif
+			return OwnControl(ctrl, title, text, excludeTitle, excludeText)?.Text ?? "";
+		}
+
+#if OSX
+		internal override void ControlSetText(string str, object ctrl, object title, object text, object excludeTitle, object excludeText)
+		{
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TrySetControlText(nativeWin, selector, str, out var foundControl))
+				{
+					WindowInfoBase.DoControlDelay();
+					return;
+				}
+
+				if (!foundControl)
+					_ = Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+				else
+					_ = Errors.OSErrorOccurred("", $"macOS Accessibility could not set text on control '{selector}'.");
+				return;
+			}
+
+			base.ControlSetText(str, ctrl, title, text, excludeTitle, excludeText);
+		}
+#endif
 
 		internal override void ControlHideDropDown(object ctrl, object title, object text, object excludeTitle, object excludeText) =>
 		DropdownHelper(false, ctrl, title, text, excludeTitle, excludeText);

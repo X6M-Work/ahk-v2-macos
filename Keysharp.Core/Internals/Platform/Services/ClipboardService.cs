@@ -279,6 +279,12 @@ namespace Keysharp.Internals
 		private static bool IsTextType(string type) =>
 			!string.IsNullOrEmpty(type) && TextMimes.Contains(type, StringComparer.OrdinalIgnoreCase);
 
+		private static bool IsHtmlType(string type) =>
+			!string.IsNullOrEmpty(type) && HtmlMimes.Contains(type, StringComparer.OrdinalIgnoreCase);
+
+		private static bool IsRtfType(string type) =>
+			!string.IsNullOrEmpty(type) && RtfMimes.Contains(type, StringComparer.OrdinalIgnoreCase);
+
 		private static bool IsClipboardProtocolType(string type) =>
 			!string.IsNullOrEmpty(type) && ClipboardProtocolTypes.Contains(type, StringComparer.OrdinalIgnoreCase);
 
@@ -519,7 +525,7 @@ namespace Keysharp.Internals
 
 			var html = clip.Html;
 
-			if (!string.IsNullOrEmpty(html) && !seen.Contains(DataFormats.Html))
+			if (!string.IsNullOrEmpty(html) && !seen.Any(IsHtmlType))
 				WriteEntry(bw, DataFormats.Html, Encoding.UTF8.GetBytes(html));
 
 			if (clip.ContainsImage)
@@ -604,9 +610,13 @@ namespace Keysharp.Internals
 					if (parsedUris.Length > 0)
 						clipboard.Uris = parsedUris;
 				}
-				else if (string.Equals(type, DataFormats.Html, StringComparison.OrdinalIgnoreCase))
+				else if (IsHtmlType(type))
 				{
 					clipboard.Html = Encoding.UTF8.GetString(payload);
+				}
+				else if (IsRtfType(type))
+				{
+					clipboard.SetString(Encoding.UTF8.GetString(payload), RtfMimes[0]);
 				}
 				else
 				{

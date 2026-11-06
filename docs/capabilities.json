@@ -16,11 +16,11 @@
                  {
                      "category":  "Core Language",
                      "feature":  "Operator overloads",
-                     "syntax":  "+(Right) => Expression / static +(Right) => Expression / ?() => Expression (inside a class or struct)",
+                     "syntax":  "+(Right) =\u003e Expression / static +(Right) =\u003e Expression / ?() =\u003e Expression (inside a class or struct)",
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Fixed instance and static symbolic operators for classes and structs, with separate unary/binary slots and inheritance. Equality pairs must be declared together in the same class and scope. ?() converts its result recursively; ++()/--() fall back to +1/-1. No dynamic replacement or right-operand fallback. Native numeric paths and short-circuit semantics are preserved.",
                      "tested-by":  "op-overloads.ahk; op-static-overloads.ahk; ParserTests.OperatorSignatures; ParserTests.OperatorEqualityPairs; ParserTests.StaticOperatorEqualityPairs"
                  },
@@ -100,19 +100,19 @@
                      "macos":  "full",
                      "notes":  "Keysharp-only descriptor for assembly metadata, Icon, GuiTheme, ConsoleApp, HookMutexName, Linux DesktopEntry and Files; multiple blocks merge independently by key in source order, later keys win, and Files: [] clears the list. DesktopEntry selects the Linux desktop file, Wayland app_id and Taskbar target unless DESKTOP_ENTRY overrides it. Asset paths are main-script-relative logical paths and artifact builds embed Files.",
                      "tested-by":  "directive-asminfo.ahk; directive-misc.ahk; file-fileinstall.ahk; DirectiveTests.AppErrors; DirectiveTests.AppData; IconInternals.LinuxDesktopEntryControlsWindowAndTaskbarIdentity; FileAndDirTests.FileInstallResources"
-                  },
-                  {
+                 },
+                 {
                      "category":  "Environment/System",
                      "feature":  "Managed key-state provider",
                      "syntax":  "Script.TheScript.RegisterKeyStateProvider(Provider)",
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Managed host API registering one active IKeyStateProvider per Script for GetKeyState/KeyWait keyboard and mouse-button queries, including #HotIf. Canonical L/P/T modes; false requests native fallback and unexpected managed exceptions raise OSError. Load through CLR/package interop; #Startup registers before capability checks and hotkey setup. Successful registration transfers ownership and returns an IDisposable handle; disposing it restores native queries and allows a fresh provider to register. Optional provider cleanup runs after active queries finish on removal or script shutdown. Stale handles cannot remove another registration or restore a shut-down script. Null, additional active and disposed-script registrations are rejected. Native capture, sending, controller queries and device enumeration are unchanged. Hardware drivers and macOS execution are unverified.",
                      "tested-by":  "KeyStateProviderTests.StateQueries; KeyStateProviderTests.RegistrationOwnership; KeyStateProviderTests.RegistrationRestoration; KeyStateProviderTests.ActiveQueryRetirement"
-                  },
-                  {
+                 },
+                 {
                      "category":  "Input/Automation",
                      "feature":  "Managed hook provider",
                      "syntax":  "Script.TheScript.RegisterHookProvider(Provider)",
@@ -122,8 +122,8 @@
                      "macos":  "partial",
                      "notes":  "Managed host API registering one IHookProvider once per Script on its startup thread before hooks or hotkeys are installed; #Startup supports early registration through CLR interop. Events enter existing hotkey and InputHook processing. Windows providers report physical input and native hooks observe injections; Linux/macOS providers supply their observed stream with injected flags, without starting native capture. Sending and its permissions remain native. Registration transfers ownership and returns an IDisposable handle restoring native capture. ResetState forgets state and invalidates descriptors after capture/session gaps. Optional IInputDeviceProvider supplies source-scoped metadata; absent it enumeration remains native. Driver and hardware delivery remain unverified. Interception remains Windows x64 only.",
                      "tested-by":  "HookProviderTests.Registration; HookProviderTests.DeviceState; HookProviderTests.NativeObservation; HookProviderTests.Timeout; HookProviderTests.ActiveRemoval; HookProviderTests.QueuedCaptureChange"
-                  },
-                  {
+                 },
+                 {
                      "category":  "Environment/System",
                      "feature":  "#ClipboardTimeout",
                      "syntax":  "",
@@ -137,11 +137,11 @@
                  {
                      "category":  "Environment/System",
                      "feature":  "#CSharp",
-                     "syntax":  "#CSharp ... #EndCSharp  |  #CSharp \"file.cs\"  |  #CSharp <Library>",
+                     "syntax":  "#CSharp ... #EndCSharp  |  #CSharp \"file.cs\"  |  #CSharp \u003cLibrary\u003e",
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Embeds C# at module or class scope; public module members support imports and dynamic lookup. Library files use the shared include directories and AhkLibPath, with a .cs suffix and underscore fallback in either compatibility mode.",
                      "tested-by":  "directive-csharp.ahk; directive-csharp-clr.ahk; directive-csharp-errors.ahk; directive-csharp-class.ahk; directive-csharp-modules.ahk; directive-csharp-module-scopes.ahk; directive-csharp-symbols.ahk; module-object-members.ahk; DirectiveTests.CSharpLibraryFile; DirectiveTests.CSharpFileScopes; ProviderDeploymentTests.InlineNamesFromPackageConstants"
                  },
@@ -261,7 +261,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Changes hotstring options or ending characters. Keysharp adds `I<n>` (0 through 100), setting a hotstring default that overrides #InputLevel. Invalid options raise ValueError.",
+                     "notes":  "Changes hotstring options or ending characters. Keysharp adds `I\u003cn\u003e` (0 through 100), setting a hotstring default that overrides #InputLevel. Invalid options raise ValueError.",
                      "tested-by":  "hotstring-directives.ahk; HotstringTests.HotstringInputLevel"
                  },
                  {
@@ -376,7 +376,7 @@
                  {
                      "category":  "Core Language",
                      "feature":  "Module.__Ref()",
-                     "syntax":  "ModuleObject.__Ref(Name) / &ModuleObject.Member",
+                     "syntax":  "ModuleObject.__Ref(Name) / \u0026ModuleObject.Member",
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
@@ -412,7 +412,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Keysharp-only. Resolves NuGet packages at compile time for Clr and inline C#. Supports managed, resource and native assets, but not package build hooks. Windows verified.",
                      "tested-by":  "PackageDirectiveTests.cs"
                  },
@@ -444,7 +444,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The #Requires directive displays an error and quits if a version requirement is not met. A version requirement also sets the compatibility mode of the definitions after it, and a module's first one outside functions and classes, in the file that declares the module, sets the module's.",
+                     "notes":  "The #Requires directive displays an error and quits if a version requirement is not met. A version requirement also sets the compatibility mode of the definitions after it, and a module\u0027s first one outside functions and classes, in the file that declares the module, sets the module\u0027s.",
                      "tested-by":  "module-compatibility-mode.ahk"
                  },
                  {
@@ -464,7 +464,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Keysharp-only module-level expression evaluated once after runtime and package setup, before capability checks, hotkey setup and auto-execute. Imported modules run in dependency order, then source order within each module, including included files. Results are ignored; an uncaught error prevents auto-execute. Normal expression continuations and calls to multiline functions are supported; auto-execute assignments have not run.",
                      "tested-by":  "directive-startup.ahk; DirectiveTests.StartupErrors; DirectiveTests.StartupFailure"
                  },
@@ -488,8 +488,8 @@
                      "macos":  "full",
                      "notes":  "Exempts physically subsequent hotkey and hotstring declarations from suspension. It does not affect Hotkey() or Hotstring() calls made while the script runs.",
                      "tested-by":  "directive-misc.ahk; DirectiveTests.SuspendExempt; DirectiveTests.SuspendExemptModuleOrder"
-                  },
-                  {
+                 },
+                 {
                      "category":  "Environment/System",
                      "feature":  "#TrayIcon",
                      "syntax":  "#TrayIcon  |  #TrayIcon FileName [, IconNumber]",
@@ -497,10 +497,10 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Keysharp-only standalone directive that selects the script's embedded tray default; #TrayIcon and #NoTrayIcon apply in source order, and bare #TrayIcon restores the #App Icon or Keysharp default. FileName is main-script-relative; omitted, positive, negative and quoted-string selectors mean the first group, a 1-based group, a native resource ID or a managed resource name, respectively, and native-module selection is Windows-only.",
+                     "notes":  "Keysharp-only standalone directive that selects the script\u0027s embedded tray default; #TrayIcon and #NoTrayIcon apply in source order, and bare #TrayIcon restores the #App Icon or Keysharp default. FileName is main-script-relative; omitted, positive, negative and quoted-string selectors mean the first group, a 1-based group, a native resource ID or a managed resource name, respectively, and native-module selection is Windows-only.",
                      "tested-by":  "DirectiveTests.TrayIcon"
-                  },
-                  {
+                 },
+                 {
                      "category":  "Environment/System",
                      "feature":  "#Undef",
                      "syntax":  "",
@@ -541,7 +541,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Keysharp extension. Checks a named argument against the callee's signature at build time when the callee is a bare name. On by default; dispatch is by value at run time so it is a warning, and the binder re-checks and throws.",
+                     "notes":  "Keysharp extension. Checks a named argument against the callee\u0027s signature at build time when the callee is a bare name. On by default; dispatch is by value at run time so it is a warning, and the binder re-checks and throws.",
                      "tested-by":  "func-named-params.ahk"
                  },
                  {
@@ -760,7 +760,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Keysharp extension. An Array describing the parameters a call can supply (Name, Index, IsOptional, IsByRef, IsVariadic, and Default when present), with an unbound method's this receiver included and bound ones excluded; unset when unknown (ObjBindMethod).",
+                     "notes":  "Keysharp extension. An Array describing the parameters a call can supply (Name, Index, IsOptional, IsByRef, IsVariadic, and Default when present), with an unbound method\u0027s this receiver included and bound ones excluded; unset when unknown (ObjBindMethod).",
                      "tested-by":  "func-named-params.ahk"
                  },
                  {
@@ -770,7 +770,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Reports ByRef parameters. v2.0 native enumerators follow their MaxParams metadata; bound native enumerators report no ByRef parameters."
                  },
                  {
@@ -852,7 +852,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Keysharp extension. Binds an argument to the callee's parameter of that name instead of by position; must trail the positional arguments. Works for script functions, built-ins, methods, constructors (built-in classes included: Buffer(ByteCount: 16), Error(Message: msg)), bound functions, COM objects (via IDispatch DISPIDs) and Clr calls (where they also drive overload selection). Not available in '[]' (that is the map literal), and not for the receiver. A call's named arguments travel as one first-class value (Ks.NamedArgs, a case-insensitive Map whose keys are the names; the last argument slot is reserved for it): any variadic parameter collects the ones it does not declare as an ordinary trailing element and a variadic call re-emits it, so a wrapper forwards names without knowing they exist, and NamedArgs(name, value) — imported from the Ks module — makes a named call dynamically; a variadic that consumes its tail as values (Format, Push, Max) receives it as data. See #Warn NamedArg.",
+                     "notes":  "Keysharp extension. Binds an argument to the callee\u0027s parameter of that name instead of by position; must trail the positional arguments. Works for script functions, built-ins, methods, constructors (built-in classes included: Buffer(ByteCount: 16), Error(Message: msg)), bound functions, COM objects (via IDispatch DISPIDs) and Clr calls (where they also drive overload selection). Not available in \u0027[]\u0027 (that is the map literal), and not for the receiver. A call\u0027s named arguments travel as one first-class value (Ks.NamedArgs, a case-insensitive Map whose keys are the names; the last argument slot is reserved for it): any variadic parameter collects the ones it does not declare as an ordinary trailing element and a variadic call re-emits it, so a wrapper forwards names without knowing they exist, and NamedArgs(name, value) — imported from the Ks module — makes a named call dynamically; a variadic that consumes its tail as values (Format, Push, Max) receives it as data. See #Warn NamedArg.",
                      "tested-by":  "func-named-params.ahk"
                  },
                  {
@@ -962,7 +962,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Instrumented user instances rooted in Object, Map or Array and compiler-prepared exact Object/Array/Map instances count variable, scope, expression, container and own-property owners. Descriptor Value/Get/Set/Call slots and native OwnProps enumerators retain their references. Map entries are released before ascending-name own properties; replacements publish before callbacks. Failed construction still registers its expression owner, and retained/resurrected instances keep their owners. All five strict fixtures and eight portable lifecycle regressions pass locally on Windows against AHK 2.0.31. Native revalidation is pending. Unknown native calls, CLR dictionary aliases/exports, base/prototype pointers, callbacks/captures, legacy classes and uninstrumented native subclasses retain GC fallback. Compiled named receivers resolve after evaluated call/index/store arguments, and ordinary call variable arguments resolve after side effects. Variable index/property slots are reread after RHS effects; computed slots evaluate once. Mixed spread calls resolve ordinary variable arguments after expansion. The Windows Map regression covers these evaluation paths; native validation is pending. Every user class in a Map/Array inheritance chain must be instrumented. Constructors, clones, fields, failed construction, reentrancy and resurrection are covered by the portable container-inheritance regression; unmarked/inline-CSharp chains and unsupported native roots retain GC fallback.",
+                     "notes":  "Instrumented user instances rooted in Object, Map or Array and compiler-prepared exact Object/Array/Map instances count variable, scope, expression, container, own-property and BoundFunc owners. Descriptor Value/Get/Set/Call slots, BoundFunc targets/arguments, and native OwnProps/Array/Map enumerators retain their references. Map entries are released before ascending-name own properties; replacements publish before callbacks. Failed construction still registers its expression owner, and retained/resurrected instances keep their owners. Validated on Windows and macOS (osx-arm64 and osx-x64). Unknown native calls, CLR dictionary aliases/exports, base/prototype pointers, closure captures, legacy classes and uninstrumented native subclasses retain GC fallback.",
                      "tested-by":  "class-special-funcs.ahk; class-destructor-aliases.ahk; class-destructor-scopes.ahk; class-destructor-temporaries.ahk; class-destructor-arrays.ahk; ReferenceLifetimeTests; compat/phase15-architecture/; FileAndDirTests.FileLocalLifetime; class-destructor-maps.ahk; class-destructor-construction.ahk; class-destructor-properties.ahk; class-destructor-container-inheritance.ahk"
                  },
                  {
@@ -1367,7 +1367,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The running application as a class: Name, Title, Description, Configuration, Company, Product, Copyright, Trademark and Version report the assembly metadata the matching #App key sets, CommandLine reports the process command line, and ExitReason/ExitCode report an exit in progress to code that is not an OnExit callback. Every member is read-only. Undeclared optional attributes and an unavailable ExitReason follow reference.md's compatibility-mode rule. Explicit empty attributes remain empty strings; Name remains required identity and ExitCode retains the armed integer. Replaces the removed A_Assembly*, A_CommandLine and A_HasExited variables.",
+                     "notes":  "The running application as a class: Name, Title, Description, Configuration, Company, Product, Copyright, Trademark and Version report the assembly metadata the matching #App key sets, CommandLine reports the process command line, and ExitReason/ExitCode report an exit in progress to code that is not an OnExit callback. Every member is read-only. Undeclared optional attributes and an unavailable ExitReason follow reference.md\u0027s compatibility-mode rule. Explicit empty attributes remain empty strings; Name remains required identity and ExitCode retains the armed integer. Replaces the removed A_Assembly*, A_CommandLine and A_HasExited variables.",
                      "tested-by":  "MiscTests.OptionalMetadata"
                  },
                  {
@@ -2095,7 +2095,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Thread is a class rather than a function: calling it runs the AHK sub-functions (NoTimers/Priority/Interrupt) unchanged, and an instance describes one pseudo-thread: Id, Index (1-based), IsActive, Kind, Elapsed, Priority, Critical, Paused, IsInterruptible, Underlying, Exit and ExitCode (the code its Exit ended it with, readable after it ends). An Is prefix marks a read-only predicate; a settable mode is named for the mode. Obtained from A_Thread, Under or RealThread.Threads, never constructed. There is one object per pseudo-thread, so `thr == A_Thread` tests whether it is the running one. It revalidates its identity on every access, so one held past its pseudo-thread's life reports IsActive false rather than describing whichever pseudo-thread reused the pooled slot. Reads work from any real thread; setters and Exit require the owning one. An unarmed ExitCode follows reference.md's compatibility-mode rule.",
+                     "notes":  "Thread is a class rather than a function: calling it runs the AHK sub-functions (NoTimers/Priority/Interrupt) unchanged, and an instance describes one pseudo-thread: Id, Index (1-based), IsActive, Kind, Elapsed, Priority, Critical, Paused, IsInterruptible, Underlying, Exit and ExitCode (the code its Exit ended it with, readable after it ends). An Is prefix marks a read-only predicate; a settable mode is named for the mode. Obtained from A_Thread, Under or RealThread.Threads, never constructed. There is one object per pseudo-thread, so `thr == A_Thread` tests whether it is the running one. It revalidates its identity on every access, so one held past its pseudo-thread\u0027s life reports IsActive false rather than describing whichever pseudo-thread reused the pooled slot. Reads work from any real thread; setters and Exit require the owning one. An unarmed ExitCode follows reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "FlowTests.FlowExit; MiscTests.OptionalMetadata"
                  },
                  {
@@ -2105,7 +2105,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Read-only four-digit uppercase hex string. Windows: system default UI language ID. Linux/macOS: .NET system locale LCID low 16 bits (unverified).",
                      "tested-by":  "BuiltInVarsTests.PropsScriptProperties"
                  },
@@ -3177,7 +3177,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "v2.0 preserves NumberOfVars metadata, adapts omitted/zero mode to actual output VarRefs and ignores non-VarRef/extra arguments. v2.1 retains strict fixed/adaptive invocation. Native enumerators retain fully instrumented script subclasses; an independent user __Enum result does not retain its former receiver. Native revalidation is pending.",
                      "tested-by":  "collections-array.ahk; flow-enum.ahk; external-com-atp.ahk; compat/phase15-enumerators/; class-destructor-container-inheritance.ahk"
                  },
@@ -3387,7 +3387,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Keysharp-specific Array method. Removes the first occurrence of the value and returns true if one was found and removed, else false. Omitting the value removes the first element which has no value. What counts as a match is IndexOf's rule, which Contains uses too.",
+                     "notes":  "Keysharp-specific Array method. Removes the first occurrence of the value and returns true if one was found and removed, else false. Omitting the value removes the first element which has no value. What counts as a match is IndexOf\u0027s rule, which Contains uses too.",
                      "tested-by":  "collections-array.ahk"
                  },
                  {
@@ -3474,7 +3474,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Class methods Encode and Decode convert RFC 4648 Base32 text and raw bytes, including unpadded TOTP secrets. Windows verified; Linux and macOS unverified.",
                      "tested-by":  "string-base32.ahk; crypt-totp.ahk"
                  },
@@ -3485,7 +3485,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Decodes RFC 4648 Base32 to a Buffer; accepts lowercase and omitted padding, rejects malformed alphabet, padding and nonzero pad bits. Windows verified; Linux and macOS unverified.",
                      "tested-by":  "string-base32.ahk; crypt-totp.ahk"
                  },
@@ -3496,7 +3496,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Encodes a String, StringBuffer or Buffer as uppercase padded RFC 4648 Base32. Windows verified; Linux and macOS unverified.",
                      "tested-by":  "string-base32.ahk"
                  },
@@ -3712,7 +3712,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Text get/set (identical to A_Clipboard), emptiness and clearing. IsEmpty is derived from the platform format enumeration, so private and registered formats count. macOS is unverified: the Eto/Cocoa backend has never been compiled from the development host.",
                      "tested-by":  "clipboard-class.ahk"
                  },
@@ -3723,7 +3723,7 @@
                      "windows":  "full",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Gets an Image or \"\"; the setter takes an Image, file path, bitmap handle or \"HBITMAP:n\". Replaces CopyImageToClipboard(), which only accepted a filename. Linux is partial: writing works, but reading an image back through Eto/GTK produced no pixbuf under Xvfb and needs a real desktop session to confirm.",
                      "tested-by":  "clipboard-class.ahk"
                  },
@@ -3734,19 +3734,19 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "The copied files as an Array of paths, or \"\". Windows uses CF_HDROP, everything else text/uri-list. Copy semantics only; cut-vs-copy is desktop-specific and not implemented.",
                      "tested-by":  "clipboard-class.ahk"
                  },
                  {
                      "category":  "Keysharp Module (Ks)",
                      "feature":  "Clipboard.Html / Clipboard.Rtf",
-                     "syntax":  "Clipboard.Html := \"<b>hi</b>\"",
+                     "syntax":  "Clipboard.Html := \"\u003cb\u003ehi\u003c/b\u003e\"",
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
-                     "notes":  "HTML is exchanged as the fragment: the Windows CF_HTML header is built on write and stripped on read, so the raw envelope is only visible through GetData(\"HTML Format\"). RTF is the format's source text.",
+                     "macos":  "full",
+                     "notes":  "HTML is exchanged as the fragment: the Windows CF_HTML header is built on write and stripped on read, so the raw envelope is only visible through GetData(\"HTML Format\"). RTF is the format\u0027s source text.",
                      "tested-by":  "clipboard-class.ahk"
                  },
                  {
@@ -3756,18 +3756,18 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "The platform-native escape hatch. Format names are NOT normalized (\"HTML Format\"/\"FileDrop\" on Windows, \"text/html\"/\"text/uri-list\" elsewhere), so a script using them is platform-specific by construction. Has() also accepts the portable kind names Text/Image/Files/Html/Rtf.",
                      "tested-by":  "clipboard-class.ahk"
                  },
                  {
                      "category":  "Keysharp Module (Ks)",
                      "feature":  "Clipboard.Set()",
-                     "syntax":  "Clipboard.Set({ Text: \"Hello\", Html: \"<b>Hello</b>\" })",
+                     "syntax":  "Clipboard.Set({ Text: \"Hello\", Html: \"\u003cb\u003eHello\u003c/b\u003e\" })",
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Publishes several formats in one transaction. Windows uses a single raw Win32 transaction, so one change notification; the Eto backends accumulate formats into one offer but publish per entry, so each raises a notification (GTK debounces them into one on Wayland). The Wayland shell-extension fallback can advertise only one MIME type and degrades to the most useful single representation, exactly as ClipboardAll() does there.",
                      "tested-by":  "clipboard-class.ahk"
                  },
@@ -3778,8 +3778,8 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
-                     "notes":  "The ClipboardAll() save/restore pair as one get/set property. Inherits ClipboardAll()'s Wayland single-representation limitation.",
+                     "macos":  "full",
+                     "notes":  "The ClipboardAll() save/restore pair as one get/set property. Inherits ClipboardAll()\u0027s Wayland single-representation limitation.",
                      "tested-by":  "clipboard-class.ahk"
                  },
                  {
@@ -3789,7 +3789,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "ClipWait with the kind vocabulary added: 0/1 behave exactly as before, and \"Text\", \"Any\", \"Image\", \"Files\", \"Html\", \"Rtf\" are also accepted (by ClipWait too).",
                      "tested-by":  "clipboard-class.ahk"
                  },
@@ -3800,7 +3800,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Calls Callback(Hook, DataType) with 0 (empty), 1 (text or files) or 2 (other). Returns a started ClipboardHook, independent of OnClipboardChange, that keeps the script running; native callbacks are unverified on macOS.",
                      "tested-by":  "clipboard-class.ahk; ClipboardTests.OnChangeHookSurface; EventHookTests.PersistenceFollowsTheFamily"
                  },
@@ -3811,7 +3811,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "An Array of every running Clipboard.OnChange hook, in start order, from every thread. A snapshot; OnClipboardChange handlers are not included.",
                      "tested-by":  "clipboard-class.ahk"
                  },
@@ -3845,7 +3845,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "A value as an ordinary Ks.Clr object, so its own full CLR surface is reachable late-bound -- this is how an Array reaches its IList members and a Map its IDictionary ones. The result is always a view over the value itself; to reach the .NET object a builtin is a facade over, call that type's own ToClr(), which exists only on the types which have one. Wrapping something already wrapped is the identity.",
+                     "notes":  "A value as an ordinary Ks.Clr object, so its own full CLR surface is reachable late-bound -- this is how an Array reaches its IList members and a Map its IDictionary ones. The result is always a view over the value itself; to reach the .NET object a builtin is a facade over, call that type\u0027s own ToClr(), which exists only on the types which have one. Wrapping something already wrapped is the identity.",
                      "tested-by":  "directive-csharp-clr.ahk"
                  },
                  {
@@ -3886,7 +3886,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Keysharp-only runtime NuGet package loading. Calls accumulate and report version conflicts. Prefer #Package when the dependency is known at compile time. Windows verified.",
                      "tested-by":  "PackageDirectiveTests.cs"
                  },
@@ -3929,7 +3929,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Subscribes Callback to an instance event, or a ManagedType's static event, and runs it on the subscribing thread. Returns a started Clr.EventSubscription that Stop() detaches and Start() re-attaches; it does not keep the script running.",
+                     "notes":  "Subscribes Callback to an instance event, or a ManagedType\u0027s static event, and runs it on the subscribing thread. Returns a started Clr.EventSubscription that Stop() detaches and Start() re-attaches; it does not keep the script running.",
                      "tested-by":  "directive-csharp-events.ahk"
                  },
                  {
@@ -4227,7 +4227,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlClick function sends a mouse button or mouse wheel event to a window or control."
+                     "notes":  "The ControlClick function sends a mouse button or mouse wheel event to a window or control. On macOS, supports both script-owned controls and foreign windows/controls via Accessibility (AXUIElement AXPress or CGEvent click by ClassNN/AXRole+index or title/description/identifier)."
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -4259,7 +4259,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlFocus function sets keyboard focus to a control.",
+                     "notes":  "The ControlFocus function sets keyboard focus to a control. On macOS, supports both script-owned controls and foreign application controls via Accessibility (AXUIElement AXFocused by ClassNN/AXRole+index or title/description/identifier).",
                      "tested-by":  "ControlTests/copy_image_to_clipboard.ahk"
                  },
                  {
@@ -4292,7 +4292,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Returns the class name and sequence number among the resolved target window's descendants. A direct control handle uses its containing top-level window for numbering.",
+                     "notes":  "Returns the class name and sequence number among the resolved target window\u0027s descendants. A direct control handle uses its containing top-level window for numbering.",
                      "tested-by":  "ControlTests/control_get_classNN.ahk; window-functions.ahk"
                  },
                  {
@@ -4369,7 +4369,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Retrieves a control's position relative to the resolved target window's client area and its size. A direct control handle or omitted ControlID uses the control's containing top-level window's client area. Nested container offsets are included. Off Windows, position queries cover script-owned toolkit controls only.",
+                     "notes":  "Retrieves a control\u0027s position relative to the resolved target window\u0027s client area and its size. A direct control handle or omitted ControlID uses the control\u0027s containing top-level window\u0027s client area. Nested container offsets are included. Off Windows, position queries cover script-owned toolkit controls only.",
                      "tested-by":  "ControlTests/control_get_pos.ahk; window-functions.ahk; control-coordinates.ahk"
                  },
                  {
@@ -4391,7 +4391,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlGetText function retrieves text from a control.",
+                     "notes":  "The ControlGetText function retrieves text from a control. On macOS, supports both script-owned controls and foreign application controls via Accessibility (AXValue/AXTitle/AXDescription by ClassNN/AXRole+index or title/description/identifier).",
                      "tested-by":  "ControlTests/control_get_text.ahk"
                  },
                  {
@@ -4435,7 +4435,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Moves and/or resizes a control using the same target-client coordinates as ControlGetPos, including controls in nested containers. A direct control handle or omitted ControlID uses the control's containing top-level window's client area. Omitted position and size axes stay unchanged. Off Windows, toolkit controls use this mapping; native window movement remains limited by the desktop backend.",
+                     "notes":  "Moves and/or resizes a control using the same target-client coordinates as ControlGetPos, including controls in nested containers. A direct control handle or omitted ControlID uses the control\u0027s containing top-level window\u0027s client area. Omitted position and size axes stay unchanged. Off Windows, toolkit controls use this mapping; native window movement remains limited by the desktop backend.",
                      "tested-by":  "ControlTests/control_move.ahk; window-functions.ahk; control-coordinates.ahk"
                  },
                  {
@@ -4446,7 +4446,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Sends simulated keystrokes to a window or control. Linux supports the script's own GTK windows and controls only; a window forwards input to its focused control. Input is posted asynchronously, with modifiers carried in the target events rather than changing global keyboard state.",
+                     "notes":  "Sends simulated keystrokes to a window or control. Linux supports the script\u0027s own GTK windows and controls only; a window forwards input to its focused control. Input is posted asynchronously, with modifiers carried in the target events rather than changing global keyboard state.",
                      "tested-by":  "ControlTests/control_send.ahk; window-functions.ahk"
                  },
                  {
@@ -4457,7 +4457,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Sends literal text to a window or control. Linux supports the script's own GTK windows and controls only; text and edit keys are posted in order to the UI thread and respect read-only controls and text-input cancellation.",
+                     "notes":  "Sends literal text to a window or control. Linux supports the script\u0027s own GTK windows and controls only; text and edit keys are posted in order to the UI thread and respect read-only controls and text-input cancellation.",
                      "tested-by":  "ControlTests/control_send.ahk; window-functions.ahk"
                  },
                  {
@@ -4512,7 +4512,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlSetText function changes the text of a control.",
+                     "notes":  "The ControlSetText function changes the text of a control. On macOS, supports both script-owned controls and foreign application controls via Accessibility (AXValue/AXTitle by ClassNN/AXRole+index or title/description/identifier).",
                      "tested-by":  "ControlTests/control_set_exstyle.ahk"
                  },
                  {
@@ -4632,7 +4632,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Computes HMAC with SHA1, SHA256, SHA384 or SHA512, accepting the same case-insensitive, hyphen-tolerant names as Hash. Returns uppercase hexadecimal; Hex.Decode converts the digest to a Buffer. A File Value is streamed and its position restored. Windows RFC vectors verified; Linux and macOS unverified.",
                      "tested-by":  "crypt-hmac.ahk; crypt-totp.ahk"
                  },
@@ -4830,7 +4830,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Calls native functions, including numeric type classes and void returns. v2.0 Float return/output values widen exactly to Double; v2.1 retains shortest-decimal widening. Structured arrays pass by address but cannot be returned. Native macOS ABI verification remains pending.",
                      "tested-by":  "external-dllcall.ahk; struct-array.ahk; struct-basic.ahk; compat/phase15-native-windows/; compat/phase15-architecture/macos/sqrtf.ahk"
                  },
@@ -5006,7 +5006,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Opens the script, or the file named by the optional argument, in a text editor rather than the extension's handler.",
+                     "notes":  "Opens the script, or the file named by the optional argument, in a text editor rather than the extension\u0027s handler.",
                      "tested-by":  "ControlTests/control_get_focus.ahk"
                  },
                  {
@@ -5138,7 +5138,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Exits the current pseudo-thread immediately. Terminating a different pseudo-thread is Thread.Exit(ExitCode?) on a Thread object, reached through KS.A_Thread.Underlying or KS.A_RealThread.Threads[i] (1-based, oldest first). An underlying target exits at its next cooperative event/message check; later requests overwrite its pending exit code. As in AutoHotkey, the code is the process exit code if the script exits when that thread ends; the auto-execute section's stays pending until the next thread ends.",
+                     "notes":  "Exits the current pseudo-thread immediately. Terminating a different pseudo-thread is Thread.Exit(ExitCode?) on a Thread object, reached through KS.A_Thread.Underlying or KS.A_RealThread.Threads[i] (1-based, oldest first). An underlying target exits at its next cooperative event/message check; later requests overwrite its pending exit code. As in AutoHotkey, the code is the process exit code if the script exits when that thread ends; the auto-execute section\u0027s stays pending until the next thread ends.",
                      "tested-by":  "FlowTests.FlowExit; FlowTests.FlowExitRequests"
                  },
                  {
@@ -5722,7 +5722,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "unknown",
-                     "notes":  "Optional font attributes and system font selections. Linux resolves unavailable GTK theme fonts through Pango substitution. GUI/image weights map to normal or bold; Windows RichEdit preserves numeric weights. Windows applies quality to GUI fonts and image text; other platforms reject non-default quality, as does per-range RichEdit formatting. Unspecified attributes follow reference.md's compatibility-mode rule; Options remains a valid empty string.",
+                     "notes":  "Optional font attributes and system font selections. Linux resolves unavailable GTK theme fonts through Pango substitution. GUI/image weights map to normal or bold; Windows RichEdit preserves numeric weights. Windows applies quality to GUI fonts and image text; other platforms reject non-default quality, as does per-range RichEdit formatting. Unspecified attributes follow reference.md\u0027s compatibility-mode rule; Options remains a valid empty string.",
                      "tested-by":  "ks-font.ahk; MiscTests.OptionalMetadata"
                  },
                  {
@@ -5786,7 +5786,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Returns logical, physical, and toggle state. Polling an arbitrary key or mouse button requires InputMonitoring. Modifier state and CapsLock/NumLock/ScrollLock toggle state are ungated; polling whether a lock key is physically down still requires InputMonitoring. Linux uses keysharp-input without installing a hook and fails closed for arbitrary state if its authority is unavailable or revokes access; The keysharp-desktop X11 fallback is limited to ungated modifier and lock-toggle snapshots. Joystick controls (Joy1, JoyX, JoyPOV, JoyName, ...) read the winmm joystick API on Windows and keysharp-input's ungated gamepad path on Linux, which needs neither a grant nor `input` group membership; buttons are numbered as the kernel's joydev driver numbers them and controllers are ordered by device node. macOS has no joystick backend and reports every joystick control as unavailable. Mode follows AutoHotkey: it is ignored for controller controls, only its first letter (L, P or T) is significant, and anything else raises ValueError, including an explicit empty string; omitting Mode reads logical state, as L does. Per-device physical state is available through Input.GetKeyState; numeric Mode values raise ValueError on every platform.",
+                     "notes":  "Returns logical, physical, and toggle state. Polling an arbitrary key or mouse button requires InputMonitoring. Modifier state and CapsLock/NumLock/ScrollLock toggle state are ungated; polling whether a lock key is physically down still requires InputMonitoring. Linux uses keysharp-input without installing a hook and fails closed for arbitrary state if its authority is unavailable or revokes access; The keysharp-desktop X11 fallback is limited to ungated modifier and lock-toggle snapshots. Joystick controls (Joy1, JoyX, JoyPOV, JoyName, ...) read the winmm joystick API on Windows and keysharp-input\u0027s ungated gamepad path on Linux, which needs neither a grant nor `input` group membership; buttons are numbered as the kernel\u0027s joydev driver numbers them and controllers are ordered by device node. macOS has no joystick backend and reports every joystick control as unavailable. Mode follows AutoHotkey: it is ignored for controller controls, only its first letter (L, P or T) is significant, and anything else raises ValueError, including an explicit empty string; omitting Mode reads logical state, as L does. Per-device physical state is available through Input.GetKeyState; numeric Mode values raise ValueError on every platform.",
                      "tested-by":  "Gui/guitest.ks; misc-get-key-state-device.ahk; LinuxInputManagerTests.DeviceBitmapAliases"
                  },
                  {
@@ -5797,7 +5797,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Returns Keysharp's portable Windows-compatible VK for a named key or platform-native physical key code."
+                     "notes":  "Returns Keysharp\u0027s portable Windows-compatible VK for a named key or platform-native physical key code."
                  },
                  {
                      "category":  "Core Language",
@@ -5941,7 +5941,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The backing toolkit window as a Ks.Clr object. Its concrete type is platform-dependent and unspecified; changes made through it bypass the Gui's own state and event wiring."
+                     "notes":  "The backing toolkit window as a Ks.Clr object. Its concrete type is platform-dependent and unspecified; changes made through it bypass the Gui\u0027s own state and event wiring."
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -6034,7 +6034,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The backing toolkit control as a Ks.Clr object. Its concrete type is platform-dependent and unspecified; changes made through it bypass the control's own state and event wiring."
+                     "notes":  "The backing toolkit control as a Ks.Clr object. Its concrete type is platform-dependent and unspecified; changes made through it bypass the control\u0027s own state and event wiring."
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -6145,7 +6145,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "unknown",
-                     "notes":  "Registers Callback(GuiCtrlObj, wParam, lParam, Msg) for a window message the control receives, ahead of WM_COMMAND/WM_NOTIFY reflection and default processing; a non-empty return, 0 included, is the reply and ends the message's processing. Off Windows only the script's own synthesized GUI input messages are delivered, after the global monitors. WM_MOUSELEAVE reports toolkit pointer exit with zero wParam/lParam; native leave delivery is verified on X11 under Xvfb; Wayland and macOS delivery remain unverified.",
+                     "notes":  "Registers Callback(GuiCtrlObj, wParam, lParam, Msg) for a window message the control receives, ahead of WM_COMMAND/WM_NOTIFY reflection and default processing; a non-empty return, 0 included, is the reply and ends the message\u0027s processing. Off Windows only the script\u0027s own synthesized GUI input messages are delivered, after the global monitors. WM_MOUSELEAVE reports toolkit pointer exit with zero wParam/lParam; native leave delivery is verified on X11 under Xvfb; Wayland and macOS delivery remain unverified.",
                      "tested-by":  "GuiTests.MessageHandlers; MessageFilterTests.EtoMouseLeave"
                  },
                  {
@@ -6197,7 +6197,7 @@
                      "linux_x11":  "unsupported",
                      "linux_wayland":  "unsupported",
                      "macos":  "unsupported",
-                     "notes":  "Shows a cue text in a ComboBox's empty field, which raises an Error off Windows, where the toolkit's combo box has none."
+                     "notes":  "Shows a cue text in a ComboBox\u0027s empty field, which raises an Error off Windows, where the toolkit\u0027s combo box has none."
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -6308,7 +6308,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "unknown",
-                     "notes":  "Read-only borrowed native handle for the GUI's current default font: an HFONT on Windows, a PangoFontDescription* on Linux and an NSFont* on macOS, where it is unverified.",
+                     "notes":  "Read-only borrowed native handle for the GUI\u0027s current default font: an HFONT on Windows, a PangoFontDescription* on Linux and an NSFont* on macOS, where it is unverified.",
                      "tested-by":  "ks-font.ahk"
                  },
                  {
@@ -6360,7 +6360,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "unsupported",
                      "macos":  "unsupported",
-                     "notes":  "Gets or sets this window's own icon, in place of the tray icon it was created with. Reading returns an Image holding the frame the window shows at its preferred size, or \"\" when it has none, so an icon can be copied from one window to another. Property form of Gui.SetIcon(). Partial on X11 for the same reasons as the setter. Wayland has no per-window icon protocol and resolves the icon from the window's app id instead; macOS windows have no icon.",
+                     "notes":  "Gets or sets this window\u0027s own icon, in place of the tray icon it was created with. Reading returns an Image holding the frame the window shows at its preferred size, or \"\" when it has none, so an icon can be copied from one window to another. Property form of Gui.SetIcon(). Partial on X11 for the same reasons as the setter. Wayland has no per-window icon protocol and resolves the icon from the window\u0027s app id instead; macOS windows have no icon.",
                      "tested-by":  "IconInternals.cs"
                  },
                  {
@@ -6456,7 +6456,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "unknown",
-                     "notes":  "Registers Callback(GuiObj, wParam, lParam, Msg) for a window message the GUI receives, ahead of the default window procedure; a non-empty return, 0 included, is the reply and ends the message's processing. Off Windows only the script's own synthesized GUI input messages are delivered, after the global monitors. WM_MOUSELEAVE reports toolkit pointer exit with zero wParam/lParam; native leave delivery is verified on X11 under Xvfb; Wayland and macOS delivery remain unverified.",
+                     "notes":  "Registers Callback(GuiObj, wParam, lParam, Msg) for a window message the GUI receives, ahead of the default window procedure; a non-empty return, 0 included, is the reply and ends the message\u0027s processing. Off Windows only the script\u0027s own synthesized GUI input messages are delivered, after the global monitors. WM_MOUSELEAVE reports toolkit pointer exit with zero wParam/lParam; native leave delivery is verified on X11 under Xvfb; Wayland and macOS delivery remain unverified.",
                      "tested-by":  "GuiTests.MessageHandlers; MessageFilterTests.EtoMouseLeave"
                  },
                  {
@@ -6489,7 +6489,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "unknown",
-                     "notes":  "The RichEdit control's own members: RichText, SelectedText/SelectedRichText, TextLength, LineCount, Modified, ReadOnly, WordWrap, DetectUrls, HideSelection and Zoom; SelectionStart/SelectionLength, CurrentLine/CurrentCol, FirstVisibleLine, Select, SelectAll and ScrollCaret; GetLine, LineLength, LineFromPos, PosFromLine, PosFromPoint and PointFromPos; CanUndo/CanRedo, Undo, Redo, ClearUndo, Cut, Copy, Paste, Append, Replace and Find; SetFormat/GetFormat, GetBackColor, SetParagraph/GetParagraph and the BeginUpdate/EndUpdate pair a highlighting pass wraps itself in; LoadFile/SaveFile; and the Change, SelectionChange and LinkClick events. Positions are 1-based and index the same text Value returns. Only the Win32 control serves all of it: off Windows there is no undo history, DetectUrls and HideSelection read back as false, Zoom scales the control font, GetFormat reports the start of the range rather than detecting variation, and SelectedRichText, the paragraph pair, the hit-testing pair and FirstVisibleLine raise. GTK has no RTF at all, so RichText and RTF files raise on Linux; colours, fonts and styles work everywhere.",
+                     "notes":  "The RichEdit control\u0027s own members: RichText, SelectedText/SelectedRichText, TextLength, LineCount, Modified, ReadOnly, WordWrap, DetectUrls, HideSelection and Zoom; SelectionStart/SelectionLength, CurrentLine/CurrentCol, FirstVisibleLine, Select, SelectAll and ScrollCaret; GetLine, LineLength, LineFromPos, PosFromLine, PosFromPoint and PointFromPos; CanUndo/CanRedo, Undo, Redo, ClearUndo, Cut, Copy, Paste, Append, Replace and Find; SetFormat/GetFormat, GetBackColor, SetParagraph/GetParagraph and the BeginUpdate/EndUpdate pair a highlighting pass wraps itself in; LoadFile/SaveFile; and the Change, SelectionChange and LinkClick events. Positions are 1-based and index the same text Value returns. Only the Win32 control serves all of it: off Windows there is no undo history, DetectUrls and HideSelection read back as false, Zoom scales the control font, GetFormat reports the start of the range rather than detecting variation, and SelectedRichText, the paragraph pair, the hit-testing pair and FirstVisibleLine raise. GTK has no RTF at all, so RichText and RTF files raise on Linux; colours, fonts and styles work everywhere.",
                      "tested-by":  "GuiTests/gui-richedit.ahk"
                  },
                  {
@@ -6564,7 +6564,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Keysharp extension that sets the image list SetTabIcon takes tab icons from and returns the previous list's ID."
+                     "notes":  "Keysharp extension that sets the image list SetTabIcon takes tab icons from and returns the previous list\u0027s ID."
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -6574,7 +6574,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Keysharp extension that shows an image of the tab control's image list on a tab, both numbers 1-based, an image number of 0 or past the list removing the icon."
+                     "notes":  "Keysharp extension that shows an image of the tab control\u0027s image list on a tab, both numbers 1-based, an image number of 0 or past the list removing the icon."
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -6766,7 +6766,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Creates, modifies, enables, or disables hotstrings. Keysharp adds `I<n>` (0 through 100); omitted I preserves existing levels, and `Hotstring(\"I<n>\")` sets the default. Invalid options raise ValueError.",
+                     "notes":  "Creates, modifies, enables, or disables hotstrings. Keysharp adds `I\u003cn\u003e` (0 through 100); omitted I preserves existing levels, and `Hotstring(\"I\u003cn\u003e\")` sets the default. Invalid options raise ValueError.",
                      "tested-by":  "Gui/guitest.ks; HotstringTests.HotstringInputLevel"
                  },
                  {
@@ -6821,7 +6821,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Captures, loads, creates, edits and searches images. Search methods return match objects. Grayscale() and GetPixelData(1) share 0.299R + 0.587G + 0.114B luminance rounded half up. A color string that is neither a name nor a number, and an invalid DrawText font option, raise ValueError when the method is called. FromWindow Mode and search Direction use string names instead of numeric codes. Supports saving and CLR bitmap access. Linux capture requires keysharp-desktop, ScreenCapture and backend support for the requested capture. Cinnamon Wayland supports area capture through its stage capture API and window capture through the window actor. Image.FromWindow raises UnsupportedError on Wayland when neither window capture nor global frame geometry is available. Native macOS capture and rendering remain unverified. Invalidated OriginX/OriginY and ScaleX/ScaleY follow reference.md's compatibility-mode rule.",
+                     "notes":  "Captures, loads, creates, edits and searches images. Search methods return match objects. Grayscale() and GetPixelData(1) share 0.299R + 0.587G + 0.114B luminance rounded half up. A color string that is neither a name nor a number, and an invalid DrawText font option, raise ValueError when the method is called. FromWindow Mode and search Direction use string names instead of numeric codes. Supports saving and CLR bitmap access. Linux capture requires keysharp-desktop, ScreenCapture and backend support for the requested capture. Cinnamon Wayland supports area capture through its stage capture API and window capture through the window actor. Image.FromWindow raises UnsupportedError on Wayland when neither window capture nor global frame geometry is available. Native macOS capture and rendering remain unverified. Invalidated OriginX/OriginY and ScaleX/ScaleY follow reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "Gui/guitest.ks; image.ahk; MiscTests.OptionalMetadata"
                  },
                  {
@@ -6849,12 +6849,12 @@
                  {
                      "category":  "Core Language",
                      "feature":  "ImageSearch()",
-                     "syntax":  "found := ImageSearch(&x, &y, 0, 0, 1000, 1000, \"file.bmp\")",
+                     "syntax":  "found := ImageSearch(\u0026x, \u0026y, 0, 0, 1000, 1000, \"file.bmp\")",
                      "windows":  "full",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Searches a screen region for an image, writing the position to ByRef outputs and returning true/false. Only 32-bit color is supported; .ani, .emf, .exif and .wmf files are unsupported. The Keysharp *Dir option takes Image.Search's direction names, such as *DirBottomRight. Linux requires keysharp-desktop, ScreenCapture and a backend which can capture the requested screen area, including the Cinnamon stage capture API. For searches within an Image, use its Search/SearchAll/SearchPixel methods.",
+                     "notes":  "Searches a screen region for an image, writing the position to ByRef outputs and returning true/false. Only 32-bit color is supported; .ani, .emf, .exif and .wmf files are unsupported. The Keysharp *Dir option takes Image.Search\u0027s direction names, such as *DirBottomRight. Linux requires keysharp-desktop, ScreenCapture and a backend which can capture the requested screen area, including the Cinnamon stage capture API. For searches within an Image, use its Search/SearchAll/SearchPixel methods.",
                      "tested-by":  "Gui/guitest.ks"
                  },
                  {
@@ -7344,7 +7344,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "In v2.0 mode accepts String only and checks ASCII digits. The broader v2.1 Keysharp predicate remains available.",
                      "tested-by":  "misc-is.ahk; compat/phase15-map-conversions/type-predicates.ahk"
                  },
@@ -7355,7 +7355,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Checks Float values and numeric strings; v2.0 does not trim newline whitespace from numeric text.",
                      "tested-by":  "misc-is.ahk; compat/phase15-map-conversions/type-predicates.ahk"
                  },
@@ -7366,7 +7366,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Checks Integer values and numeric strings; v2.0 does not trim newline whitespace from numeric text.",
                      "tested-by":  "misc-is.ahk; compat/phase15-map-conversions/type-predicates.ahk"
                  },
@@ -7453,7 +7453,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "v2.0 accepts ASCII timestamps with an even 4-14 digits, Gregorian year 1601-9999 and valid calendar/time components. v2.1 retains the broader Keysharp date parser.",
                      "tested-by":  "misc-is.ahk; compat/phase15-stdlib/time-validation.ahk; MiscTests.MiscIs"
                  },
@@ -7612,7 +7612,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Gets a cell's text, or a column header's for row 0, and a row or column that does not exist fails with an Error, as in AutoHotkey.",
+                     "notes":  "Gets a cell\u0027s text, or a column header\u0027s for row 0, and a row or column that does not exist fails with an Error, as in AutoHotkey.",
                      "tested-by":  "Gui/guitest.ks"
                  },
                  {
@@ -7634,7 +7634,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Inserts a column sized to its header unless the options size it, a new first column keeping the old first column's text as the native control does."
+                     "notes":  "Inserts a column sized to its header unless the options size it, a new first column keeping the old first column\u0027s text as the native control does."
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -7655,7 +7655,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Changes a column's options and title as AutoHotkey does, the per-column sort settings applying to header clicks, Auto and AutoHdr sizing only that column, and Sort sorting once.",
+                     "notes":  "Changes a column\u0027s options and title as AutoHotkey does, the per-column sort settings applying to header clicks, Auto and AutoHdr sizing only that column, and Sort sorting once.",
                      "tested-by":  "Gui/guitest.ks"
                  },
                  {
@@ -7730,7 +7730,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Work that finishes later; every CLR call returning a .NET Task hands one back. Status is the canonical one-read state (Pending/Succeeded/Failed/Canceled) with IsPending/IsSucceeded/IsFailed/IsCanceled as single-question predicates, Result is a non-blocking snapshot, Await returns or throws the outcome, and Wait returns false only on timeout. Then receives the successful value, can optionally handle failure, adopts the selected callback's returned work, and propagates cancellation. Producer and Then callback errors fault the task without calling OnError at the throw site. WhenAny transfers the first value, failure or cancellation.",
+                     "notes":  "Work that finishes later; every CLR call returning a .NET Task hands one back. Status is the canonical one-read state (Pending/Succeeded/Failed/Canceled) with IsPending/IsSucceeded/IsFailed/IsCanceled as single-question predicates, Result is a non-blocking snapshot, Await returns or throws the outcome, and Wait returns false only on timeout. Then receives the successful value, can optionally handle failure, adopts the selected callback\u0027s returned work, and propagates cancellation. Producer and Then callback errors fault the task without calling OnError at the throw site. WhenAny transfers the first value, failure or cancellation.",
                      "tested-by":  "directive-csharp-async.ahk"
                  },
                  {
@@ -7741,7 +7741,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Calls Producer synchronously with the positional prefix it accepts of Succeed, Fail and Cancel, and returns the Task they settle; Producer's return value is ignored. First settlement wins; Succeed adopts asynchronous work's eventual value, failure or cancellation, and an early producer error fails the Task.",
+                     "notes":  "Calls Producer synchronously with the positional prefix it accepts of Succeed, Fail and Cancel, and returns the Task they settle; Producer\u0027s return value is ignored. First settlement wins; Succeed adopts asynchronous work\u0027s eventual value, failure or cancellation, and an early producer error fails the Task.",
                      "tested-by":  "directive-csharp-async.ahk"
                  },
                  {
@@ -7752,7 +7752,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Lets a script object expose asynchronous work without inheriting from Task. The zero-argument method returns a Task, CLR Task or ValueTask, or another __Await object; Await, Task(Value), either Then callback's direct return, Task.Create settlement and Task combinators consume it.",
+                     "notes":  "Lets a script object expose asynchronous work without inheriting from Task. The zero-argument method returns a Task, CLR Task or ValueTask, or another __Await object; Await, Task(Value), either Then callback\u0027s direct return, Task.Create settlement and Task combinators consume it.",
                      "tested-by":  "directive-csharp-async.ahk"
                  },
                  {
@@ -7870,7 +7870,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Reads lines using A_FileEncoding and BOM detection. Missing inputs raise OSError, or run Else when present. Native macOS validation remains pending.",
                      "tested-by":  "flow-loop-read.ahk; flow-loop-read.ahk; compat/phase15-stdlib/file-loop-encoding.ahk"
                  },
@@ -7903,7 +7903,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "In v2.0 mode Float keys become String keys, distinct from Integer keys; Set requires pairs, rejects odd counts before mutation and skips pairs containing unset. Compiler-prepared exact Maps retain both keys and values through primitive mutations, clones and enumeration. Native literals, CLR exports/shared dictionaries and unmigrated subclasses retain GC fallback. Windows lifecycle regressions pass against AHK 2.0.31; native macOS validation remains pending.",
                      "tested-by":  "assign-multiline.ahk; collections-map.ahk; compat/phase15-map-conversions/; class-destructor-maps.ahk"
                  },
@@ -7914,7 +7914,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "v2.0 observes live mutations and accepts output slots independently of NumberOfVars metadata; non-VarRef and extra arguments are ignored. v2.1 retains strict fixed/adaptive invocation and its cached snapshot behavior. Owned native enumerators retain their source; v2.1 snapshots retain their entries. Both outputs are protected before assignment, including reentrant writers. Native enumerators retain fully instrumented script subclasses and release their owners when discarded. Native revalidation is pending.",
                      "tested-by":  "collections-map.ahk; flow-enum.ahk; compat/phase15-map-conversions/map-enumerators.ahk; compat/phase15-map-conversions/map-mutation.ahk; compat/phase15-enumerators/; compat/phase15-map-conversions/; class-destructor-maps.ahk; class-destructor-map-reentry.ahk; class-destructor-map-extensions.ahk; class-destructor-container-inheritance.ahk"
                  },
@@ -8124,7 +8124,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The backing toolkit menu as a Ks.Clr object. Its concrete type is platform-dependent and unspecified; changes made through it bypass the Menu's own state and event wiring."
+                     "notes":  "The backing toolkit menu as a Ks.Clr object. Its concrete type is platform-dependent and unspecified; changes made through it bypass the Menu\u0027s own state and event wiring."
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -8415,7 +8415,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Keysharp keyboard and mouse descriptors with device discovery, per-device physical state through native Linux keysharp-input or managed capture, and native device-change subscriptions. Read-only properties: Id, Kind, Name, VendorId, ProductId, HardwareId, Manufacturer, Connection, Location and IsInternal. Optional metadata follows reference.md's compatibility-mode rule. Input() raises Error. Native Windows/macOS per-device state is unsupported; driver and hardware capture remain unverified.",
+                     "notes":  "Keysharp keyboard and mouse descriptors with device discovery, per-device physical state through native Linux keysharp-input or managed capture, and native device-change subscriptions. Read-only properties: Id, Kind, Name, VendorId, ProductId, HardwareId, Manufacturer, Connection, Location and IsInternal. Optional metadata follows reference.md\u0027s compatibility-mode rule. Input() raises Error. Native Windows/macOS per-device state is unsupported; driver and hardware capture remain unverified.",
                      "tested-by":  "InputDeviceTests.cs; input-devices.ahk; LinuxInputManagerTests.cs; HookProviderTests.DeviceState"
                  },
                  {
@@ -8426,7 +8426,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "full",
-                     "notes":  "A fresh Array of keyboard and mouse descriptors. Id is an opaque, source-scoped Integer; zero source IDs are unavailable, while reported vendor/product zero remains data. Optional metadata follows reference.md's compatibility-mode rule. Windows uses Raw Input handles, SetupAPI and HID metadata. Linux uses keysharp-input ABI 1.x and existing access without prompting. macOS uses IOKit HID metadata and signed 64-bit registry entry IDs, valid for the entry lifetime within the current boot; HardwareId is the reported serial. An implemented managed inventory, including an empty one, is authoritative; otherwise enumeration remains native. An unavailable inventory raises OSError. See reference.md for the per-platform metadata fields.",
+                     "notes":  "A fresh Array of keyboard and mouse descriptors. Id is an opaque, source-scoped Integer; zero source IDs are unavailable, while reported vendor/product zero remains data. Optional metadata follows reference.md\u0027s compatibility-mode rule. Windows uses Raw Input handles, SetupAPI and HID metadata. Linux uses keysharp-input ABI 1.x and existing access without prompting. macOS uses IOKit HID metadata and signed 64-bit registry entry IDs, valid for the entry lifetime within the current boot; HardwareId is the reported serial. An implemented managed inventory, including an empty one, is authoritative; otherwise enumeration remains native. An unavailable inventory raises OSError. See reference.md for the per-platform metadata fields.",
                      "tested-by":  "InputDeviceTests.cs; input-devices.ahk; Gui/guitest.ks; LinuxInputManagerTests.cs; LinuxNativeClientTests.DeviceInventoryChecksAnExistingGrantWithoutPrompting"
                  },
                  {
@@ -8448,7 +8448,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Calls Callback(Hook, Change, Device) with Added, Removed or Changed and an Input snapshot. Returns a started Input.DeviceHook using the EventHook lifecycle, without keeping the script running. Existing devices form the baseline; coalesced notifications compare inventories. The native watcher runs only while hooks are active. Windows and macOS watch arrivals/removals; property-only metadata changes have no trigger and are discovered only during a subsequent refresh. Managed capture compares its selected inventory on the native watcher's notifications and retains its access requirements; provider-only changes have no trigger. Linux requires keysharp-input client ABI 1.1 and an existing InputMonitoring grant, without prompting or installing input hooks. Source loss or a failed inventory refresh ends hooks with Failed; Start retries explicitly.",
+                     "notes":  "Calls Callback(Hook, Change, Device) with Added, Removed or Changed and an Input snapshot. Returns a started Input.DeviceHook using the EventHook lifecycle, without keeping the script running. Existing devices form the baseline; coalesced notifications compare inventories. The native watcher runs only while hooks are active. Windows and macOS watch arrivals/removals; property-only metadata changes have no trigger and are discovered only during a subsequent refresh. Managed capture compares its selected inventory on the native watcher\u0027s notifications and retains its access requirements; provider-only changes have no trigger. Linux requires keysharp-input client ABI 1.1 and an existing InputMonitoring grant, without prompting or installing input hooks. Source loss or a failed inventory refresh ends hooks with Failed; Start retries explicitly.",
                      "tested-by":  "input-device-changes.ahk; InputDeviceTests.InventoryChanges; InputDeviceTests.AnonymousDevicesAreNotMerged; Gui/guitest.ks"
                  },
                  {
@@ -8481,7 +8481,7 @@
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
                      "macos":  "planned",
-                     "notes":  "Keysharp-specific Ks class for cross-platform audio: polyphonic playback from files or memory through a managed mixer, device discovery, endpoint volume and mute, per-application sessions, level meters and recording. Independent of the AHK Sound* functions, which keep their own fuzzy device selector and monophonic file playback. Windows uses WASAPI and is verified on hardware; the Linux libpulse backend compiles and has been exercised against a real PulseAudio server for enumeration, playback and recording; macOS AudioQueue compiles against the contracts but has never been run. Optional property availability follows reference.md's compatibility-mode rule.",
+                     "notes":  "Keysharp-specific Ks class for cross-platform audio: polyphonic playback from files or memory through a managed mixer, device discovery, endpoint volume and mute, per-application sessions, level meters and recording. Independent of the AHK Sound* functions, which keep their own fuzzy device selector and monophonic file playback. Windows uses WASAPI and is verified on hardware; the Linux libpulse backend compiles and has been exercised against a real PulseAudio server for enumeration, playback and recording; macOS AudioQueue compiles against the contracts but has never been run. Optional property availability follows reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "audio-class.ahk; AudioInternalsTests.cs; MiscTests.OptionalMetadata"
                  },
                  {
@@ -8503,7 +8503,7 @@
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
                      "macos":  "planned",
-                     "notes":  "Many sounds at once through one managed float32 mixer and one native stream, which is what SoundPlay cannot do. After Open() and Prepare() a play performs no decode, resample or blocking call, so it is safe from a frame timer. Each admitted play returns a stable Audio.Playback with Volume, Pan, Loop, Mute, PositionMilliseconds, Pause, Resume and Stop; a bounded refusal returns blank rather than raising. VoicePolicy is \"Oldest\", \"RoundRobin\" or \"Reject\". One script may hold 16 outputs open. Unavailable Device, output SampleRate/Channels/LatencyMilliseconds/Peak/Error and playback DurationMilliseconds/PositionMilliseconds/Peak follow reference.md's compatibility-mode rule.",
+                     "notes":  "Many sounds at once through one managed float32 mixer and one native stream, which is what SoundPlay cannot do. After Open() and Prepare() a play performs no decode, resample or blocking call, so it is safe from a frame timer. Each admitted play returns a stable Audio.Playback with Volume, Pan, Loop, Mute, PositionMilliseconds, Pause, Resume and Stop; a bounded refusal returns blank rather than raising. VoicePolicy is \"Oldest\", \"RoundRobin\" or \"Reject\". One script may hold 16 outputs open. Unavailable Device, output SampleRate/Channels/LatencyMilliseconds/Peak/Error and playback DurationMilliseconds/PositionMilliseconds/Peak follow reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "audio-class.ahk; AudioInternalsTests.cs; Gui/guitest.ks; MiscTests.OptionalMetadata"
                  },
                  {
@@ -8525,7 +8525,7 @@
                      "linux_x11":  "unsupported",
                      "linux_wayland":  "unsupported",
                      "macos":  "unknown",
-                     "notes":  "Returns the platform's device or session object, with an unspecified concrete type. Direct access bypasses snapshot caching. Linux raises OSError because PulseAudio exposes no comparable object."
+                     "notes":  "Returns the platform\u0027s device or session object, with an unspecified concrete type. Direct access bypasses snapshot caching. Linux raises OSError because PulseAudio exposes no comparable object."
                  },
                  {
                      "category":  "Keysharp Module (Ks)",
@@ -8579,7 +8579,7 @@
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
                      "macos":  "unsupported",
-                     "notes":  "Per-application volume and mute. A session snapshot is generation-bound and expires rather than rebinding, so a handle kept across an application restart never silently controls the newcomer. One process routinely owns several sessions, so every match is returned and the bulk setters report how many they changed. macOS exposes no public per-application audio model and reports IsSessionControlSupported false. Optional Device, ProcessId, ProcessName and DisplayName follow reference.md's compatibility-mode rule.",
+                     "notes":  "Per-application volume and mute. A session snapshot is generation-bound and expires rather than rebinding, so a handle kept across an application restart never silently controls the newcomer. One process routinely owns several sessions, so every match is returned and the bulk setters report how many they changed. macOS exposes no public per-application audio model and reports IsSessionControlSupported false. Optional Device, ProcessId, ProcessName and DisplayName follow reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "audio-class.ahk; Gui/guitest.ks; MiscTests.MetadataSnapshots"
                  },
                  {
@@ -8590,7 +8590,7 @@
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
                      "macos":  "planned",
-                     "notes":  "An explicit lifetime for observing a device or session level, because metering a target whose frames do not pass through Keysharp costs a live native stream on some backends. Peak is 0 through 100 when observed. Unresolved Target, unobserved Peak and absent Error follow reference.md's compatibility-mode rule, keeping no data distinct from silence. Output, playback and recorder Peak need no meter, since Keysharp already owns those frames.",
+                     "notes":  "An explicit lifetime for observing a device or session level, because metering a target whose frames do not pass through Keysharp costs a live native stream on some backends. Peak is 0 through 100 when observed. Unresolved Target, unobserved Peak and absent Error follow reference.md\u0027s compatibility-mode rule, keeping no data distinct from silence. Output, playback and recorder Peak need no meter, since Keysharp already owns those frames.",
                      "tested-by":  "audio-class.ahk"
                  },
                  {
@@ -8601,7 +8601,7 @@
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
                      "macos":  "planned",
-                     "notes":  "Captures a microphone or what an output device is playing, to a WAV file or to memory. Configured first and started second so handlers can be registered before capture begins and a permission failure is observable. A recorder is single-use once capture is admitted, and every way it can end competes for one terminal transition, so exactly one reason and one result are published. Capture is gated on the AudioCapture permission strictly, rather than the usual log-and-continue. Implemented on all three backends but not yet exercised on hardware; macOS system-output capture is unsupported pending its process-tap spike. Unavailable recorder Device/Path/Peak/Error/Result and the unused Recording.Clip or Path follow reference.md's compatibility-mode rule.",
+                     "notes":  "Captures a microphone or what an output device is playing, to a WAV file or to memory. Configured first and started second so handlers can be registered before capture begins and a permission failure is observable. A recorder is single-use once capture is admitted, and every way it can end competes for one terminal transition, so exactly one reason and one result are published. Capture is gated on the AudioCapture permission strictly, rather than the usual log-and-continue. Implemented on all three backends but not yet exercised on hardware; macOS system-output capture is unsupported pending its process-tap spike. Unavailable recorder Device/Path/Peak/Error/Result and the unused Recording.Clip or Path follow reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "audio-class.ahk; MiscTests.OptionalMetadata"
                  },
                  {
@@ -8612,7 +8612,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "partial",
-                     "notes":  "Display snapshots with identity, metadata, brightness and DDC/CI control. Optional metadata follows reference.md's compatibility-mode rule. On macOS Model and Adapter are unavailable; Connection identifies built-in panels only.",
+                     "notes":  "Display snapshots with identity, metadata, brightness and DDC/CI control. Optional metadata follows reference.md\u0027s compatibility-mode rule. On macOS Model and Adapter are unavailable; Connection identifies built-in panels only.",
                      "tested-by":  "MonitorTests.cs; MiscTests.MetadataSnapshots"
                  },
                  {
@@ -8656,7 +8656,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "partial",
                      "macos":  "unknown",
-                     "notes":  "The monitor a window overlaps most. Inherits the platform's foreign-window geometry support, so on Wayland it needs a compositor backend (KWin/GNOME/Cinnamon/COSMIC) to locate the window at all.",
+                     "notes":  "The monitor a window overlaps most. Inherits the platform\u0027s foreign-window geometry support, so on Wayland it needs a compositor backend (KWin/GNOME/Cinnamon/COSMIC) to locate the window at all.",
                      "tested-by":  "MonitorTests.cs"
                  },
                  {
@@ -8700,7 +8700,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The monitor's authored-size scale; 1.0 is 100%. It scales dimensions, never absolute positions. Replaces the removed Ks.MonitorGetScale() function. Wayland and macOS always report 1.0 because their native coordinate spaces already account for UI scaling, so the value only varies on Windows and X11.",
+                     "notes":  "The monitor\u0027s authored-size scale; 1.0 is 100%. It scales dimensions, never absolute positions. Replaces the removed Ks.MonitorGetScale() function. Wayland and macOS always report 1.0 because their native coordinate spaces already account for UI scaling, so the value only varies on Windows and X11.",
                      "tested-by":  "MonitorTests.cs"
                  },
                  {
@@ -8722,7 +8722,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "partial",
-                     "notes":  "Panel identity from EDID. Id survives reboots and re-plugging and is the value to persist (for example to restore a window layout per monitor set); panels that report no serial are disambiguated by connector, making Id stable per port rather than per panel. Windows reads the EDID Windows cached under the monitor's registry key; Linux reads /sys/class/drm/*/edid under both X11 and Wayland. macOS answers from CoreGraphics vendor/model/serial numbers and has no product-name API, so Model is unavailable there. Missing fields follow reference.md's compatibility-mode rule.",
+                     "notes":  "Panel identity from EDID. Id survives reboots and re-plugging and is the value to persist (for example to restore a window layout per monitor set); panels that report no serial are disambiguated by connector, making Id stable per port rather than per panel. Windows reads the EDID Windows cached under the monitor\u0027s registry key; Linux reads /sys/class/drm/*/edid under both X11 and Wayland. macOS answers from CoreGraphics vendor/model/serial numbers and has no product-name API, so Model is unavailable there. Missing fields follow reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "MonitorTests.cs; MiscTests.MetadataSnapshots"
                  },
                  {
@@ -8733,7 +8733,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "partial",
-                     "notes":  "Vertical refresh in Hz as a float (59.94, not 59), or unavailable when unknown. Windows uses the DisplayConfig rational rate, X11 computes it from the RandR mode's pixel clock, Wayland uses wl_output's mode refresh. macOS returns 0 for some built-in panels, which denotes an unavailable rate. Missing values follow reference.md's compatibility-mode rule.",
+                     "notes":  "Vertical refresh in Hz as a float (59.94, not 59), or unavailable when unknown. Windows uses the DisplayConfig rational rate, X11 computes it from the RandR mode\u0027s pixel clock, Wayland uses wl_output\u0027s mode refresh. macOS returns 0 for some built-in panels, which denotes an unavailable rate. Missing values follow reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "MonitorTests.cs; MiscTests.MetadataSnapshots"
                  },
                  {
@@ -8744,7 +8744,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "unknown",
-                     "notes":  "The panel's physical size in millimetres, and the resulting dots per inch. Dpi is expressed in the same units as Width and Height, so it is a physical pixel density on Windows and X11 but a logical one on Wayland and macOS. Unavailable values follow reference.md's compatibility-mode rule.",
+                     "notes":  "The panel\u0027s physical size in millimetres, and the resulting dots per inch. Dpi is expressed in the same units as Width and Height, so it is a physical pixel density on Windows and X11 but a logical one on Wayland and macOS. Unavailable values follow reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "MonitorTests.cs; MiscTests.MetadataSnapshots"
                  },
                  {
@@ -8788,7 +8788,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "partial",
-                     "notes":  "How the monitor is attached (HDMI, DisplayPort, eDP, DVI, VGA, Internal), whether it is a built-in panel, and the adapter driving it. Windows reports the DisplayConfig output technology and the adapter's marketing name; Linux derives the kind from the DRM connector name and reports the DRM driver as the adapter. macOS distinguishes only built-in from external and exposes no adapter name. Unknown fields follow reference.md's compatibility-mode rule; a known external panel reports IsInternal false.",
+                     "notes":  "How the monitor is attached (HDMI, DisplayPort, eDP, DVI, VGA, Internal), whether it is a built-in panel, and the adapter driving it. Windows reports the DisplayConfig output technology and the adapter\u0027s marketing name; Linux derives the kind from the DRM connector name and reports the DRM driver as the adapter. macOS distinguishes only built-in from external and exposes no adapter name. Unknown fields follow reference.md\u0027s compatibility-mode rule; a known external panel reports IsInternal false.",
                      "tested-by":  "MonitorTests.cs; MiscTests.MetadataSnapshots"
                  },
                  {
@@ -8799,7 +8799,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Get or set the monitor's brightness as a percentage (0-100); assigning another value raises ValueError before any device transaction. Each access is a real device transaction (tens of milliseconds over DDC/CI) and is deliberately not cached, because the monitor's own buttons can change the value too. Windows uses WMI for the built-in panel and DDC/CI for external monitors. Linux uses the kernel backlight class for the built-in panel (a direct sysfs write where permitted, else logind's SetBrightness) and DDC/CI over /dev/i2c-* for external monitors, which needs i2c-dev loaded and access to the bus (a root install adds a udev rule granting the local-seat user access to display-controller i2c buses only; ddcutil's own rule works too) - hence partial. macOS uses the private DisplayServices framework for the built-in panel and Apple's own displays, and DDC/CI for every other external monitor: on Apple Silicon over the private IOAVService (the only option, since IOFramebuffer does not exist under the DCP architecture), on Intel over the public IOKit I2C API - the Intel path is implemented but untested. Throws an OSError naming the reason where unsupported; test IsBrightnessSupported to branch without an exception.",
+                     "notes":  "Get or set the monitor\u0027s brightness as a percentage (0-100); assigning another value raises ValueError before any device transaction. Each access is a real device transaction (tens of milliseconds over DDC/CI) and is deliberately not cached, because the monitor\u0027s own buttons can change the value too. Windows uses WMI for the built-in panel and DDC/CI for external monitors. Linux uses the kernel backlight class for the built-in panel (a direct sysfs write where permitted, else logind\u0027s SetBrightness) and DDC/CI over /dev/i2c-* for external monitors, which needs i2c-dev loaded and access to the bus (a root install adds a udev rule granting the local-seat user access to display-controller i2c buses only; ddcutil\u0027s own rule works too) - hence partial. macOS uses the private DisplayServices framework for the built-in panel and Apple\u0027s own displays, and DDC/CI for every other external monitor: on Apple Silicon over the private IOAVService (the only option, since IOFramebuffer does not exist under the DCP architecture), on Intel over the public IOKit I2C API - the Intel path is implemented but untested. Throws an OSError naming the reason where unsupported; test IsBrightnessSupported to branch without an exception.",
                      "tested-by":  "MonitorTests.cs"
                  },
                  {
@@ -8821,7 +8821,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Read or write a raw DDC/CI VCP feature (MCCS): 0x10 brightness, 0x12 contrast, 0x60 input source, 0x62 speaker volume, 0xD6 power mode. GetVCP returns {Current, Maximum}. Codes outside 0-255 and SetVCP values outside 0-65535 raise ValueError before I/O. SetVCP drives the monitor's firmware directly - an input-source or power code will switch the monitor away from this computer, and some displays mishandle codes they document, so verify a code against the monitor's MCCS documentation first. SetVCP reads the feature back before writing it, on the transport it already has open, so a code the monitor does not implement raises an OSError instead of reporting a success the display silently ignored - a DDC/CI write is unacknowledged, so that read is the only evidence the code exists. Windows uses dxva2; Linux talks to /dev/i2c-* directly, which needs i2c-dev loaded and bus access (granted by the udev rule a root install adds). macOS reaches external monitors over DDC/CI - the private IOAVService on Apple Silicon, the public IOKit I2C API on Intel (implemented but untested) - and cannot reach the built-in panel at all, which has no DDC/CI connection.",
+                     "notes":  "Read or write a raw DDC/CI VCP feature (MCCS): 0x10 brightness, 0x12 contrast, 0x60 input source, 0x62 speaker volume, 0xD6 power mode. GetVCP returns {Current, Maximum}. Codes outside 0-255 and SetVCP values outside 0-65535 raise ValueError before I/O. SetVCP drives the monitor\u0027s firmware directly - an input-source or power code will switch the monitor away from this computer, and some displays mishandle codes they document, so verify a code against the monitor\u0027s MCCS documentation first. SetVCP reads the feature back before writing it, on the transport it already has open, so a code the monitor does not implement raises an OSError instead of reporting a success the display silently ignored - a DDC/CI write is unacknowledged, so that read is the only evidence the code exists. Windows uses dxva2; Linux talks to /dev/i2c-* directly, which needs i2c-dev loaded and bus access (granted by the udev rule a root install adds). macOS reaches external monitors over DDC/CI - the private IOAVService on Apple Silicon, the public IOKit I2C API on Intel (implemented but untested) - and cannot reach the built-in panel at all, which has no DDC/CI connection.",
                      "tested-by":  "MonitorTests.cs"
                  },
                  {
@@ -8950,7 +8950,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "v2.0 reads the first type character after optional U, using an integer tag containing 6 as 64-bit; Float widens exactly to Double. v2.1 retains full-name matching. Numeric type classes are a Keysharp extension.",
                      "tested-by":  "external-numput-numget.ahk; external-callbackcreate.ahk; compat/phase15-stdlib/numeric-memory-types.ahk"
                  },
@@ -8961,7 +8961,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "v2.0 interprets the type prefix like NumGet. Numeric values and bounds are validated; writes may precede a later pair error, as in AHK. Numeric type classes are a Keysharp extension.",
                      "tested-by":  "external-numput-numget.ahk; external-dllcall.ahk; compat/phase15-stdlib/numeric-memory-types.ahk"
                  },
@@ -8984,7 +8984,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The ObjBindMethod function creates a BoundFunc object which calls a method of a given object."
+                     "notes":  "The ObjBindMethod function creates a BoundFunc object which calls a method of a given object. BoundFunc instances deterministically retain and release their bound target and arguments under reference-counted scopes.",
+                     "tested-by":  "func-bound.ahk; class-destructor-temporaries.ahk; ReferenceLifetimeTests"
                  },
                  {
                      "category":  "Collections",
@@ -9081,7 +9082,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Returns the size of the object's structure (typed properties), in bytes. Accepts struct prototypes and returns zero for ordinary objects.",
+                     "notes":  "Returns the size of the object\u0027s structure (typed properties), in bytes. Accepts struct prototypes and returns zero for ordinary objects.",
                      "tested-by":  "struct-pack.ahk"
                  },
                  {
@@ -9113,7 +9114,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Enumerates own properties; structs raise TypeError. v2.0 ignores invalid output slots and evaluates getters only when the second output is a real VarRef. The prepared native enumerator retains its counted source and observes current own properties after mutations. Windows lifecycle differential tests pass; native lifetime revalidation remains pending.",
                      "tested-by":  "collections-object.ahk; struct-basic.ahk; compat/phase15-enumerators/enumerator-ownprops-getters.ahk; class-destructor-properties.ahk"
                  },
@@ -9125,7 +9126,7 @@
                      "linux_x11":  "unsupported",
                      "linux_wayland":  "unsupported",
                      "macos":  "unsupported",
-                     "notes":  "Returns an Integer containing the object's IUnknown address without adding a native reference. Keep the object alive while using the pointer.",
+                     "notes":  "Returns an Integer containing the object\u0027s IUnknown address without adding a native reference. Keep the object alive while using the pointer.",
                      "tested-by":  "misc-object.ahk; external-com.ahk; external-chrome.ahk"
                  },
                  {
@@ -9136,7 +9137,7 @@
                      "linux_x11":  "unsupported",
                      "linux_wayland":  "unsupported",
                      "macos":  "unsupported",
-                     "notes":  "Returns an Integer containing the object's IUnknown address and adds a native reference, released with ObjRelease. This also applies to the COM wrappers of managed objects.",
+                     "notes":  "Returns an Integer containing the object\u0027s IUnknown address and adds a native reference, released with ObjRelease. This also applies to the COM wrappers of managed objects.",
                      "tested-by":  "misc-object.ahk"
                  },
                  {
@@ -9158,7 +9159,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Sets an object's base object. The native type cannot change and the base chain may not become circular. Neither object may have typed properties, since those fix the memory layout; a prototype which has none is writable. A Struct.At view or ObjCreateWithDataPtr instance has a read-only base.",
+                     "notes":  "Sets an object\u0027s base object. The native type cannot change and the base chain may not become circular. Neither object may have typed properties, since those fix the memory layout; a prototype which has none is writable. A Struct.At view or ObjCreateWithDataPtr instance has a read-only base.",
                      "tested-by":  "class-prototype.ahk; struct-pack.ahk"
                  },
                  {
@@ -9201,7 +9202,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Registers callbacks for errors nothing catches. An error reaches them where it is raised, before the stack unwinds, or, once it passes a try statement with catches, in mode Exit after that statement's finally.",
+                     "notes":  "Registers callbacks for errors nothing catches. An error reaches them where it is raised, before the stack unwinds, or, once it passes a try statement with catches, in mode Exit after that statement\u0027s finally.",
                      "tested-by":  "flow-onerror.ahk; flow-try-interrupt.ahk"
                  },
                  {
@@ -9223,7 +9224,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "unknown",
-                     "notes":  "Windows monitors the hidden main window, GUIs, controls and tray events. Linux/macOS synthesize toolkit messages from the script's own GUI, including WM_MOUSELEAVE with zero wParam/lParam. Native leave delivery is verified on X11 under Xvfb; Wayland and macOS delivery remain unverified. Menu interception verified on Linux X11, unverified on Wayland/macOS.",
+                     "notes":  "Windows monitors the hidden main window, GUIs, controls and tray events. Linux/macOS synthesize toolkit messages from the script\u0027s own GUI, including WM_MOUSELEAVE with zero wParam/lParam. Native leave delivery is verified on X11 under Xvfb; Wayland and macOS delivery remain unverified. Menu interception verified on Linux X11, unverified on Wayland/macOS.",
                      "tested-by":  "MessageFilterTests.cs; ExternalTests.OnMessage; external-onmessage.ahk; BuiltInVarsTests.PropsMenuCommands; props-menu-commands.ahk; MessageFilterTests.TrayNotifications; MessageFilterTests.TrayActivations; MessageFilterTests.EtoMouseLeave"
                  },
                  {
@@ -9256,7 +9257,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Built-in error class. OSError(Code) records the code as its own Number property and uses the operating system's message; a nonnumeric string is the Message and leaves Number unset. Without an argument, it uses the last operating-system error.",
+                     "notes":  "Built-in error class. OSError(Code) records the code as its own Number property and uses the operating system\u0027s message; a nonnumeric string is the Message and leaves Number unset. Without an argument, it uses the last operating-system error.",
                      "tested-by":  "external-dllcall.ahk; flow-trycatch.ahk"
                  },
                  {
@@ -9364,8 +9365,8 @@
                      "windows":  "full",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "partial",
-                     "notes":  "Searches a region of the screen for a pixel of the specified color. On no match it returns false and sets both output variables to blank. Linux requires keysharp-desktop, ScreenCapture and a backend which can capture the requested screen area, including the Cinnamon stage capture API.",
+                     "macos":  "full",
+                     "notes":  "Searches a region of the screen for a pixel of the specified color using direct 32bpp BGRA buffer scanning. On no match it returns false and sets both output variables to blank. macOS requires Screen Recording permission; Linux requires keysharp-desktop and ScreenCapture.",
                      "tested-by":  "screen-pixelsearch.ahk"
                  },
                  {
@@ -9418,7 +9419,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Returns the parent PID of the selected process, or of the script process if omitted. Throws TargetError if the process is missing and OSError if the parent cannot be queried. The macOS implementation is not yet runtime-verified.",
                      "tested-by":  "ProcessTests.ProcessGetParent; process-get-parent.ahk"
                  },
@@ -9462,7 +9463,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Gets the process exit code after termination; while running, its unavailable value follows reference.md's compatibility-mode rule.",
+                     "notes":  "Gets the process exit code after termination; while running, its unavailable value follows reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "ProcessTests.ProcessRunScript; process-runscript.ahk; MiscTests.OptionalMetadata"
                  },
                  {
@@ -9473,7 +9474,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Gets the process exit time after termination; while running, its unavailable value follows reference.md's compatibility-mode rule.",
+                     "notes":  "Gets the process exit time after termination; while running, its unavailable value follows reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "ProcessTests.ProcessRunScript; process-runscript.ahk; MiscTests.OptionalMetadata"
                  },
                  {
@@ -9626,7 +9627,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Represents a real background thread. It carries two separate completions: Task is the entry function's result and settles as the body leaves, while Terminated settles when the OS thread is gone (IsAlive is that as a poll). Body and Post errors are carried by their tasks without calling OnError at the throw site; Send rethrows to its caller.",
+                     "notes":  "Represents a real background thread. It carries two separate completions: Task is the entry function\u0027s result and settles as the body leaves, while Terminated settles when the OS thread is gone (IsAlive is that as a poll). Body and Post errors are carried by their tasks without calling OnError at the throw site; Send rethrows to its caller.",
                      "tested-by":  "flow-realthreads.ahk"
                  },
                  {
@@ -9703,7 +9704,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Fires when a matching window moves or resizes, with A_EventInfo holding its { X, Y, Width, Height } at event time. On Linux a window's queued moves are merged.",
+                     "notes":  "Fires when a matching window moves or resizes, with A_EventInfo holding its { X, Y, Width, Height } at event time. On Linux a window\u0027s queued moves are merged.",
                      "tested-by":  "Gui/guitest.ks"
                  },
                  {
@@ -9736,7 +9737,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Fires when a matching window's title changes.",
+                     "notes":  "Fires when a matching window\u0027s title changes.",
                      "tested-by":  "Gui/guitest.ks"
                  },
                  {
@@ -9833,7 +9834,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The entry function's eventual result, settled as the body leaves rather than when the thread ends, so the value is readable while a worker stays up serving registrations. Errors rethrow when it is awaited. The main and adopted threads have no body and raise TargetError.",
+                     "notes":  "The entry function\u0027s eventual result, settled as the body leaves rather than when the thread ends, so the value is readable while a worker stays up serving registrations. Errors rethrow when it is awaited. The main and adopted threads have no body and raise TargetError.",
                      "tested-by":  "flow-realthreads.ahk"
                  },
                  {
@@ -9919,7 +9920,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Match result including whole match at index 0. Direct construction and default subclass construction raise ValueError. v2.0 native enumeration preserves raw NumberOfVars metadata and ignores non-VarRef/extra arguments; v2.1 keeps strict arity.",
                      "tested-by":  "string-regexmatch.ahk; flow-enum.ahk; class-builtin-visibility.ahk; compat/phase15-enumerators/"
                  },
@@ -10529,7 +10530,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Sets a part's text and, when a style is given, its border, and a part the bar does not have fails with an Error, as in AutoHotkey.",
+                     "notes":  "Sets a part\u0027s text and, when a style is given, its border, and a part the bar does not have fails with an Error, as in AutoHotkey.",
                      "tested-by":  "gui-window.ahk"
                  },
                  {
@@ -10570,7 +10571,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Decodes bounded buffers or zero-terminated raw pointers with the requested encoding. Empty encoding means CP0 in v2.0, UTF-16 in v2.1; omission retains native UTF-16. Native pointer lifetime remains subject to the architecture gate.",
                      "tested-by":  "external-dllcall.ahk; compat/phase15-stdlib/string-native-encodings.ahk; compat/phase15-stdlib/string-pointer-contracts.ahk"
                  },
@@ -10581,7 +10582,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "v2.0 implicit object-to-text conversion raises TypeError. Explicit String(obj) invokes a user ToString method and preserves its result; builtin Array/Map conversion raises MethodError. Direct collection ToString methods remain extensions.",
                      "tested-by":  "string-string.ahk; types-conversions.ahk; compat/phase15-map-conversions/string-conversion.ahk"
                  },
@@ -10593,7 +10594,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Keysharp extension. Returns whether a string ends with the specified suffix. The CaseSense parameter matches InStr's, so Locale folds case one character at a time.",
+                     "notes":  "Keysharp extension. Returns whether a string ends with the specified suffix. The CaseSense parameter matches InStr\u0027s, so Locale folds case one character at a time.",
                      "tested-by":  "string-startsendswith.ahk"
                  },
                  {
@@ -10614,7 +10615,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Keysharp extension. Returns whether a string starts with the specified prefix. The CaseSense parameter matches InStr's, so Locale folds case one character at a time.",
+                     "notes":  "Keysharp extension. Returns whether a string starts with the specified prefix. The CaseSense parameter matches InStr\u0027s, so Locale folds case one character at a time.",
                      "tested-by":  "string-startsendswith.ahk"
                  },
                  {
@@ -10636,7 +10637,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The underlying CLR task as a Ks.Clr object, so members Task does not mirror (IsCompleted, ContinueWith, ...) stay reachable. CLR ContinueWith has neither Then's script-thread affinity nor its result flattening.",
+                     "notes":  "The underlying CLR task as a Ks.Clr object, so members Task does not mirror (IsCompleted, ContinueWith, ...) stay reachable. CLR ContinueWith has neither Then\u0027s script-thread affinity nor its result flattening.",
                      "tested-by":  "directive-csharp-async.ahk"
                  },
                  {
@@ -10647,7 +10648,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Draws a badge and a progress bar on one window's taskbar button (SetBadge, SetProgress, SetProgressState). SetProgress raises ValueError when Value is outside 0 through Maximum. Called on the class it decorates the application's own button and every window opened afterwards, which is what Linux and macOS do in any case; constructed with a window handle it decorates that one button, a distinction only Windows makes. IsBadgeIconSupported/IsPerWindow report what the platform can draw. Windows uses ITaskbarList3, per window. Linux uses the Unity LauncherEntry protocol, which carries a number rather than an icon, covers the whole application, and decorates the desktop entry selected by DESKTOP_ENTRY, then #App DesktopEntry, then Keysharp. Plasma and implementing docks consume it natively; the keysharp-desktop extension maps it onto GNOME's stock overview dash and Cinnamon's grouped-window-list. macOS badges the dock tile with text and draws progress on the tile, also application-wide. Cinnamon 6.6.9 is runtime-verified; GNOME, Plasma and macOS are compile-checked or source-verified only.",
+                     "notes":  "Draws a badge and a progress bar on one window\u0027s taskbar button (SetBadge, SetProgress, SetProgressState). SetProgress raises ValueError when Value is outside 0 through Maximum. Called on the class it decorates the application\u0027s own button and every window opened afterwards, which is what Linux and macOS do in any case; constructed with a window handle it decorates that one button, a distinction only Windows makes. IsBadgeIconSupported/IsPerWindow report what the platform can draw. Windows uses ITaskbarList3, per window. Linux uses the Unity LauncherEntry protocol, which carries a number rather than an icon, covers the whole application, and decorates the desktop entry selected by DESKTOP_ENTRY, then #App DesktopEntry, then Keysharp. Plasma and implementing docks consume it natively; the keysharp-desktop extension maps it onto GNOME\u0027s stock overview dash and Cinnamon\u0027s grouped-window-list. macOS badges the dock tile with text and draws progress on the tile, also application-wide. Cinnamon 6.6.9 is runtime-verified; GNOME, Plasma and macOS are compile-checked or source-verified only.",
                      "tested-by":  "IconInternals.cs; Gui/guitest.ks"
                  },
                  {
@@ -10690,7 +10691,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Writes encoded string bytes and terminator within capacity. Empty encoding means CP0 in v2.0, UTF-16 in v2.1; omission retains native UTF-16.",
                      "tested-by":  "string-strputstrget.ahk; compat/phase15-stdlib/string-native-encodings.ahk"
                  },
@@ -10943,7 +10944,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Creates a toast message window near the tray icon. Differs in that the Mute option is accepted but has no effect (there is no way to mute the system sound) and a large icon cannot be requested. The registry key EnableBalloonTips is not observed for disabling the notification. The option 4 has no effect because the tray icon is always shown at the top of the toast. On Linux and macOS the toast is an Eto Notification, so its appearance and duration are decided by the desktop notification service.",
+                     "notes":  "Creates a toast message window near the tray icon. On Linux and macOS the toast uses Eto Notification when a tray icon is active; on macOS when #NoTrayIcon is active, falls back to a native Notification Center banner via osascript.",
                      "tested-by":  "ControlTests/control_choose_string.ahk"
                  },
                  {
@@ -10976,7 +10977,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Gets the item's ID when it is expanded, checked or bold, chosen by the attribute's first letter, else 0.",
+                     "notes":  "Gets the item\u0027s ID when it is expanded, checked or bold, chosen by the attribute\u0027s first letter, else 0.",
                      "tested-by":  "gui-window.ahk"
                  },
                  {
@@ -11061,7 +11062,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Gets an item's text, and ID 0 or one that does not exist fails with an Error, as in AutoHotkey."
+                     "notes":  "Gets an item\u0027s text, and ID 0 or one that does not exist fails with an Error, as in AutoHotkey."
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -11071,7 +11072,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Changes an item's options and name, selects it when only the ID is given, and with Sort sorts its children one level, keeping every ID.",
+                     "notes":  "Changes an item\u0027s options and name, selects it when only the ID is given, and with Sort sorts its children one level, keeping every ID.",
                      "tested-by":  "Gui/guitest.ks"
                  },
                  {
@@ -11197,7 +11198,7 @@
                  {
                      "category":  "Interop/Memory",
                      "feature":  "VarSetStrCapacity()",
-                     "syntax":  "GrantedCapacity := VarSetStrCapacity(&TargetVar [, RequestedCapacity])",
+                     "syntax":  "GrantedCapacity := VarSetStrCapacity(\u0026TargetVar [, RequestedCapacity])",
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
@@ -11561,7 +11562,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Minimizes all windows; Windows follows Explorer's exemptions. An unimplemented backend operation raises UnsupportedError.",
+                     "notes":  "Minimizes all windows; Windows follows Explorer\u0027s exemptions. An unimplemented backend operation raises UnsupportedError.",
                      "tested-by":  "Gui/guitest.ks"
                  },
                  {
@@ -11647,7 +11648,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "unsupported",
-                     "notes":  "Enables or disables the specified window. Linux supports script-owned windows, but neither X11 nor Wayland has a faithful equivalent of Win32 EnableWindow for another application's window, so a foreign target raises UnsupportedError. macOS has no faithful public equivalent and is intentionally unsupported."
+                     "notes":  "Enables or disables the specified window. Linux supports script-owned windows, but neither X11 nor Wayland has a faithful equivalent of Win32 EnableWindow for another application\u0027s window, so a foreign target raises UnsupportedError. macOS has no faithful public equivalent and is intentionally unsupported."
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -11688,7 +11689,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Changes the specified window's title. Wayland supports owned windows only. macOS foreign targets require writable AXTitle; read-only titles raise UnsupportedError.",
+                     "notes":  "Changes the specified window\u0027s title. Wayland supports owned windows only. macOS foreign targets require writable AXTitle; read-only titles raise UnsupportedError.",
                      "tested-by":  "Gui/guitest.ks"
                  },
                  {
@@ -11992,7 +11993,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Class methods Encode and Decode convert hexadecimal text and raw bytes. Windows verified; Linux and macOS unverified.",
                      "tested-by":  "string-hex.ahk; crypt-hmac.ahk; crypt-totp.ahk"
                  },
@@ -12003,7 +12004,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Decodes an even number of hexadecimal digits to a Buffer. Accepts either letter case and empty text; invalid characters, whitespace, prefixes and odd lengths raise ValueError. Windows verified; Linux and macOS unverified.",
                      "tested-by":  "string-hex.ahk; crypt-hmac.ahk; crypt-totp.ahk"
                  },
@@ -12014,7 +12015,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Encodes a String, StringBuffer or Buffer as uppercase hexadecimal without separators or prefix. Windows verified; Linux and macOS unverified.",
                      "tested-by":  "string-hex.ahk; crypt-hmac.ahk"
                  },
@@ -12166,15 +12167,59 @@
                      "notes":  "Windows broadcasts WM_SETTINGCHANGE. Linux publishes pending EnvSet changes to the D-Bus activation environment and systemd user manager; D-Bus deletions become empty values because its update API cannot unset them. macOS publishes pending changes to the current launchd session. Existing processes are unchanged and these updates are not persistent."
                  },
                  {
-                     "category": "Core Language",
-                     "feature": "Identifier comparison",
-                     "syntax": "Variables, functions, classes, properties, labels and dynamic identifiers",
-                     "windows": "partial",
-                     "linux_x11": "unknown",
-                     "linux_wayland": "unknown",
-                     "macos": "unknown",
-                     "notes": "Folds ASCII A-Z only; Unicode code units remain distinct. Official AHK 2.0.31 fixtures cover lexical/dynamic lookups, properties, classes, closures and labels. This is selected evidence, not exhaustive identifier conformance.",
-                     "tested-by": "ParserTests.IdentifierNames; compat/phase15-symbols/"
+                     "category":  "Core Language",
+                     "feature":  "Identifier comparison",
+                     "syntax":  "Variables, functions, classes, properties, labels and dynamic identifiers",
+                     "windows":  "partial",
+                     "linux_x11":  "unknown",
+                     "linux_wayland":  "unknown",
+                     "macos":  "full",
+                     "notes":  "Folds ASCII A-Z only; Unicode code units remain distinct. Official AHK 2.0.31 fixtures cover lexical/dynamic lookups, properties, classes, closures and labels. This is selected evidence, not exhaustive identifier conformance.",
+                     "tested-by":  "ParserTests.IdentifierNames; compat/phase15-symbols/"
+                 },
+                 {
+                     "category":  "Keysharp Module (Ks)",
+                     "feature":  "AppleScript()",
+                     "syntax":  "Ks.AppleScript(Script, Args*)",
+                     "windows":  "unsupported",
+                     "linux_x11":  "unsupported",
+                     "linux_wayland":  "unsupported",
+                     "macos":  "full",
+                     "notes":  "Executes inline AppleScript via /usr/bin/osascript on macOS, forwarding optional positional arguments to \u0027on run argv\u0027 and returning trimmed stdout.",
+                     "tested-by":  "AppleEventsTests"
+                 },
+                 {
+                     "category":  "Keysharp Module (Ks)",
+                     "feature":  "Jxa()",
+                     "syntax":  "Ks.Jxa(Script, Args*)",
+                     "windows":  "unsupported",
+                     "linux_x11":  "unsupported",
+                     "linux_wayland":  "unsupported",
+                     "macos":  "full",
+                     "notes":  "Executes inline JavaScript for Automation (JXA) via /usr/bin/osascript -l JavaScript on macOS, forwarding optional arguments to \u0027run(argv)\u0027 and returning trimmed stdout.",
+                     "tested-by":  "AppleEventsTests"
+                 },
+                 {
+                     "category":  "Keysharp Module (Ks)",
+                     "feature":  "Notify()",
+                     "syntax":  "Ks.Notify(Text [, Title, Subtitle, SoundName])",
+                     "windows":  "full",
+                     "linux_x11":  "full",
+                     "linux_wayland":  "full",
+                     "macos":  "full",
+                     "notes":  "Displays a desktop notification. On macOS, delivers a native Notification Center banner with optional subtitle and sound via osascript even when #NoTrayIcon is active; on other platforms delegates to TrayTip().",
+                     "tested-by":  "AppleEventsTests.MacNotificationArgsPreserveSpecialCharactersAndDefaultTitle"
+                 },
+                 {
+                     "category":  "Keysharp Module (Ks)",
+                     "feature":  "Shortcut()",
+                     "syntax":  "Ks.Shortcut(Name [, Input])",
+                     "windows":  "unsupported",
+                     "linux_x11":  "unsupported",
+                     "linux_wayland":  "unsupported",
+                     "macos":  "full",
+                     "notes":  "Runs a macOS Shortcut from Shortcuts.app via /usr/bin/shortcuts run \u003cName\u003e, optionally piping Input to standard input (-i -), and returns trimmed standard output.",
+                     "tested-by":  "AppleEventsTests.MacShortcutArgsFormatRunAndStdinFlags"
                  }
              ]
 }

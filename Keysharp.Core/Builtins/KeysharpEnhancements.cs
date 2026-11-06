@@ -117,6 +117,45 @@ namespace Keysharp.Builtins
 #endif
 		}
 
+		internal static List<string> BuildMacShortcutArgs(string name, bool hasStdinInput = false)
+			=> hasStdinInput
+				? ["run", name ?? "", "-i", "-"]
+				: ["run", name ?? ""];
+
+		/// <summary>
+		/// Executes a macOS Shortcut by name via <c>/usr/bin/shortcuts run</c> and returns its standard output.
+		/// When <paramref name="input"/> is provided, it is piped to the shortcut's standard input (<c>-i -</c>).
+		/// </summary>
+		/// <param name="name">The name of the Shortcut in <c>Shortcuts.app</c>.</param>
+		/// <param name="input">Optional input string passed to the Shortcut.</param>
+		/// <returns>The trimmed standard output produced by the Shortcut.</returns>
+		public static object Shortcut(object name, object input = null)
+		{
+			if (!name.CoerceString(out var shortcutName))
+				return DefaultObject;
+
+			if (string.IsNullOrWhiteSpace(shortcutName))
+				return Errors.ValueErrorOccurred("Shortcut name cannot be empty.", name, DefaultErrorString);
+
+			string shortcutInput = null;
+			if (input != null && !input.CoerceString(out shortcutInput))
+				return DefaultObject;
+
+#if OSX
+			var exitCode = shortcutName.RunShortcut(out var output, out var error, shortcutInput, wait: true);
+
+			if (exitCode != 0)
+			{
+				var detail = !string.IsNullOrEmpty(error) ? error : $"shortcuts exited with code {exitCode}.";
+				return Errors.OSErrorOccurred("", detail, DefaultErrorString);
+			}
+
+			return output ?? DefaultErrorString;
+#else
+			return Errors.ErrorOccurred("Ks.Shortcut is only supported on macOS.", DefaultErrorString);
+#endif
+		}
+
 		private static object RunOsascriptBuiltIn(object script, string language, object[] args)
 		{
 			if (!script.CoerceString(out var code))

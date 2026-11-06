@@ -425,9 +425,9 @@ namespace Keysharp.Builtins
 				return DefaultObject;
 
 			if (obj is Any)
-				return new BoundFunc(new MethodPropertyHolder(n), args, o);
+				return BoundFunc.CreateOwned(new MethodPropertyHolder(n), args, o);
 			else if (Reflections.FindAndCacheMethod(o.GetType(), n, -1) is MethodPropertyHolder mph && mph.mi != null)
-				return new BoundFunc(mph, [obj, .. args], o);
+				return BoundFunc.CreateOwned(mph, [obj, .. args], o);
 
 			return Errors.ErrorOccurred($"Unable to retrieve method {n} for object.");
 		}

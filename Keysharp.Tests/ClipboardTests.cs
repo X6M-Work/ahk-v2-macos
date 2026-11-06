@@ -287,6 +287,48 @@ public partial class ClipboardTests : TestRunner
 		Assert.That(Ks.KeysharpClipboard.staticget_Text(Clip), Is.EqualTo("saved"));
 	}
 
+	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]
+#if WINDOWS
+	[Apartment(ApartmentState.STA)]
+#endif
+	public void AllSavesAndRestoresMultipleFormats()
+	{
+		RequireClipboard();
+		const string customFormat = "KeysharpMultiFormatProbe";
+		var customBytes = new byte[] { 0x4B, 0x53, 0x01, 0x02 };
+		_ = Ks.KeysharpClipboard.Set(Clip, MakeMap(
+			"Text", "plain body",
+			"Html", "<b>bold body</b>",
+			"Rtf", @"{\rtf1\ansi bold body}",
+			customFormat, new Keysharp.Builtins.Buffer(customBytes)));
+
+		var hadHtml = (bool)Ks.KeysharpClipboard.Has(Clip, "Html");
+		var hadRtf = (bool)Ks.KeysharpClipboard.Has(Clip, "Rtf");
+		var hadCustom = (bool)Ks.KeysharpClipboard.Has(Clip, customFormat);
+
+		var saved = Ks.KeysharpClipboard.staticget_All(Clip);
+		Assert.IsInstanceOf<ClipboardAll>(saved);
+
+		_ = Ks.KeysharpClipboard.staticset_Text(Clip, "overwritten");
+		Assert.That(Ks.KeysharpClipboard.staticget_Text(Clip), Is.EqualTo("overwritten"));
+
+		_ = Ks.KeysharpClipboard.staticset_All(Clip, saved);
+		Assert.That(Ks.KeysharpClipboard.staticget_Text(Clip), Is.EqualTo("plain body"));
+
+		if (hadHtml)
+			Assert.That(Ks.KeysharpClipboard.staticget_Html(Clip), Is.EqualTo("<b>bold body</b>"));
+
+		if (hadRtf)
+			Assert.That(Ks.KeysharpClipboard.staticget_Rtf(Clip), Is.EqualTo(@"{\rtf1\ansi bold body}"));
+
+		if (hadCustom && Ks.KeysharpClipboard.GetData(Clip, customFormat) is Keysharp.Builtins.Buffer restoredBuf)
+		{
+			var got = restoredBuf.ToByteArray();
+			Assert.IsTrue(got.Length >= customBytes.Length);
+			Assert.That(got[..customBytes.Length], Is.EqualTo(customBytes).AsCollection);
+		}
+	}
+
 	/// <summary>Has() takes a kind name OR a native format name; an unknown kind name falls through to the
 	/// native probe rather than throwing.</summary>
 	[Test, Category("Clipboard"), Category("Desktop"), NonParallelizable]

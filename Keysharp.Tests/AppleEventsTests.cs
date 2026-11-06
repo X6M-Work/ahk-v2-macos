@@ -412,6 +412,47 @@ public class AppleEventsTests : TestRunner
 		}
 	}
 
+	[Test]
+	public void MacShortcutArgsFormatRunAndStdinFlags()
+	{
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(Ks.BuildMacShortcutArgs("My Shortcut", hasStdinInput: false),
+				Is.EqualTo(new[] { "run", "My Shortcut" }));
+			Assert.That(Ks.BuildMacShortcutArgs("Process Text", hasStdinInput: true),
+				Is.EqualTo(new[] { "run", "Process Text", "-i", "-" }));
+		}
+	}
+
+	[Test]
+	public void MacControlSelectorParsesRolesClassNNAndMatchesCandidates()
+	{
+		Keysharp.Internals.Window.MacOS.MacControlCandidate[] candidates =
+		[
+			new("AXStaticText", "", "Username label", "lblUser", "Username:"),
+			new("AXTextField", "", "Username input", "txtUser", "alice"),
+			new("AXButton", "Cancel", "Cancel dialog", "btnCancel", ""),
+			new("AXButton", "OK", "Confirm dialog", "btnOk", ""),
+			new("AXTable", "", "Results list", "tblResults", "")
+		];
+
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndex(candidates, "Button1"), Is.EqualTo(2));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndex(candidates, "Button2"), Is.EqualTo(3));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndex(candidates, "AXButton2"), Is.EqualTo(3));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndex(candidates, "Edit1"), Is.EqualTo(1));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndex(candidates, "Static1"), Is.EqualTo(0));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndex(candidates, "SysListView321"), Is.EqualTo(4));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndex(candidates, "OK"), Is.EqualTo(3));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndex(candidates, "btnCancel"), Is.EqualTo(2));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndex(candidates, "Confirm dialog"), Is.EqualTo(3));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndex(candidates, "NoSuchControl"), Is.EqualTo(-1));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.ExtractControlText(candidates[1]), Is.EqualTo("alice"));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.ExtractControlText(candidates[3]), Is.EqualTo("OK"));
+		}
+	}
+
 #if OSX
 	[Test]
 	public void IndependentTargets()

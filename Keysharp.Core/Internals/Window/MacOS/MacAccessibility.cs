@@ -101,6 +101,14 @@ namespace Keysharp.Internals.Window.MacOS
 			private static readonly nint attrFullScreen = CreateCFString("AXFullScreen");
 			private static readonly nint attrFullScreenButton = CreateCFString("AXFullScreenButton");
 			private static readonly nint attrCloseButton = CreateCFString("AXCloseButton");
+			private static readonly nint attrChildren = CreateCFString("AXChildren");
+			private static readonly nint attrRole = CreateCFString("AXRole");
+			private static readonly nint attrValue = CreateCFString("AXValue");
+			private static readonly nint attrDescription = CreateCFString("AXDescription");
+			private static readonly nint attrIdentifier = CreateCFString("AXIdentifier");
+			private static readonly nint attrFocused = CreateCFString("AXFocused");
+			private const int MaxControlSearchDepth = 16;
+			private const int MaxControlSearchNodes = 512;
 
 		private static readonly nint actionRaise = CreateCFString("AXRaise");
 		private static readonly nint actionClose = CreateCFString("AXClose");
@@ -780,6 +788,240 @@ namespace Keysharp.Internals.Window.MacOS
 			}
 
 			return true;
+		}
+
+		internal static bool TryGetControlText(MacNativeWindow info, string selector, out string text)
+		{
+			text = string.Empty;
+			using var window = ResolveWindowElement(info, "read control text");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out var candidate))
+				return false;
+
+			try
+			{
+				text = MacControlSelector.ExtractControlText(candidate);
+				return true;
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TrySetControlText(MacNativeWindow info, string selector, string text, out bool foundControl)
+		{
+			foundControl = false;
+			using var window = ResolveWindowElement(info, "set control text");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out _))
+				return false;
+
+			foundControl = true;
+			var strRef = CreateCFString(text ?? string.Empty);
+
+			if (strRef == 0)
+			{
+				CFRelease(ctrl);
+				return false;
+			}
+
+			try
+			{
+				if (IsAttributeSettable(ctrl, attrValue)
+					&& AXUIElementSetAttributeValue(ctrl, attrValue, strRef) == kAXErrorSuccess)
+					return true;
+
+				if (IsAttributeSettable(ctrl, attrTitle)
+					&& AXUIElementSetAttributeValue(ctrl, attrTitle, strRef) == kAXErrorSuccess)
+					return true;
+
+				return false;
+			}
+			finally
+			{
+				CFRelease(strRef);
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryFocusControl(MacNativeWindow info, string selector, out bool foundControl)
+		{
+			foundControl = false;
+			using var window = ResolveWindowElement(info, "focus control");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out _))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				_ = TryActivateWindow(window);
+				return TryWriteBool(ctrl, attrFocused, true);
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryClickControl(MacNativeWindow info, string selector, uint buttonNumber, int count, int relX, int relY, out bool foundControl)
+		{
+			foundControl = false;
+			using var window = ResolveWindowElement(info, "click control");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out _))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (buttonNumber == 1 && count == 1 && relX == int.MinValue && relY == int.MinValue
+					&& AXUIElementPerformAction(ctrl, actionPress) == kAXErrorSuccess)
+					return true;
+
+				if (!TryReadRect(ctrl, out var rect))
+					return false;
+
+				var clickX = relX != int.MinValue ? relX : rect.Width / 2;
+				var clickY = relY != int.MinValue ? relY : rect.Height / 2;
+				var winRelative = new Point(rect.X - window.Info.Bounds.X + clickX, rect.Y - window.Info.Bounds.Y + clickY);
+				return TryClickWindow(window, winRelative, buttonNumber, count);
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		private static bool TryFindControlElement(nint windowElement, string selector, out nint controlElement, out MacControlCandidate matchedCandidate)
+		{
+			controlElement = 0;
+			matchedCandidate = default;
+
+			if (windowElement == 0 || string.IsNullOrWhiteSpace(selector))
+				return false;
+
+			var elements = new List<nint>();
+			var candidates = new List<MacControlCandidate>();
+			var queue = new Queue<(nint Element, int Depth)>();
+			queue.Enqueue((CFRetain(windowElement), 0));
+
+			try
+			{
+				while (queue.Count > 0 && elements.Count < MaxControlSearchNodes)
+				{
+					var (current, depth) = queue.Dequeue();
+
+					try
+					{
+						if (depth > 0)
+						{
+							var candidate = ReadControlCandidate(current);
+							elements.Add(CFRetain(current));
+							candidates.Add(candidate);
+						}
+
+						if (depth >= MaxControlSearchDepth || !TryCopyAttributeValue(current, attrChildren, out var childrenArray))
+							continue;
+
+						try
+						{
+							var childCount = CFArrayGetCount(childrenArray);
+
+							for (nint i = 0; i < childCount && elements.Count + queue.Count < MaxControlSearchNodes; i++)
+							{
+								var child = CFArrayGetValueAtIndex(childrenArray, i);
+
+								if (child != 0)
+								{
+									_ = AXUIElementSetMessagingTimeout(child, QueryMessagingTimeout);
+									queue.Enqueue((CFRetain(child), depth + 1));
+								}
+							}
+						}
+						finally
+						{
+							CFRelease(childrenArray);
+						}
+					}
+					finally
+					{
+						CFRelease(current);
+					}
+				}
+
+				var matchIndex = MacControlSelector.FindMatchIndex(candidates, selector);
+
+				if (matchIndex < 0)
+					return false;
+
+				controlElement = CFRetain(elements[matchIndex]);
+				_ = AXUIElementSetMessagingTimeout(controlElement, WindowMessagingTimeout);
+				matchedCandidate = candidates[matchIndex];
+				return controlElement != 0;
+			}
+			finally
+			{
+				while (queue.Count > 0)
+					CFRelease(queue.Dequeue().Element);
+
+				for (var i = 0; i < elements.Count; i++)
+					CFRelease(elements[i]);
+			}
+		}
+
+		private static MacControlCandidate ReadControlCandidate(nint element)
+		{
+			var role = ReadStringAttribute(element, attrRole);
+			var title = ReadStringAttribute(element, attrTitle);
+			var description = ReadStringAttribute(element, attrDescription);
+			var identifier = ReadStringAttribute(element, attrIdentifier);
+			var value = ReadValueAttributeAsString(element, attrValue);
+			return new MacControlCandidate(role, title, description, identifier, value);
+		}
+
+		private static string ReadStringAttribute(nint element, nint attr)
+		{
+			if (!TryCopyAttributeValue(element, attr, out var val))
+				return string.Empty;
+
+			try
+			{
+				return CFGetTypeID(val) == CFStringGetTypeID() ? ReadString(val) : string.Empty;
+			}
+			finally
+			{
+				CFRelease(val);
+			}
+		}
+
+		private static string ReadValueAttributeAsString(nint element, nint attr)
+		{
+			if (!TryCopyAttributeValue(element, attr, out var val))
+				return string.Empty;
+
+			try
+			{
+				var typeId = CFGetTypeID(val);
+
+				if (typeId == CFStringGetTypeID())
+					return ReadString(val);
+
+				if (typeId == CFBooleanGetTypeID())
+					return CFBooleanGetValue(val) ? "1" : "0";
+
+				if (typeId == CFNumberGetTypeID() && CFNumberGetValue(val, kCFNumberSInt32Type, out int num))
+					return num.ToString(CultureInfo.InvariantCulture);
+
+				return string.Empty;
+			}
+			finally
+			{
+				CFRelease(val);
+			}
 		}
 
 		// The CG preflights cost about 10 ms of tccd IPC when another process is responsible for this one, so a grant is

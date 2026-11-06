@@ -180,4 +180,30 @@ Check(trace, "", "returned variable reference keeps cell alive")
 Check(%heldRef%.Label, "ref", "returned variable reference remains readable")
 heldRef := 0
 Check(trace, "Dref|", "returned variable reference released with destination")
+trace := ""
+bf := Consume.Bind(Temporary("bound"))
+Check(trace, "", "BoundFunc retains bound argument")
+bf()
+Check(trace, "Cbound|", "calling BoundFunc borrows bound argument")
+bf.Call()
+Check(trace, "Cbound|Cbound|", "explicit BoundFunc.Call preserves bound argument")
+bf := 0
+Check(trace, "Cbound|Cbound|Dbound|", "releasing BoundFunc deterministically releases bound argument")
+trace := ""
+Consume.Bind(Temporary("temp-bound"))()
+Check(trace, "Ctemp-bound|Dtemp-bound|", "temporary BoundFunc releases bound argument at end of expression")
+trace := ""
+bm := ObjBindMethod(Temporary("recv"), "Touch")
+Check(trace, "", "ObjBindMethod retains bound receiver")
+bm()
+Check(trace, "Mrecv|", "calling ObjBindMethod invokes receiver without releasing")
+bm := 0
+Check(trace, "Mrecv|Drecv|", "releasing ObjBindMethod deterministically releases bound receiver")
+trace := ""
+bfChain := Consume.Bind(, Temporary("chain2")).Bind(Temporary("chain1"))
+Check(trace, "", "chained Bind retains both bound arguments")
+bfChain()
+Check(trace, "Cchain1|", "chained BoundFunc runs")
+bfChain := 0
+Check(trace, "Cchain1|Dchain1|Dchain2|", "releasing chained BoundFunc releases bound arguments")
 FileAppend("pass`n", "*", "UTF-8-RAW")

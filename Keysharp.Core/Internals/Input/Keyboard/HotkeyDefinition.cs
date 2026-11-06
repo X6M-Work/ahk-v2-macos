@@ -2758,7 +2758,7 @@ namespace Keysharp.Internals.Input.Keyboard
 			{
 				var mi = typeof(HotkeyDefinition).GetMethod(funcname, BindingFlags.NonPublic | BindingFlags.Static);
 				var fo = new KeysharpFunc(mi);
-				var bf = fo.Bind(obj0 ?? "", obj1 ?? "");//Must not pass null so that the logic in BoundFunc.Call() works.
+				var bf = (KeysharpFunc)Keysharp.Runtime.Lifetime.Escape(fo.Bind(obj0 ?? "", obj1 ?? ""));//Must not pass null so that the logic in BoundFunc.Call() works.
 
 				// The criterion made by an earlier identical call, so hotkeys and hotstrings defined under either share
 				// their variants, as AHK finds the criterion by its kind, title and text.
