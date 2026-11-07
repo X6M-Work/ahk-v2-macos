@@ -507,7 +507,7 @@ public class AppleEventsTests : TestRunner
 		var logicalRegion = new ScreenRect(100, 50, 200, 100);
 		var backingSize = new PixelSize(400, 200);
 
-		var mapped = logicalRegion.PixelToScreen(new PixelPoint(240, 120), backingSize);
+		var mapped = logicalRegion.PixelToScreen(new Point(240, 120), backingSize);
 		var pixelBounds = logicalRegion.ScreenToPixelBounds(new ScreenRect(100, 50, 200, 100), backingSize);
 
 		using (Assert.EnterMultipleScope())

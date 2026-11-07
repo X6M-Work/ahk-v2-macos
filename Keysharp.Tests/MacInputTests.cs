@@ -143,14 +143,14 @@ public class MacInputTests
 		Span<char> rightBuf = stackalloc char[8];
 
 		KeyCodes.ResetDeadKeyState();
-		var leftRes = Keysharp.Internals.Platform.Keyboard.ToUnicodeWithDeadKeys((uint)'2', 0, leftOptState, leftBuf, 0, 0);
+		var leftRes = Keysharp.Internals.Platform.Keys.ToUnicodeWithDeadKeys((uint)'2', 0, leftOptState, leftBuf, 0, 0);
 		KeyCodes.ResetDeadKeyState();
-		var rightRes = Keysharp.Internals.Platform.Keyboard.ToUnicodeWithDeadKeys((uint)'2', 0, rightOptState, rightBuf, 0, 0);
+		var rightRes = Keysharp.Internals.Platform.Keys.ToUnicodeWithDeadKeys((uint)'2', 0, rightOptState, rightBuf, 0, 0);
 		KeyCodes.ResetDeadKeyState();
 
-		Assert.AreEqual(leftRes, rightRes);
+		Assert.That(rightRes, Is.EqualTo(leftRes));
 		if (leftRes > 0)
-			Assert.AreEqual(leftBuf[..leftRes].ToString(), rightBuf[..rightRes].ToString());
+			Assert.That(rightBuf[..rightRes].ToString(), Is.EqualTo(leftBuf[..leftRes].ToString()));
 	}
 
 	[Test, Category("Input")]
