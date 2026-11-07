@@ -528,8 +528,12 @@ public class AppleEventsTests : TestRunner
 		{
 			Assert.That(Ks.BuildMacKeychainGetArgs("MyService", "alice"),
 				Is.EqualTo(new[] { "find-generic-password", "-s", "MyService", "-a", "alice", "-w" }));
-			Assert.That(Ks.BuildMacKeychainSetArgs("MyService", "alice", "s3cr3t"),
-				Is.EqualTo(new[] { "add-generic-password", "-U", "-s", "MyService", "-a", "alice", "-w", "s3cr3t" }));
+			Assert.That(Ks.BuildMacKeychainSetCommand("MyService", "alice", "s3cr3t"),
+				Is.EqualTo("add-generic-password -U -s \"MyService\" -a \"alice\" -w \"s3cr3t\"\n"));
+			Assert.That(Ks.BuildMacKeychainSetCommand("My Service", "a\"b", "p\\w \"q\" 'r'"),
+				Is.EqualTo("add-generic-password -U -s \"My Service\" -a \"a\\\"b\" -w \"p\\\\w \\\"q\\\" 'r'\"\n"));
+			Assert.That(Ks.IsKeychainLineSafe("pass word"), Is.True);
+			Assert.That(Ks.IsKeychainLineSafe("line\nbreak"), Is.False);
 			Assert.That(Ks.BuildMacKeychainDeleteArgs("MyService", "alice"),
 				Is.EqualTo(new[] { "delete-generic-password", "-s", "MyService", "-a", "alice" }));
 			Assert.That(Ks.BuildMacSpotlightArgs("kMDItemFSName == '*.ahk'"),
@@ -543,6 +547,39 @@ public class AppleEventsTests : TestRunner
 	}
 
 #if OSX
+	[Test]
+	public void MacKeychainSetRoundTripsThroughSecurityTool()
+	{
+		// KeychainSet feeds `security -i` on stdin (no password on a command line); this proves the
+		// quoting survives spaces, quotes and backslashes, and that -U updates in place.
+		var service = "Keysharp.Tests." + Guid.NewGuid().ToString("N");
+		const string account = "keysharp-test";
+		const string first = "p\\w \"q\" 'r' x";
+
+		try
+		{
+			try
+			{
+				_ = Ks.KeychainSet(service, account, first);
+			}
+			catch (Error ex) when (ex.Message.Contains("keychain could not be found", StringComparison.OrdinalIgnoreCase)
+				|| ex.Message.Contains("interaction is not allowed", StringComparison.OrdinalIgnoreCase)
+				|| (ex.Extra?.ToString() ?? "").Contains("keychain could not be found", StringComparison.OrdinalIgnoreCase)
+				|| (ex.Extra?.ToString() ?? "").Contains("interaction is not allowed", StringComparison.OrdinalIgnoreCase))
+			{
+				Assert.Ignore("No unlocked default keychain in this environment.");
+			}
+
+			Assert.That(Ks.KeychainGet(service, account), Is.EqualTo(first));
+			_ = Ks.KeychainSet(service, account, "second");
+			Assert.That(Ks.KeychainGet(service, account), Is.EqualTo("second"));
+		}
+		finally
+		{
+			try { _ = Ks.KeychainDelete(service, account); } catch { }
+		}
+	}
+
 	[Test]
 	public void IndependentTargets()
 	{

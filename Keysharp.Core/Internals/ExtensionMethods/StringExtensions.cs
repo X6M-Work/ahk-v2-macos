@@ -303,9 +303,11 @@ namespace System
 
 		/// <summary>
 		/// Executes a native macOS command-line utility with an explicit argument list (no shell interpolation)
-		/// and captures standard output and standard error.
+		/// and captures standard output and standard error. <paramref name="standardInput"/>, when given, is written
+		/// to the child's standard input, which is then closed — the way to hand a tool a secret without putting it
+		/// on its command line, where any local process can read it.
 		/// </summary>
-		internal static int RunMacCommand(this string executablePath, IReadOnlyList<string> arguments, out string output, out string error, bool wait = true)
+		internal static int RunMacCommand(this string executablePath, IReadOnlyList<string> arguments, out string output, out string error, bool wait = true, string standardInput = null)
 		{
 			output = DefaultObject;
 			error = DefaultObject;
@@ -319,6 +321,7 @@ namespace System
 						FileName = executablePath,
 						RedirectStandardOutput = true,
 						RedirectStandardError = true,
+						RedirectStandardInput = standardInput != null,
 						UseShellExecute = false,
 						CreateNoWindow = true,
 					}
@@ -331,6 +334,12 @@ namespace System
 				}
 
 				_ = process.Start();
+
+				if (standardInput != null)
+				{
+					process.StandardInput.Write(standardInput);
+					process.StandardInput.Close();
+				}
 
 				if (!wait)
 					return 0;

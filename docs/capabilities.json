@@ -12229,7 +12229,7 @@
                      "linux_x11":  "unsupported",
                      "linux_wayland":  "unsupported",
                      "macos":  "full",
-                     "notes":  "Reads, creates/updates (-U), or deletes generic passwords in the user\u0027s macOS Keychain via /usr/bin/security.",
+                     "notes":  "Reads, creates/updates (-U), or deletes generic passwords in the user\u0027s macOS Keychain via /usr/bin/security. KeychainSet sends the password on standard input (security -i), never on a command line; it cannot contain line breaks.",
                      "tested-by":  "AppleEventsTests.MacKeychainAndSpotlightHelpersFormatArgumentsAndParsePaths"
                  },
                  {

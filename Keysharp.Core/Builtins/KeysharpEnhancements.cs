@@ -159,8 +159,21 @@ namespace Keysharp.Builtins
 		internal static List<string> BuildMacKeychainGetArgs(string service, string account)
 			=> ["find-generic-password", "-s", service ?? "", "-a", account ?? "", "-w"];
 
-		internal static List<string> BuildMacKeychainSetArgs(string service, string account, string password)
-			=> ["add-generic-password", "-U", "-s", service ?? "", "-a", account ?? "", "-w", password ?? ""];
+		/// <summary>
+		/// The <c>add-generic-password</c> line fed to <c>security -i</c> on standard input. Passing the password as
+		/// an argument (<c>-w &lt;password&gt;</c>) would expose it to every local process that can list arguments
+		/// (<c>ps</c>) for as long as the tool runs. Interactive mode splits the line like a shell: each value is
+		/// double-quoted, with <c>\</c> and <c>"</c> escaped. Values must not contain line breaks or NUL
+		/// (<see cref="IsKeychainLineSafe"/>), since the line is the command.
+		/// </summary>
+		internal static string BuildMacKeychainSetCommand(string service, string account, string password)
+		{
+			static string Quote(string s) => "\"" + (s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+			return $"add-generic-password -U -s {Quote(service)} -a {Quote(account)} -w {Quote(password)}\n";
+		}
+
+		internal static bool IsKeychainLineSafe(string s)
+			=> s == null || s.IndexOfAny(['\r', '\n', '\0']) < 0;
 
 		internal static List<string> BuildMacKeychainDeleteArgs(string service, string account)
 			=> ["delete-generic-password", "-s", service ?? "", "-a", account ?? ""];
@@ -215,10 +228,11 @@ namespace Keysharp.Builtins
 
 		/// <summary>
 		/// Stores or updates a generic password in the user's macOS Keychain via <c>/usr/bin/security add-generic-password -U</c>.
+		/// The command is sent on standard input (<c>security -i</c>), so the password never appears on a command line.
 		/// </summary>
 		/// <param name="service">The Keychain service name (<c>-s</c>).</param>
 		/// <param name="account">The Keychain account name (<c>-a</c>).</param>
-		/// <param name="password">The secret password to store (<c>-w</c>).</param>
+		/// <param name="password">The secret password to store (<c>-w</c>); it cannot contain line breaks.</param>
 		public static object KeychainSet(object service, object account, object password)
 		{
 			if (!service.CoerceString(out var svc) || !account.CoerceString(out var acct) || !password.CoerceString(out var pwd))
@@ -228,8 +242,14 @@ namespace Keysharp.Builtins
 				return Errors.ValueErrorOccurred("Keychain service and account cannot be empty.", $"{svc}:{acct}", DefaultObject);
 
 #if OSX
-			var exitCode = "/usr/bin/security".RunMacCommand(BuildMacKeychainSetArgs(svc, acct, pwd), out _, out var error, wait: true);
-			if (exitCode != 0)
+			if (!IsKeychainLineSafe(svc) || !IsKeychainLineSafe(acct) || !IsKeychainLineSafe(pwd))
+				return Errors.ValueErrorOccurred("Keychain service, account and password cannot contain line breaks or NUL.", null, DefaultObject);
+
+			// Interactive mode keeps going after a failed command, so its exit code alone is not
+			// enough: anything on stderr is the failure.
+			var exitCode = "/usr/bin/security".RunMacCommand(["-i"], out _, out var error, wait: true,
+				standardInput: BuildMacKeychainSetCommand(svc, acct, pwd));
+			if (exitCode != 0 || !string.IsNullOrEmpty(error))
 			{
 				var detail = !string.IsNullOrEmpty(error) ? error : $"security exited with code {exitCode}.";
 				return Errors.OSErrorOccurred("", detail, DefaultObject);
