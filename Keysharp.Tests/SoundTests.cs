@@ -80,12 +80,12 @@ public partial class SoundTests : TestRunner
 	{
 		using (Assert.EnterMultipleScope())
 		{
-			Assert.That(SoundPlayback.SystemSoundFile(-1), Is.EqualTo("/System/Library/Sounds/Funk.aiff"));
+			Assert.That(SoundPlayback.SystemSoundFile(-1), Is.EqualTo("/System/Library/Sounds/Ping.aiff"));
 			Assert.That(SoundPlayback.SystemSoundFile(16), Is.EqualTo("/System/Library/Sounds/Basso.aiff"));
-			Assert.That(SoundPlayback.SystemSoundFile(32), Is.EqualTo("/System/Library/Sounds/Bottle.aiff"));
+			Assert.That(SoundPlayback.SystemSoundFile(32), Is.EqualTo("/System/Library/Sounds/Funk.aiff"));
 			Assert.That(SoundPlayback.SystemSoundFile(48), Is.EqualTo("/System/Library/Sounds/Sosumi.aiff"));
 			Assert.That(SoundPlayback.SystemSoundFile(64), Is.EqualTo("/System/Library/Sounds/Glass.aiff"));
-			Assert.That(SoundPlayback.SystemSoundFile(999), Is.Null);
+			Assert.That(SoundPlayback.SystemSoundFile(999), Is.EqualTo("/System/Library/Sounds/Ping.aiff"));
 		}
 	}
 #endif
