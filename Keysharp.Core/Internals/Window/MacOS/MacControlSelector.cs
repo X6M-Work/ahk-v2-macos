@@ -253,6 +253,56 @@ namespace Keysharp.Internals.Window.MacOS
 			return -1;
 		}
 
+		/// <summary>
+		/// Finds the 0-based index of the control in <paramref name="candidates"/> whose screen-coordinate
+		/// rectangle in <paramref name="bounds"/> contains <paramref name="point"/>, or <c>-1</c> if none matches.
+		/// When <paramref name="simpleMode"/> is <see langword="false"/> (the default for <c>MouseGetPos</c>),
+		/// prefers the smallest-area containing control (breaking ties in favor of deeper/later controls).
+		/// When <paramref name="simpleMode"/> is <see langword="true"/> (<c>Flag &amp; 1</c>), returns the first
+		/// top-level/shallowest control in traversal order whose bounds contain <paramref name="point"/>.
+		/// </summary>
+		internal static int FindMatchIndexAtPoint(
+			IReadOnlyList<MacControlCandidate> candidates,
+			IReadOnlyList<Rectangle> bounds,
+			Point point,
+			bool simpleMode = false)
+		{
+			if (candidates == null || bounds == null)
+				return -1;
+
+			var count = Math.Min(candidates.Count, bounds.Count);
+
+			if (count == 0)
+				return -1;
+
+			var bestIndex = -1;
+			var bestArea = long.MaxValue;
+
+			for (var i = 0; i < count; i++)
+			{
+				if (string.IsNullOrWhiteSpace(candidates[i].Role))
+					continue;
+
+				var rect = bounds[i];
+
+				if (rect.Width <= 0 || rect.Height <= 0 || !rect.Contains(point))
+					continue;
+
+				if (simpleMode)
+					return i;
+
+				var area = (long)rect.Width * rect.Height;
+
+				if (bestIndex < 0 || area <= bestArea)
+				{
+					bestArea = area;
+					bestIndex = i;
+				}
+			}
+
+			return bestIndex;
+		}
+
 		private static bool MatchesField(string fieldValue, string selector)
 			=> !string.IsNullOrEmpty(fieldValue)
 				&& fieldValue.Contains(selector, StringComparison.OrdinalIgnoreCase);

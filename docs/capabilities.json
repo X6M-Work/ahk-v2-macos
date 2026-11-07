@@ -8480,8 +8480,8 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "planned",
-                     "notes":  "Keysharp-specific Ks class for cross-platform audio: polyphonic playback from files or memory through a managed mixer, device discovery, endpoint volume and mute, per-application sessions, level meters and recording. Independent of the AHK Sound* functions, which keep their own fuzzy device selector and monophonic file playback. Windows uses WASAPI and is verified on hardware; the Linux libpulse backend compiles and has been exercised against a real PulseAudio server for enumeration, playback and recording; macOS AudioQueue compiles against the contracts but has never been run. Optional property availability follows reference.md\u0027s compatibility-mode rule.",
+                     "macos":  "partial",
+                     "notes":  "Keysharp-specific Ks class for cross-platform audio: polyphonic playback from files or memory through a managed mixer, device discovery, endpoint volume and mute, per-application sessions, level meters and recording. Independent of the AHK Sound* functions, which keep their own fuzzy device selector and monophonic file playback. Windows uses WASAPI and is verified on hardware; the Linux libpulse backend compiles and has been exercised against a real PulseAudio server for enumeration, playback and recording; macOS uses CoreAudio HAL for device discovery, volume/mute, status and change hooks, and AudioToolbox (AudioQueue + ExtAudioFile) for decoding, playback and microphone capture. Optional property availability follows reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "audio-class.ahk; AudioInternalsTests.cs; MiscTests.OptionalMetadata"
                  },
                  {
@@ -8491,7 +8491,7 @@
                      "windows":  "partial",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "planned",
+                     "macos":  "full",
                      "notes":  "An immutable decoded sound. Load() reads a file and FromPcm() copies headerless bytes out of a Buffer, so the caller may reuse its buffer immediately. Only WAV is decoded without a platform codec: little-endian RIFF carrying 8/16/24/32-bit integer or float32 PCM, mono or stereo, 8 through 192 kHz. Every other container is refused by name rather than played as noise; IsFormatSupported() reports what this host can actually decode.",
                      "tested-by":  "audio-class.ahk; AudioInternalsTests.cs"
                  },
@@ -8502,7 +8502,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "planned",
+                     "macos":  "full",
                      "notes":  "Many sounds at once through one managed float32 mixer and one native stream, which is what SoundPlay cannot do. After Open() and Prepare() a play performs no decode, resample or blocking call, so it is safe from a frame timer. Each admitted play returns a stable Audio.Playback with Volume, Pan, Loop, Mute, PositionMilliseconds, Pause, Resume and Stop; a bounded refusal returns blank rather than raising. VoicePolicy is \"Oldest\", \"RoundRobin\" or \"Reject\". One script may hold 16 outputs open. Unavailable Device, output SampleRate/Channels/LatencyMilliseconds/Peak/Error and playback DurationMilliseconds/PositionMilliseconds/Peak follow reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "audio-class.ahk; AudioInternalsTests.cs; Gui/guitest.ks; MiscTests.OptionalMetadata"
                  },
@@ -8513,7 +8513,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Snapshot Array of usable Audio endpoints with completed identity metadata. Filter by Kind and IsDefault; Refresh updates a snapshot in place.",
                      "tested-by":  "audio-class.ahk; Gui/guitest.ks"
                  },
@@ -8524,7 +8524,7 @@
                      "windows":  "full",
                      "linux_x11":  "unsupported",
                      "linux_wayland":  "unsupported",
-                     "macos":  "unknown",
+                     "macos":  "partial",
                      "notes":  "Returns the platform\u0027s device or session object, with an unspecified concrete type. Direct access bypasses snapshot caching. Linux raises OSError because PulseAudio exposes no comparable object."
                  },
                  {
@@ -8534,7 +8534,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Live endpoint volume from 0 through 100 and mute state. Out-of-range volume raises ValueError. Linux uses mixer slider percentages.",
                      "tested-by":  "audio-class.ahk; Gui/guitest.ks"
                  },
@@ -8545,7 +8545,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Status is Running, Idle, Unknown or Missing; IsRunning is true only for Running, including silent streams. Unknown means activity cannot be determined; Missing means removal was observed. macOS may not track Bluetooth inputs.",
                      "tested-by":  "audio-class.ahk; AudioInternalsTests.DeviceStatus; Gui/guitest.ks"
                  },
@@ -8556,7 +8556,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "planned",
+                     "macos":  "full",
                      "notes":  "Calls Callback(Hook, Change, Device) with Change \"Added\", \"Removed\", \"Changed\" or \"DefaultChanged\". Returns a started Audio.DeviceHook that does not keep the script running.",
                      "tested-by":  "audio-class.ahk; EventHookTests.PersistenceFollowsTheFamily"
                  },
@@ -8567,7 +8567,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "planned",
+                     "macos":  "full",
                      "notes":  "An Array of every running Audio.OnDeviceChange hook, in start order, from every thread. A snapshot.",
                      "tested-by":  "audio-class.ahk"
                  },
@@ -8589,7 +8589,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "planned",
+                     "macos":  "unsupported",
                      "notes":  "An explicit lifetime for observing a device or session level, because metering a target whose frames do not pass through Keysharp costs a live native stream on some backends. Peak is 0 through 100 when observed. Unresolved Target, unobserved Peak and absent Error follow reference.md\u0027s compatibility-mode rule, keeping no data distinct from silence. Output, playback and recorder Peak need no meter, since Keysharp already owns those frames.",
                      "tested-by":  "audio-class.ahk"
                  },
@@ -8600,7 +8600,7 @@
                      "windows":  "unknown",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "planned",
+                     "macos":  "partial",
                      "notes":  "Captures a microphone or what an output device is playing, to a WAV file or to memory. Configured first and started second so handlers can be registered before capture begins and a permission failure is observable. A recorder is single-use once capture is admitted, and every way it can end competes for one terminal transition, so exactly one reason and one result are published. Capture is gated on the AudioCapture permission strictly, rather than the usual log-and-continue. Implemented on all three backends but not yet exercised on hardware; macOS system-output capture is unsupported pending its process-tap spike. Unavailable recorder Device/Path/Peak/Error/Result and the unused Recording.Clip or Path follow reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "audio-class.ahk; MiscTests.OptionalMetadata"
                  },
@@ -8622,7 +8622,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Snapshot Array of monitors in index order from one topology enumeration, with geometry and metadata completed before return.",
                      "tested-by":  "MonitorTests.cs"
                  },
@@ -8633,7 +8633,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "The primary monitor.",
                      "tested-by":  "MonitorTests.cs"
                  },
@@ -8644,7 +8644,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "The monitor containing a native screen point, or the nearest monitor when the point lies in a gap. Replaces the removed Ks.MonitorFromPoint() function, which returned an index instead of a Monitor.",
                      "tested-by":  "MonitorTests.cs"
                  },
@@ -8655,7 +8655,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "The monitor a window overlaps most. Inherits the platform\u0027s foreign-window geometry support, so on Wayland it needs a compositor backend (KWin/GNOME/Cinnamon/COSMIC) to locate the window at all.",
                      "tested-by":  "MonitorTests.cs"
                  },
@@ -8666,7 +8666,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "The monitor the cursor is on. Cursor position is not permission-gated. On Wayland it is available only when the active compositor or keysharp-input can provide it.",
                      "tested-by":  "MonitorTests.cs"
                  },
@@ -8688,7 +8688,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Geometry in native screen coordinates, the same space MonitorGet reports. Bounds and WorkArea are objects with X, Y, Width and Height.",
                      "tested-by":  "MonitorTests.cs"
                  },
@@ -8710,7 +8710,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "The union of every monitor - the whole desktop - as an object with X, Y, Width and Height, in native screen coordinates. The origin is negative when a display sits left of or above the primary.",
                      "tested-by":  "MonitorTests.cs"
                  },
@@ -8743,7 +8743,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "The panel\u0027s physical size in millimetres, and the resulting dots per inch. Dpi is expressed in the same units as Width and Height, so it is a physical pixel density on Windows and X11 but a logical one on Wayland and macOS. Unavailable values follow reference.md\u0027s compatibility-mode rule.",
                      "tested-by":  "MonitorTests.cs; MiscTests.MetadataSnapshots"
                  },
@@ -8754,7 +8754,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Calls Callback(Hook, Change) with \"Topology\" or \"Settings\", ignoring notifications that change nothing. Returns a started MonitorHook that does not keep the script running; native callbacks are unverified on Linux and macOS.",
                      "tested-by":  "MonitorTests.cs; EventHookTests.PersistenceFollowsTheFamily"
                  },
@@ -8776,7 +8776,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Clockwise rotation of the desktop content in degrees: 0, 90, 180 or 270.",
                      "tested-by":  "MonitorTests.cs"
                  },
@@ -8896,7 +8896,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Retrieves the current mouse position and, optionally, the window and control beneath it. Cursor coordinates are not permission-gated. Requesting a window or control output requires WindowMonitoring and returns blank when there is no corresponding target. On macOS, the window output for a GUI owned by this script matches Gui.Hwnd; windows owned by other processes use their window-server ID (CGWindowID).",
+                     "notes":  "Retrieves the current mouse position and, optionally, the window and control beneath it. Cursor coordinates are not permission-gated. Requesting a window or control output requires WindowMonitoring and returns blank when there is no corresponding target. On macOS, the window output for a GUI owned by this script matches Gui.Hwnd; windows owned by other processes use their window-server ID (CGWindowID), and foreign controls under the cursor resolve to their 1-based AXRoleN ClassNN via Accessibility when Flag omits 2.",
                      "tested-by":  "ControlTests/control_get_focus.ahk"
                  },
                  {
@@ -10397,7 +10397,7 @@
                      "windows":  "full",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "partial",
+                     "macos":  "full",
                      "notes":  "Emits a tone at the requested frequency and duration. Frequencies outside 37 through 32767 are silent no-ops, matching AutoHotkey 2.0.31 on Windows; nonnumeric inputs still raise TypeError. Windows uses Win32 Beep. Linux and macOS synthesize a WAV and use the SoundPlay backend; Linux needs an available supported player. Local Windows call and duration checks passed; native macOS/Linux playback and audible pitch remain unverified.",
                      "tested-by":  "sound-soundbeep.ahk, clamp-validation.ahk, finite-inputs.ahk, SoundTests.ToneWav"
                  },
@@ -10452,7 +10452,7 @@
                      "windows":  "full",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "partial",
+                     "macos":  "full",
                      "notes":  "Plays a sound file. The \"*n\" standard-sound syntax (*-1, *16, *32, *48, *64) works on every platform: Windows passes the number to MessageBeep, Linux uses the freedesktop sound theme and macOS /System/Library/Sounds, the latter two falling back to a synthesized beep when the desktop ships no such sound. Windows plays via MCI, so any format with an installed codec works (.wav, .mp3, .avi, ...); MCI limits paths to roughly 127 characters. macOS uses afplay (wav/aiff/caf/mp3/m4a). Linux picks the best installed player for the file type - paplay or aplay for uncompressed/libsndfile formats, otherwise ffplay, mpv, gst-play-1.0 or mpg123 - and raises an error naming them if none is present. On every platform, starting a new file stops the previous one, SoundPlay on a nonexistent file stops playback and raises, and playback stops when the script exits.",
                      "tested-by":  "Gui/guitest.ks"
                  },

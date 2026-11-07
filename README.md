@@ -11,7 +11,23 @@ Run AutoHotkey v2-style scripts on macOS with the complete [Keysharp](https://gi
 
 The stable compatibility contract is [AutoHotkey 2.0.31](docs/compatibility-contract.md). The [architecture documentation](docs/architecture-phase15.md) details the deterministic reference-counting lifecycle model implemented across local scopes, expressions, temporaries, arrays, maps, and dynamic properties. The expanded test suite validates regex, enumeration, encodings, native Float values, self-Reload, and over 1,000 unit and integration tests.
 
-## Run on macOS
+## Install on macOS (Release Packages or Homebrew)
+
+Prebuilt `.dmg` and `.pkg` bundles for Apple Silicon (`osx-arm64`) and Intel (`osx-x64`) are published on the [GitHub Releases](https://github.com/X6M-Work/ahk-v2-macos/releases) page, including both `Keysharp.app` (runtime + Dash) and `Keyview.app` (live C# transpiler/editor).
+
+You can also install directly via the included Homebrew Cask formula (`packaging/homebrew/Casks/keysharp.rb`):
+
+```sh
+brew install --cask --no-quarantine ./packaging/homebrew/Casks/keysharp.rb
+```
+
+Because release packages are unsigned, remove the Gatekeeper quarantine attribute if downloading manually via browser:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Keysharp.app /Applications/Keyview.app
+```
+
+## Build and Run from Source on macOS
 
 Requires macOS 15+, the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0), Git, and Python 3. Apple Silicon and Intel are supported build targets.
 

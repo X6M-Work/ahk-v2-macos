@@ -1682,6 +1682,9 @@ namespace Keysharp.Internals.Input.Hooks
 
 						// Reset hotstring detection if the user seems to be navigating within an editor.  This is done
 						// so that hotstrings do not fire in unexpected places.
+#if !WINDOWS
+						KeyCodes.ResetDeadKeyState();
+#endif
 						if (hsBuf.Count > 0)
 							hm.ClearBuf();
 

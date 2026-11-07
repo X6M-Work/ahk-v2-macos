@@ -106,10 +106,26 @@ namespace Keysharp.Internals
 
 				caps = lpKeyState.Length > VirtualKeys.VK_CAPITAL && (lpKeyState[VirtualKeys.VK_CAPITAL] & 0x01) != 0;
 
+#if OSX
+				// On macOS, both Left Option (VK_LMENU) and Right Option (VK_RMENU) select the Option
+				// character and dead-key layer in UCKeyTranslate when neither Control nor Command is held.
+				var controlOrCommandDown =
+					(lpKeyState.Length > VirtualKeys.VK_CONTROL && (lpKeyState[VirtualKeys.VK_CONTROL] & 0x80) != 0) ||
+					(lpKeyState.Length > VirtualKeys.VK_LCONTROL && (lpKeyState[VirtualKeys.VK_LCONTROL] & 0x80) != 0) ||
+					(lpKeyState.Length > VirtualKeys.VK_RCONTROL && (lpKeyState[VirtualKeys.VK_RCONTROL] & 0x80) != 0) ||
+					(lpKeyState.Length > VirtualKeys.VK_LWIN && (lpKeyState[VirtualKeys.VK_LWIN] & 0x80) != 0) ||
+					(lpKeyState.Length > VirtualKeys.VK_RWIN && (lpKeyState[VirtualKeys.VK_RWIN] & 0x80) != 0);
+
+				altGr = !controlOrCommandDown && (
+					(lpKeyState.Length > VirtualKeys.VK_MENU && (lpKeyState[VirtualKeys.VK_MENU] & 0x80) != 0) ||
+					(lpKeyState.Length > VirtualKeys.VK_LMENU && (lpKeyState[VirtualKeys.VK_LMENU] & 0x80) != 0) ||
+					(lpKeyState.Length > VirtualKeys.VK_RMENU && (lpKeyState[VirtualKeys.VK_RMENU] & 0x80) != 0));
+#else
 				altGr =
 					(lpKeyState.Length > VirtualKeys.VK_RMENU && (lpKeyState[VirtualKeys.VK_RMENU] & 0x80) != 0) ||
 					(lpKeyState.Length > VirtualKeys.VK_RCONTROL && (lpKeyState[VirtualKeys.VK_RCONTROL] & 0x80) != 0
 					 && lpKeyState.Length > VirtualKeys.VK_LMENU && (lpKeyState[VirtualKeys.VK_LMENU] & 0x80) != 0);
+#endif
 			}
 
 			/// <summary>

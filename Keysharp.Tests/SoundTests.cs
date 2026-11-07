@@ -74,4 +74,19 @@ public partial class SoundTests : TestRunner
 			Is.EqualTo(Crossings(SoundPlayback.BuildToneWav(SoundPlayback.MinFrequency, 250, rate), rate, 0.05, 0.15)),
 			"a below-range frequency clamps to the minimum");
 	}
+#if OSX
+	[Test, Category("Misc"), Category("Internal")]
+	public void MacSystemSoundMapping()
+	{
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(SoundPlayback.SystemSoundFile(-1), Is.EqualTo("/System/Library/Sounds/Funk.aiff"));
+			Assert.That(SoundPlayback.SystemSoundFile(16), Is.EqualTo("/System/Library/Sounds/Basso.aiff"));
+			Assert.That(SoundPlayback.SystemSoundFile(32), Is.EqualTo("/System/Library/Sounds/Bottle.aiff"));
+			Assert.That(SoundPlayback.SystemSoundFile(48), Is.EqualTo("/System/Library/Sounds/Sosumi.aiff"));
+			Assert.That(SoundPlayback.SystemSoundFile(64), Is.EqualTo("/System/Library/Sounds/Glass.aiff"));
+			Assert.That(SoundPlayback.SystemSoundFile(999), Is.Null);
+		}
+	}
+#endif
 }

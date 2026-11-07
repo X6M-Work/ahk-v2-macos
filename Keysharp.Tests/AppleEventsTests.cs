@@ -457,6 +457,71 @@ public class AppleEventsTests : TestRunner
 	}
 
 	[Test]
+	public void MacControlSelectorHitTestingAtPointHonorsSimpleAndDeepModes()
+	{
+		Keysharp.Internals.Window.MacOS.MacControlCandidate[] candidates =
+		[
+			new("AXGroup", "Credentials", "", "grpCreds", ""),
+			new("AXButton", "Login", "", "btnLogin", ""),
+			new("AXScrollArea", "", "", "scrollBio", ""),
+			new("AXTextArea", "", "", "txtBio", "Hello")
+		];
+		Rectangle[] bounds =
+		[
+			new(100, 100, 300, 200),
+			new(120, 130, 80, 30),
+			new(100, 320, 300, 120),
+			new(100, 320, 300, 120)
+		];
+
+		using (Assert.EnterMultipleScope())
+		{
+			// Default deep mode (simpleMode: false) picks the smaller inner AXButton1 over the enclosing AXGroup1.
+			var deepIdx = Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndexAtPoint(
+				candidates, bounds, new Point(150, 145), simpleMode: false);
+			Assert.That(deepIdx, Is.EqualTo(1));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.GetClassNNAt(candidates, deepIdx), Is.EqualTo("AXButton1"));
+
+			// Simple mode (Flag & 1) picks the outer container AXGroup1 first in traversal order.
+			var simpleIdx = Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndexAtPoint(
+				candidates, bounds, new Point(150, 145), simpleMode: true);
+			Assert.That(simpleIdx, Is.EqualTo(0));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.GetClassNNAt(candidates, simpleIdx), Is.EqualTo("AXGroup1"));
+
+			// When container and child share identical bounds, deep mode prefers the deeper child (AXTextArea1).
+			var equalBoundsDeepIdx = Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndexAtPoint(
+				candidates, bounds, new Point(180, 360), simpleMode: false);
+			Assert.That(equalBoundsDeepIdx, Is.EqualTo(3));
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.GetClassNNAt(candidates, equalBoundsDeepIdx), Is.EqualTo("AXTextArea1"));
+
+			// Point outside all controls returns -1.
+			Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.FindMatchIndexAtPoint(
+				candidates, bounds, new Point(20, 20), simpleMode: false), Is.EqualTo(-1));
+		}
+	}
+
+	[Test]
+	public void RetinaPixelToScreenRoundTripMapsBackingPixelsToLogicalScreenCoordinates()
+	{
+		// Logical 200x100 region at screen (100, 50) backed by a 2x Retina 400x200 pixel capture.
+		var logicalRegion = new ScreenRect(100, 50, 200, 100);
+		var backingSize = new PixelSize(400, 200);
+
+		var mapped = logicalRegion.PixelToScreen(new PixelPoint(240, 120), backingSize);
+		var pixelBounds = logicalRegion.ScreenToPixelBounds(new ScreenRect(100, 50, 200, 100), backingSize);
+
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(mapped.X, Is.EqualTo(220));
+			Assert.That(mapped.Y, Is.EqualTo(110));
+			Assert.That(pixelBounds.X, Is.EqualTo(0));
+			Assert.That(pixelBounds.Y, Is.EqualTo(0));
+			Assert.That(pixelBounds.Width, Is.EqualTo(400));
+			Assert.That(pixelBounds.Height, Is.EqualTo(200));
+		}
+	}
+
+	[Test]
 	public void MacKeychainAndSpotlightHelpersFormatArgumentsAndParsePaths()
 	{
 		using (Assert.EnterMultipleScope())

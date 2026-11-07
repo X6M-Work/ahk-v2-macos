@@ -131,6 +131,29 @@ public class MacInputTests
 	}
 
 	[Test, Category("Input")]
+	public void LeftAndRightOptionMapIdenticallyInToUnicodeWithDeadKeys()
+	{
+		var leftOptState = new byte[256];
+		leftOptState[VK_LMENU] = 0x80;
+
+		var rightOptState = new byte[256];
+		rightOptState[VK_RMENU] = 0x80;
+
+		Span<char> leftBuf = stackalloc char[8];
+		Span<char> rightBuf = stackalloc char[8];
+
+		KeyCodes.ResetDeadKeyState();
+		var leftRes = Keysharp.Internals.Platform.Keyboard.ToUnicodeWithDeadKeys((uint)'2', 0, leftOptState, leftBuf, 0, 0);
+		KeyCodes.ResetDeadKeyState();
+		var rightRes = Keysharp.Internals.Platform.Keyboard.ToUnicodeWithDeadKeys((uint)'2', 0, rightOptState, rightBuf, 0, 0);
+		KeyCodes.ResetDeadKeyState();
+
+		Assert.AreEqual(leftRes, rightRes);
+		if (leftRes > 0)
+			Assert.AreEqual(leftBuf[..leftRes].ToString(), rightBuf[..rightRes].ToString());
+	}
+
+	[Test, Category("Input")]
 	public void EventOrigin()
 	{
 		var ev = MacNativeInput.CGEventCreateKeyboardEvent(nint.Zero, 0, true);

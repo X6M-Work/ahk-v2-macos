@@ -307,7 +307,23 @@ namespace Keysharp.Builtins
 
 			if (child.Handle == parent.Handle)//If there's no control per se, make it blank.
 			{
+#if OSX
+				if (outputVarControl != null)
+				{
+					if ((mode & 0x02) == 0
+						&& parent is Keysharp.Internals.Window.MacOS.MacWindowInfo macParent
+						&& macParent.TryGetControlClassNNAtPoint(pos, (mode & 0x01) != 0, out var macClassNN))
+					{
+						Refs.SetValue(outputVarControl, macClassNN);
+					}
+					else
+					{
+						Refs.SetValue(outputVarControl, "");
+					}
+				}
+#else
 				if (outputVarControl != null) Refs.SetValue(outputVarControl, "");
+#endif
 				return DefaultObject;
 			}
 

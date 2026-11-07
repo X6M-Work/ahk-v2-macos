@@ -144,6 +144,13 @@ namespace Keysharp.Internals
 	{
 		public bool TryGetCursorPos(out int x, out int y)
 		{
+			if (Keysharp.Internals.Input.MacOS.MacNativeInput.TryGetCursorLocation(out var cx, out var cy))
+			{
+				x = (int)Math.Round(cx);
+				y = (int)Math.Round(cy);
+				return true;
+			}
+
 			var pos = Forms.Mouse.Position;
 			x = Convert.ToInt32(pos.X);
 			y = Convert.ToInt32(pos.Y);

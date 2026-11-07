@@ -236,6 +236,13 @@ namespace Keysharp.Internals.Window.MacOS
 				pah.rectFound = native.Bounds;
 			}
 		}
+
+		internal bool TryGetControlClassNNAtPoint(POINT screenPoint, bool simpleMode, out string classNN)
+		{
+			classNN = string.Empty;
+			return TryGetNativeInfo(out var native)
+				&& MacAccessibility.TryGetControlClassNNAtPoint(native, screenPoint, simpleMode, out classNN);
+		}
 	}
 }
 #endif

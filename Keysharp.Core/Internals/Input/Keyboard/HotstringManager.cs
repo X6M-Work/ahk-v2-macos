@@ -293,7 +293,12 @@ namespace Keysharp.Internals.Input.Keyboard
 		internal void ClearBuf()
 		{
 			lock (bufLock)
+			{
 				hsBuf.Clear();
+#if !WINDOWS
+				KeyCodes.ResetDeadKeyState();
+#endif
+			}
 		}
 
 		/// <summary>Empties the buffer and returns what it held, as Hotstring("Reset") does.</summary>
@@ -303,6 +308,9 @@ namespace Keysharp.Internals.Input.Keyboard
 			{
 				var text = new string(CollectionsMarshal.AsSpan(hsBuf));
 				hsBuf.Clear();
+#if !WINDOWS
+				KeyCodes.ResetDeadKeyState();
+#endif
 				return text;
 			}
 		}

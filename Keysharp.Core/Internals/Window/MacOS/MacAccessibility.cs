@@ -1057,6 +1057,42 @@ namespace Keysharp.Internals.Window.MacOS
 			}
 		}
 
+		internal static bool TryGetControlClassNNAtPoint(MacNativeWindow info, POINT screenPoint, bool simpleMode, out string classNN)
+		{
+			classNN = string.Empty;
+			using var window = ResolveWindowElement(info, "query control at point", prompt: false);
+
+			if (window == null || !TryCollectControlCandidates(window.Element, out var elements, out var candidates))
+				return false;
+
+			try
+			{
+				var bounds = new List<Rectangle>(elements.Count);
+
+				for (var i = 0; i < elements.Count; i++)
+				{
+					bounds.Add(TryReadRect(elements[i], out var rect) ? rect : Rectangle.Empty);
+				}
+
+				var matchIndex = MacControlSelector.FindMatchIndexAtPoint(
+					candidates,
+					bounds,
+					new Point(screenPoint.X, screenPoint.Y),
+					simpleMode);
+
+				if (matchIndex < 0)
+					return false;
+
+				classNN = MacControlSelector.GetClassNNAt(candidates, matchIndex);
+				return !string.IsNullOrEmpty(classNN);
+			}
+			finally
+			{
+				for (var i = 0; i < elements.Count; i++)
+					CFRelease(elements[i]);
+			}
+		}
+
 		private static bool TryCollectControlCandidates(nint windowElement, out List<nint> elements, out List<MacControlCandidate> candidates)
 		{
 			elements = new List<nint>();

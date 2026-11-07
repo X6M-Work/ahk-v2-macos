@@ -23,6 +23,7 @@ namespace Keysharp.Internals.Input.Hooks.Unix
 		protected long hookStateGeneration;
 
 		private int sendDepth;
+		private nint lastTranslationWindow;
 		internal bool SendInProgress => sendDepth > 0;
 		internal readonly struct SendScope : IDisposable
 		{
@@ -62,6 +63,8 @@ namespace Keysharp.Internals.Input.Hooks.Unix
 			kbdMsSender.modifiersLRLogical = 0;
 			kbdMsSender.modifiersLRLogicalNonIgnored = 0;
 			kbdMsSender.modifiersLRPhysical = 0;
+			lastTranslationWindow = 0;
+			KeyCodes.ResetDeadKeyState();
 		}
 
 		// KeyCodes.MapVkToSc dispatches to the active platform scan-code backend, so the
@@ -425,8 +428,18 @@ namespace Keysharp.Internals.Input.Hooks.Unix
 			// keystrokes even when they were sent via hotkey such #c or a hotstring for which the user
 			// might still be holding down a modifier, such as :*:<t>::Test (if '>' requires shift key).
 			// It might also fix other issues.
-			if ((kbdMsSender.modifiersLRLogical & ~(MOD_LSHIFT | MOD_RSHIFT)) != 0 // At least one non-Shift modifier is down (Shift may also be down).
-					&& !((kbdMsSender.modifiersLRLogical & (MOD_LALT | MOD_RALT)) != 0 && (kbdMsSender.modifiersLRLogical & (MOD_LCONTROL | MOD_RCONTROL)) != 0))
+			var transcribeModifiedKeys = false;
+#if OSX
+			// On macOS, Option (Alt) and Shift+Option are standard character/dead-key layers
+			// (e.g. Option+2 -> €, Option+l -> @, Option+e -> ´ dead key), whereas Command (Win)
+			// and Control are shortcut modifiers. Allow Option / Shift+Option transcription by default
+			// when neither Control nor Command is down.
+			var hasNonTextModifiers = (kbdMsSender.modifiersLRLogical & ~(MOD_LSHIFT | MOD_RSHIFT | MOD_LALT | MOD_RALT)) != 0;
+#else
+			var hasNonTextModifiers = (kbdMsSender.modifiersLRLogical & ~(MOD_LSHIFT | MOD_RSHIFT)) != 0 // At least one non-Shift modifier is down (Shift may also be down).
+					&& !((kbdMsSender.modifiersLRLogical & (MOD_LALT | MOD_RALT)) != 0 && (kbdMsSender.modifiersLRLogical & (MOD_LCONTROL | MOD_RCONTROL)) != 0);
+#endif
+			if (hasNonTextModifiers)
 			{
 				// Since in some keybd layouts, AltGr (Ctrl+Alt) will produce valid characters (such as the @ symbol,
 				// which is Ctrl+Alt+Q in the German/IBM layout and Ctrl+Alt+2 in the Spanish layout), an attempt
@@ -451,9 +464,25 @@ namespace Keysharp.Internals.Input.Hooks.Unix
 
 					// Transcription is done only once for all layers, so do this if any layer requests it:
 					if (input.transcribeModifiedKeys && input.InProgress() && input.IsInteresting(extraInfo))
+					{
+						transcribeModifiedKeys = true;
 						break;
+					}
 				}
 			}
+#if OSX
+			else if ((kbdMsSender.modifiersLRLogical & (MOD_LALT | MOD_RALT)) != 0)
+			{
+				for (var input = script.input; input != null; input = input.prev)
+				{
+					if (input.transcribeModifiedKeys && input.InProgress() && input.IsInteresting(extraInfo))
+					{
+						transcribeModifiedKeys = true;
+						break;
+					}
+				}
+			}
+#endif
 
 			// v1.1.28.00: active_window is set to the focused control, if any, so that the hotstring buffer is reset
 			// when the focus changes between controls, not just between windows.
@@ -471,6 +500,14 @@ namespace Keysharp.Internals.Input.Hooks.Unix
 			// between two windows of the same app won't reset the buffer.
 			var activeWindow = Keysharp.Internals.Window.MacOS.MacNativeWindows.ForegroundAppHandle;
 #endif
+			if (activeWindow != lastTranslationWindow)
+			{
+				if (lastTranslationWindow != 0)
+					KeyCodes.ResetDeadKeyState();
+
+				lastTranslationWindow = activeWindow;
+			}
+
 			var activeWindowKeybdLayout = GetKeyboardLayout();
 			state.activeWindow = activeWindow;
 			state.keyboardLayout = activeWindowKeybdLayout;
@@ -509,7 +546,7 @@ namespace Keysharp.Internals.Input.Hooks.Unix
 				ch.Clear();
 				charCount = ToUnicodeWithDeadKeys(vk, rawSC, keyState, ch, 0, activeWindowKeybdLayout);
 
-				if (charCount == 0 && (kbdMsSender.modifiersLRLogical & (MOD_LALT | MOD_RALT)) != 0 && (kbdMsSender.modifiersLRLogical & (MOD_LCONTROL | MOD_RCONTROL)) == 0u)
+				if (charCount == 0 && transcribeModifiedKeys && (kbdMsSender.modifiersLRLogical & (MOD_LALT | MOD_RALT)) != 0 && (kbdMsSender.modifiersLRLogical & (MOD_LCONTROL | MOD_RCONTROL)) == 0u)
 				{
 					// Let the Alt state be ignored for Alt / Alt+Shift combinations (matches the M option
 					// behavior: e.g. Win+E or Alt+letter still transcribes to the base letter).
