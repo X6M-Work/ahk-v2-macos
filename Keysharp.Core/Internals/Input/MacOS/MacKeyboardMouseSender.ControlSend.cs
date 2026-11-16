@@ -182,7 +182,7 @@ namespace Keysharp.Internals.Input.MacOS
 		}
 
 		private static Control ResolveOwnTargetControl(Control owner)
-			=> owner is Forms.Window form ? (form.ActiveControl ?? owner) : owner;
+			=> owner is Forms.Form form ? (form.ActiveControl ?? owner) : owner;
 
 		private static bool RaiseEtoKeyEvent(Control control, bool down, Forms.Keys etoKey, char? keyChar, out KeyEventArgs args)
 		{
@@ -301,7 +301,7 @@ namespace Keysharp.Internals.Input.MacOS
 						if (area.AcceptsReturn)
 							DeliverTextToTextControl(edit, "\n");
 					}
-					else if (edit.ParentWindow is Forms.Window win && win.DefaultButton is Button def && def.Enabled)
+					else if (edit.ParentWindow is Forms.Form form && form.DefaultButton is Button def && def.Enabled)
 						def.PerformClick();
 					return;
 				case VK_TAB:
@@ -474,7 +474,7 @@ namespace Keysharp.Internals.Input.MacOS
 
 			if (edit is TextBox box && edit is Eto.ICallbackSource { Callback: TextBox.ICallback tbCb })
 			{
-				var changing = new TextChangingEventArgs(string.Empty, Eto.Forms.Range.FromLength(start, length), TextChangeSource.User);
+				var changing = new TextChangingEventArgs(string.Empty, Eto.Forms.Range.FromLength(start, length), TextChangeSource.Keyboard);
 				tbCb.OnTextChanging(box, changing);
 				if (changing.Cancel)
 					return;
@@ -505,7 +505,7 @@ namespace Keysharp.Internals.Input.MacOS
 
 			if (edit is TextBox box && edit is Eto.ICallbackSource { Callback: TextBox.ICallback tbCb })
 			{
-				var changing = new TextChangingEventArgs(text, Eto.Forms.Range.FromLength(start, length), TextChangeSource.User);
+				var changing = new TextChangingEventArgs(text, Eto.Forms.Range.FromLength(start, length), TextChangeSource.Keyboard);
 				tbCb.OnTextChanging(box, changing);
 				if (changing.Cancel)
 					return;
