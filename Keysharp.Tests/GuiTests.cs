@@ -3125,4 +3125,13 @@ public class GuiTests : TestRunner
 		Assert.IsTrue(setSize2);
 		Assert.That(sizeOnly, Is.EqualTo(new Rectangle(120, 240, 150, 30)));
 	}
+
+	[Test, Category("Internal"), Category("Curated")]
+	public void ControlManagerMacAccessibilityVisibleHelperChecksHiddenAndBounds()
+	{
+		Assert.IsTrue(Keysharp.Internals.Os.ControlManagerBase.IsMacAccessibilityControlVisible(false, false, new Rectangle(10, 20, 80, 24)));
+		Assert.IsTrue(Keysharp.Internals.Os.ControlManagerBase.IsMacAccessibilityControlVisible(true, false, new Rectangle(10, 20, 80, 24)));
+		Assert.IsFalse(Keysharp.Internals.Os.ControlManagerBase.IsMacAccessibilityControlVisible(true, true, new Rectangle(10, 20, 80, 24)));
+		Assert.IsFalse(Keysharp.Internals.Os.ControlManagerBase.IsMacAccessibilityControlVisible(false, false, new Rectangle(10, 20, 0, 24)));
+	}
 }

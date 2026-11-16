@@ -551,6 +551,9 @@ namespace Keysharp.Internals.Os
 				height == int.MinValue ? currentScreenRect.Height : height);
 		}
 
+		internal static bool IsMacAccessibilityControlVisible(bool hasHiddenAttr, bool hidden, Rectangle bounds) =>
+			!(hasHiddenAttr && hidden) && bounds.Width > 0 && bounds.Height > 0;
+
 		private static void ShowHideHelper(bool val, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
 			if (WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText) is WindowInfoBase item)

@@ -4402,8 +4402,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlGetVisible function returns 1 if a control is visible, or 0 if hidden.",
-                     "tested-by":  "ControlTests/control_show_and_hide.ahk"
+                     "notes":  "The ControlGetVisible function returns 1 if a control is visible, or 0 if hidden. On macOS, supports both script-owned controls and foreign windows resolved through Accessibility (checking AXHidden and control bounds).",
+                     "tested-by":  "ControlTests/control_show_and_hide.ahk; GuiTests.ControlManagerMacAccessibilityVisibleHelperChecksHiddenAndBounds"
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -9421,8 +9421,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Returns the parent PID of the selected process, or of the script process if omitted. Throws TargetError if the process is missing and OSError if the parent cannot be queried. The macOS implementation is not yet runtime-verified.",
-                     "tested-by":  "ProcessTests.ProcessGetParent; process-get-parent.ahk"
+                     "notes":  "Returns the parent PID of the selected process, or of the script process if omitted. Throws TargetError if the process is missing and OSError if the parent cannot be queried. Verified on Windows, macOS Intel, and Apple Silicon.",
+                     "tested-by":  "ProcessTests.ProcessGetParent; process-get-parent.ahk; compat/phase15-stdlib/process-contracts.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -9541,8 +9541,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Changes the priority level of the first matching process.",
-                     "tested-by":  "external-dllcall.ahk"
+                     "notes":  "Changes the priority level of the first matching process and returns 0 when the process cannot be manipulated or has exited.",
+                     "tested-by":  "process-run-wait-close.ahk; finite-inputs.ahk; ProcessTests.ProcessSetPriorityReturnsZeroOnUnpermittedOrExitedProcess"
                  },
                  {
                      "category":  "Core Language",

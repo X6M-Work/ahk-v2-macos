@@ -118,6 +118,7 @@ namespace Keysharp.Internals.Window.MacOS
 			private static readonly nint attrIdentifier = CreateCFString("AXIdentifier");
 			private static readonly nint attrFocused = CreateCFString("AXFocused");
 			private static readonly nint attrEnabled = CreateCFString("AXEnabled");
+			private static readonly nint attrHidden = CreateCFString("AXHidden");
 			private const int MaxControlSearchDepth = 16;
 			private const int MaxControlSearchNodes = 512;
 
@@ -2290,6 +2291,30 @@ namespace Keysharp.Internals.Window.MacOS
 				if (!TryReadBool(ctrl, attrEnabled, out enabled))
 					enabled = true;
 
+				return true;
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryGetControlVisible(MacNativeWindow info, string selector, out bool visible, out bool foundControl)
+		{
+			visible = false;
+			foundControl = false;
+			using var window = ResolveWindowElement(info, "query control visible state");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out _))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				var hasHidden = TryReadBool(ctrl, attrHidden, out var hidden);
+				var hasRect = TryReadRect(ctrl, out var rect);
+				visible = ControlManagerBase.IsMacAccessibilityControlVisible(hasHidden, hidden, hasRect ? rect : Rectangle.Empty);
 				return true;
 			}
 			finally

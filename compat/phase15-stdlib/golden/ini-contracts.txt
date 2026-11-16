@@ -1,0 +1,28 @@
+UTF-8-RAW|secs|alpha;Beta
+UTF-8-RAW|sec|key1=val1;dq="quoted two";sq='single three';sp=trimmed;url=http://x/?a=1&b=2;empty=
+UTF-8-RAW|dq|quoted two
+UTF-8-RAW|sq|single three
+UTF-8-RAW|sp|trimmed
+UTF-8-RAW|url|http://x/?a=1&b=2
+UTF-8-RAW|empty|
+UTF-8-RAW|def|DEF
+UTF-8-RAW|misskey|OSError
+UTF-8-RAW|misssec|OSError
+UTF-8-RAW|after_secs|alpha;Gamma
+UTF-8-RAW|after_key1|updated
+UTF-8-RAW|after_g1|added
+UTF-8-RAW|after_sp|GONE
+UTF-16|secs|alpha;Beta
+UTF-16|sec|key1=val1;dq="quoted two";sq='single three';sp=trimmed;url=http://x/?a=1&b=2;empty=
+UTF-16|dq|quoted two
+UTF-16|sq|single three
+UTF-16|sp|trimmed
+UTF-16|url|http://x/?a=1&b=2
+UTF-16|empty|
+UTF-16|def|DEF
+UTF-16|misskey|OSError
+UTF-16|misssec|OSError
+UTF-16|after_secs|alpha;Gamma
+UTF-16|after_key1|updated
+UTF-16|after_g1|added
+UTF-16|after_sp|GONE

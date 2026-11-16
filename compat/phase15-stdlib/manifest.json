@@ -36,6 +36,18 @@
       "category": "types",
       "script": "time-validation.ahk",
       "expected_stdout": "golden/time-validation.txt"
+    },
+    {
+      "id": "ini-contracts",
+      "category": "stdlib",
+      "script": "ini-contracts.ahk",
+      "expected_stdout": "golden/ini-contracts.txt"
+    },
+    {
+      "id": "process-contracts",
+      "category": "stdlib",
+      "script": "process-contracts.ahk",
+      "expected_stdout": "golden/process-contracts.txt"
     }
   ]
 }

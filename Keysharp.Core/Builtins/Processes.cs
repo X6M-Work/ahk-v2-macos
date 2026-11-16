@@ -190,15 +190,24 @@ namespace Keysharp.Builtins
 
 			using (var proc = string.IsNullOrEmpty(name) ? Process.GetCurrentProcess() : FindProcess(name))
 			{
-				if (proc != null)
-				{
-					proc.PriorityClass = priority.Value;
-
-					return proc.Id;
-				}
+				return proc != null ? TryApplyProcessPriority(proc, priority.Value) : 0L;
 			}
+		}
 
-			return 0;
+		internal static long TryApplyProcessPriority(Process proc, ProcessPriorityClass priority)
+		{
+			if (proc == null)
+				return 0L;
+
+			try
+			{
+				proc.PriorityClass = priority;
+				return proc.Id;
+			}
+			catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or UnauthorizedAccessException or NotSupportedException)
+			{
+				return 0L;
+			}
 		}
 
 		/// <summary>

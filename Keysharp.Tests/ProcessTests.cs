@@ -76,4 +76,72 @@ public partial class ProcessTests : TestRunner
 		Assert.That(Processes.ProcessGetPath(1), Is.TypeOf<string>());
 #endif
 	}
+
+	[Test, Category("Process"), Category("Internal"), Category("Curated")]
+	public void ProcessSetPriorityReturnsZeroOnUnpermittedOrExitedProcess()
+	{
+		Assert.That(Processes.ProcessSetPriority("H", -1L), Is.Zero);
+		Assert.That(Processes.TryApplyProcessPriority(null, ProcessPriorityClass.Normal), Is.Zero);
+
+		var exitedStart = new ProcessStartInfo
+		{
+#if WINDOWS
+			FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
+#else
+			FileName = "/bin/sh",
+#endif
+			UseShellExecute = false,
+			CreateNoWindow = true
+		};
+#if WINDOWS
+		exitedStart.ArgumentList.Add("/c");
+#else
+		exitedStart.ArgumentList.Add("-c");
+#endif
+		exitedStart.ArgumentList.Add("exit 0");
+		using (var exited = Process.Start(exitedStart))
+		{
+			Assert.That(exited, Is.Not.Null);
+			Assert.IsTrue(exited.WaitForExit(5000));
+			Assert.That(Processes.TryApplyProcessPriority(exited, ProcessPriorityClass.Normal), Is.Zero);
+		}
+
+		var liveStart = new ProcessStartInfo
+		{
+#if WINDOWS
+			FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
+#else
+			FileName = "/bin/sleep",
+#endif
+			UseShellExecute = false,
+			CreateNoWindow = true
+		};
+#if WINDOWS
+		liveStart.ArgumentList.Add("/c");
+		liveStart.ArgumentList.Add("ping -n 6 127.0.0.1 >nul");
+#else
+		liveStart.ArgumentList.Add("5");
+#endif
+		using var live = Process.Start(liveStart);
+		Assert.That(live, Is.Not.Null);
+
+		try
+		{
+			var lowered = Processes.ProcessSetPriority("B", (long)live.Id);
+			Assert.That(lowered, Is.EqualTo(live.Id));
+			var raised = Processes.ProcessSetPriority("H", (long)live.Id);
+			Assert.That(raised == 0L || raised == live.Id, Is.True);
+		}
+		finally
+		{
+			try
+			{
+				if (!live.HasExited)
+					live.Kill(true);
+			}
+			catch
+			{
+			}
+		}
+	}
 }

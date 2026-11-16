@@ -803,6 +803,19 @@ namespace Keysharp.Internals.Os.Unix
 		}
 
 #if OSX
+		internal override long ControlGetVisible(object ctrl, object title, object text, object excludeTitle, object excludeText)
+		{
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetControlVisible(nativeWin, selector, out var visible, out var foundControl))
+					return visible ? 1L : 0L;
+
+				return (long)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorLong);
+			}
+
+			return base.ControlGetVisible(ctrl, title, text, excludeTitle, excludeText);
+		}
+
 		internal override void ControlSetText(string str, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
 			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
