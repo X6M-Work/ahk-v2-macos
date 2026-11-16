@@ -312,7 +312,11 @@ namespace Keysharp.Internals.Window.Unix
 		/// </summary>
 		/// <returns>True when a monitor claimed the message, meaning default processing must be suppressed.</returns>
 		private static bool Dispatch(Forms.Control control, int msg, nint wparam, nint lparam)
+			=> TryDeliver(control, msg, wparam, lparam, out _);
+
+		internal static bool TryDeliver(Forms.Control control, int msg, nint wparam, nint lparam, out nint result)
 		{
+			result = 0;
 			var script = OwningScript(control);
 
 			if (script == null || script.IsDisposed)
@@ -331,7 +335,12 @@ namespace Keysharp.Internals.Window.Unix
 				LParam = lparam,
 				Result = 0
 			};
-			return filter.CallEventHandlers(ref m) || InvokeOwnerHandlers(control, ref m);
+
+			if (!filter.CallEventHandlers(ref m) && !InvokeOwnerHandlers(control, ref m))
+				return false;
+
+			result = m.Result;
+			return true;
 		}
 
 		/// <summary>

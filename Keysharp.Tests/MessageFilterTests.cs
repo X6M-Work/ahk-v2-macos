@@ -812,4 +812,55 @@ public class MessageFilterTests : TestRunner
 
 	private static nint GetResult(Message message) => message.Result;
 #endif
+
+	[Test]
+	public void OwnedMessageDispatchPrefersMonitorClaimOverDefaultHandler()
+	{
+		var defaultCalls = 0;
+		var posted = new List<Action>();
+
+		var claimed = Keysharp.Internals.Os.ControlManagerBase.TryExecuteOwnedMessage(
+			() => (true, 37),
+			() => { defaultCalls++; return 99L; },
+			post: false,
+			posted.Add,
+			fn => fn(),
+			out var claimedResult);
+		Assert.That(claimed, Is.True);
+		Assert.That(claimedResult, Is.EqualTo(37L));
+		Assert.That(defaultCalls, Is.Zero);
+
+		var fallback = Keysharp.Internals.Os.ControlManagerBase.TryExecuteOwnedMessage(
+			() => (false, 0),
+			() => { defaultCalls++; return 99L; },
+			post: false,
+			posted.Add,
+			fn => fn(),
+			out var fallbackResult);
+		Assert.That(fallback, Is.True);
+		Assert.That(fallbackResult, Is.EqualTo(99L));
+		Assert.That(defaultCalls, Is.EqualTo(1));
+
+		var unhandled = Keysharp.Internals.Os.ControlManagerBase.TryExecuteOwnedMessage(
+			() => (false, 0),
+			null,
+			post: false,
+			posted.Add,
+			fn => fn(),
+			out var unhandledResult);
+		Assert.That(unhandled, Is.False);
+		Assert.That(unhandledResult, Is.Zero);
+
+		var queued = Keysharp.Internals.Os.ControlManagerBase.TryExecuteOwnedMessage(
+			() => (true, 12),
+			() => { defaultCalls++; return 0L; },
+			post: true,
+			posted.Add,
+			fn => fn(),
+			out _);
+		Assert.That(queued, Is.True);
+		Assert.That(posted, Has.Count.EqualTo(1));
+		posted[0]();
+		Assert.That(defaultCalls, Is.EqualTo(1));
+	}
 }

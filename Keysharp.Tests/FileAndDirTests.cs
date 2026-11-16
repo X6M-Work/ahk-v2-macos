@@ -181,6 +181,9 @@ public class FileAndDirTests : TestRunner
 		var spacedTargetExec = Files.FormatUnixShortcutExec("/tmp/My App/runner", "--mode=fast --label \"two words\"");
 		Assert.That(spacedTargetExec, Is.EqualTo("\"/tmp/My App/runner\" --mode=fast --label \"two words\""));
 		Assert.That(Files.ParseUnixShortcutExec(spacedTargetExec), Is.EqualTo(("/tmp/My App/runner", "--mode=fast --label \"two words\"")));
+
+		var missing = Path.Combine(Path.GetTempPath(), $"ks-missing-shortcut-{Guid.NewGuid():N}.lnk");
+		Assert.DoesNotThrow(() => Files.DeleteExistingUnixShortcutTarget(missing));
 	}
 
 	[Test, Category("FileAndDir")]

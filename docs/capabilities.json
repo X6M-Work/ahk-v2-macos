@@ -9223,9 +9223,9 @@
                      "windows":  "full",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
-                     "notes":  "Windows monitors the hidden main window, GUIs, controls and tray events. Linux/macOS synthesize toolkit messages from the script\u0027s own GUI, including WM_MOUSELEAVE with zero wParam/lParam. Native leave delivery is verified on X11 under Xvfb; Wayland and macOS delivery remain unverified. Menu interception verified on Linux X11, unverified on Wayland/macOS.",
-                     "tested-by":  "MessageFilterTests.cs; ExternalTests.OnMessage; external-onmessage.ahk; BuiltInVarsTests.PropsMenuCommands; props-menu-commands.ahk; MessageFilterTests.TrayNotifications; MessageFilterTests.TrayActivations; MessageFilterTests.EtoMouseLeave"
+                     "macos":  "partial",
+                     "notes":  "Windows monitors the hidden main window, GUIs, controls and tray events. Linux/macOS dispatch SendMessage/PostMessage targeting owned GUIs, controls, or A_ScriptHwnd to registered OnMessage monitors and also synthesize toolkit input messages (including WM_MOUSELEAVE with zero wParam/lParam). Native leave delivery is verified on X11 under Xvfb; Wayland and live AppKit leave delivery remain unverified. Menu interception verified on Linux X11, unverified on Wayland/macOS.",
+                     "tested-by":  "MessageFilterTests.cs; ExternalTests.OnMessage; external-onmessage.ahk; BuiltInVarsTests.PropsMenuCommands; props-menu-commands.ahk; MessageFilterTests.TrayNotifications; MessageFilterTests.TrayActivations; MessageFilterTests.EtoMouseLeave; MessageFilterTests.OwnedMessageDispatchPrefersMonitorClaimOverDefaultHandler"
                  },
                  {
                      "category":  "Core Language",

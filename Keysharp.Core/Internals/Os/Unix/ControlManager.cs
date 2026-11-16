@@ -1202,12 +1202,14 @@ namespace Keysharp.Internals.Os.Unix
 			if (WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText, false) is not WindowInfoBase target)
 				return false;
 
-			if (target is not ControlInfo item)
+			var ownedControl = (target as ControlInfo)?.Control ?? Control.FromHandle(target.Handle);
+
+			if (ownedControl == null)
 			{
 				if (msg == (uint)WindowsAPI.WM_CLOSE)
 				{
 					if (post)
-						Application.Instance.AsyncInvoke(() => _ = Platform.Window.TryClose(target.Handle));
+						Application.Instance?.AsyncInvoke(() => _ = Platform.Window.TryClose(target.Handle));
 					else
 						result = Platform.Window.TryClose(target.Handle) ? 1L : 0L;
 					return true;
@@ -1216,24 +1218,27 @@ namespace Keysharp.Internals.Os.Unix
 				return false;
 			}
 
-			var handler = CreateWindowMessageHandler(item.Control, msg, wparam, lparam);
-
-			if (handler == null)
-				return false;
-
-			if (post)
+			var handler = CreateWindowMessageHandler(ownedControl, msg, wparam, lparam);
+			var messageId = unchecked((int)msg);
+			return TryExecuteOwnedMessage(
+				() => Keysharp.Internals.Window.Unix.EtoMessageSource.TryDeliver(ownedControl, messageId, wparam, lparam, out var delivered)
+					? (true, delivered)
+					: (false, 0),
+				handler,
+				post,
+				action =>
+				{
 #if LINUX
-				//AsyncInvoke (GtkSharp's Application.Invoke) runs at a higher priority than GTK's
-				//layout finalization, so it can fire before freshly-changed text is laid out (e.g. a
-				//scroll-to-end would land one line short). A default-priority idle runs after layout.
-				_ = GLib.Idle.Add(() => { _ = handler(); return false; });
+					//AsyncInvoke (GtkSharp's Application.Invoke) runs at a higher priority than GTK's
+					//layout finalization, so it can fire before freshly-changed text is laid out (e.g. a
+					//scroll-to-end would land one line short). A default-priority idle runs after layout.
+					_ = GLib.Idle.Add(() => { action(); return false; });
 #else
-				Application.Instance.AsyncInvoke(() => _ = handler());
+					Application.Instance?.AsyncInvoke(action);
 #endif
-			else
-				result = InvokeWindowMessageHandler(handler);
-
-			return true;
+				},
+				InvokeWindowMessageHandler,
+				out result);
 		}
 
 		internal static Func<long> CreateWindowMessageHandler(Control control, uint msg, nint wparam, nint lparam) =>

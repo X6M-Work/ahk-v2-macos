@@ -1,4 +1,5 @@
 #NoTrayIcon
+#ErrorStdOut
 
 #import KS { FileFullPath }
 #Include <assert>
@@ -91,6 +92,12 @@ AssertEq(expectedIcon, outIcon, A_LineNumber)
 
 	AssertEq("", outRunState, A_LineNumber)
 
+	multiTarget := ""
+	multiDir := ""
+	multiArgs := ""
+	multiDesc := ""
+	multiIcon := ""
+	multiType := ""
 	FileCreateShortcut("./FileGetShortcut/file1.txt", "./testshortcut_multi.lnk", fullpath, '--flag=1 --name "a b"', "MultiArgDesc", "", 2)
 	FileGetShortcut("./testshortcut_multi.lnk", &multiTarget, &multiDir, &multiArgs, &multiDesc, &multiIcon, &multiType)
 	AssertEq(StrLower(FileFullPath("./FileGetShortcut/file1.txt")), StrLower(multiTarget), A_LineNumber)

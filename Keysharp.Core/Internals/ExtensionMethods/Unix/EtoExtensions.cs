@@ -166,8 +166,16 @@ namespace Eto.Forms
             internal static Color DefaultBackColor => SystemColors.ControlBackground;
             internal static Control FromHandle(nint handle)
             {
+                if (handle == 0)
+                    return null;
+
                 var key = handle.ToInt64();
-                var allGuis = TheScript.GuiData.allGuiHwnds;
+                var script = TheScript;
+
+                if (script != null && script.MainWindowHandleIfCreated == handle)
+                    return script.mainWindow;
+
+                var allGuis = script.GuiData.allGuiHwnds;
                 if (allGuis.TryGetValue(key, out var gui))
                     return gui.form;
                 // A GUI that has not run its field initializers yet has no control map at all, and every

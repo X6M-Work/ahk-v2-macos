@@ -377,6 +377,19 @@ namespace Keysharp.Builtins
 				: (span[..split].ToString(), span[(split + 1)..].TrimStart().ToString());
 		}
 
+		internal static void DeleteExistingUnixShortcutTarget(string path)
+		{
+			if (string.IsNullOrEmpty(path))
+				return;
+
+			var existing = new FileInfo(path);
+
+			if (existing.Exists || existing.LinkTarget != null)
+				File.Delete(path);
+			else if (Directory.Exists(path))
+				Directory.Delete(path, true);
+		}
+
 		public static object FileCreateShortcut(object target, object linkFile, object workingDir = null, object args = null, object description = null,
 												object iconFile = null,
 #if WINDOWS
@@ -442,9 +455,7 @@ namespace Keysharp.Builtins
 			}
 			else
 			{
-				if (File.Exists(l) || Directory.Exists(l) || File.ResolveLinkTarget(l, returnFinalTarget: false) != null)
-					File.Delete(l);
-
+				DeleteExistingUnixShortcutTarget(l);
 				_ = File.CreateSymbolicLink(l, t);
 			}
 
@@ -739,8 +750,9 @@ namespace Keysharp.Builtins
 				link = Path.GetFullPath(linkText);
 #if !WINDOWS
 				var linkInfo = new FileInfo(link);
-				var resolved = linkInfo.ResolveLinkTarget(true);
-				var dest = resolved?.FullName;
+				var resolved = linkInfo.LinkTarget != null ? linkInfo.ResolveLinkTarget(true) : null;
+				var dest = resolved?.FullName
+					?? (linkInfo.LinkTarget != null ? Path.GetFullPath(linkInfo.LinkTarget, Path.GetDirectoryName(link)!) : null);
 
 				if (string.IsNullOrEmpty(dest) || link == dest)//Was not just a simple symlink.
 				{

@@ -498,6 +498,48 @@ namespace Keysharp.Internals.Os
 			return true;
 		}
 
+		internal static bool TryExecuteOwnedMessage(
+			Func<(bool Claimed, nint Result)> deliver,
+			Func<long> defaultHandler,
+			bool post,
+			Action<Action> postScheduler,
+			Func<Func<long>, long> syncScheduler,
+			out long result)
+		{
+			result = 0L;
+
+			if (post)
+			{
+				postScheduler(() =>
+				{
+					if (!deliver().Claimed)
+						_ = defaultHandler?.Invoke();
+				});
+				return true;
+			}
+
+			var syncHandled = false;
+			result = syncScheduler(() =>
+			{
+				var (claimed, deliveredResult) = deliver();
+
+				if (claimed)
+				{
+					syncHandled = true;
+					return deliveredResult.ToInt64();
+				}
+
+				if (defaultHandler != null)
+				{
+					syncHandled = true;
+					return defaultHandler();
+				}
+
+				return 0L;
+			});
+			return syncHandled;
+		}
+
 		private static void ShowHideHelper(bool val, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
 			if (WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText) is WindowInfoBase item)

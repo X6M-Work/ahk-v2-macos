@@ -488,6 +488,8 @@ namespace Keysharp.Runtime
 			}
 		}
 
+		internal nint MainWindowHandleIfCreated => mainWindow != null ? mainWindowHandle : 0;
+
 #if LINUX
 		internal Keysharp.Internals.Linux.LinuxServices LinuxServices { get; }
 #endif
