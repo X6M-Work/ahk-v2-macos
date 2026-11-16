@@ -106,6 +106,7 @@ namespace Keysharp.Internals.Window.MacOS
 			private static readonly nint attrMenuBar = CreateCFString("AXMenuBar");
 			private static readonly nint attrTabs = CreateCFString("AXTabs");
 			private static readonly nint attrRows = CreateCFString("AXRows");
+			private static readonly nint attrColumns = CreateCFString("AXColumns");
 			private static readonly nint attrSelectedRows = CreateCFString("AXSelectedRows");
 			private static readonly nint attrSelectedChildren = CreateCFString("AXSelectedChildren");
 			private static readonly nint attrSelected = CreateCFString("AXSelected");
@@ -1838,6 +1839,107 @@ namespace Keysharp.Internals.Window.MacOS
 				finally
 				{
 					ReleaseElements(elements);
+				}
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryGetListViewContent(
+			MacNativeWindow info,
+			string selector,
+			in Keysharp.Internals.Os.ControlManagerBase.ListViewQueryOptions opts,
+			out object result,
+			out bool foundControl,
+			out bool unsupportedClass,
+			out int outOfRangeColumnCount)
+		{
+			result = string.Empty;
+			foundControl = false;
+			unsupportedClass = false;
+			outOfRangeColumnCount = 0;
+			using var window = ResolveWindowElement(info, "read list view content");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out var candidate))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (!MacControlSelector.IsListViewRole(candidate.Role))
+				{
+					unsupportedClass = true;
+					return false;
+				}
+
+				if (!TryCopyAttributeArrayElements(ctrl, attrRows, out var rowElements) || rowElements.Count == 0)
+				{
+					ReleaseElements(rowElements);
+					_ = TryReadListOrComboItems(ctrl, candidate.Role, [], out rowElements);
+				}
+
+				try
+				{
+					var rows = new List<IReadOnlyList<string>>(rowElements.Count);
+					var selectedIndices = new List<int>();
+					var focusedRowIndex = -1;
+					var maxCells = 0;
+
+					for (var r = 0; r < rowElements.Count; r++)
+					{
+						var rowEl = rowElements[r];
+
+						if (TryReadBool(rowEl, attrSelected, out var selected) && selected)
+							selectedIndices.Add(r);
+
+						if (focusedRowIndex < 0 && TryReadBool(rowEl, attrFocused, out var focused) && focused)
+							focusedRowIndex = r;
+
+						List<string> cells;
+
+						if (TryCopyChildren(rowEl, out var cellElements) && cellElements.Count > 0)
+						{
+							cells = new List<string>(cellElements.Count);
+							for (var c = 0; c < cellElements.Count; c++)
+								cells.Add(ExtractControlItemText(cellElements[c]));
+							ReleaseElements(cellElements);
+						}
+						else
+						{
+							ReleaseElements(cellElements);
+							cells = [ExtractControlItemText(rowEl)];
+						}
+
+						if (cells.Count > maxCells)
+							maxCells = cells.Count;
+
+						rows.Add(cells);
+					}
+
+					var colCount = 0;
+
+					if (TryCopyAttributeArrayElements(ctrl, attrColumns, out var colElements))
+						colCount = colElements.Count;
+
+					ReleaseElements(colElements);
+					if (colCount <= 0)
+						colCount = Math.Max(maxCells, rows.Count > 0 ? 1 : 0);
+
+					return Keysharp.Internals.Os.ControlManagerBase.TryEvaluateListViewRows(
+						rows,
+						colCount,
+						focusedRowIndex,
+						selectedIndices,
+						in opts,
+						out result,
+						out outOfRangeColumnCount);
+				}
+				finally
+				{
+					ReleaseElements(rowElements);
 				}
 			}
 			finally

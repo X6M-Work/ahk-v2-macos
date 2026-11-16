@@ -351,6 +351,11 @@ namespace Keysharp.Internals.Window.MacOS
 			|| string.Equals(role, "AXSecureTextField", StringComparison.OrdinalIgnoreCase)
 			|| string.Equals(role, "AXComboBox", StringComparison.OrdinalIgnoreCase);
 
+		internal static bool IsListViewRole(string role) =>
+			string.Equals(role, "AXTable", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXOutline", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXList", StringComparison.OrdinalIgnoreCase);
+
 		private static bool MatchesField(string fieldValue, string selector)
 			=> !string.IsNullOrEmpty(fieldValue)
 				&& fieldValue.Contains(selector, StringComparison.OrdinalIgnoreCase);

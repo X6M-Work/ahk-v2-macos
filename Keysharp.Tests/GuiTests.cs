@@ -1158,6 +1158,42 @@ public class GuiTests : TestRunner
 		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsTextEditRole("AXButton"), Is.False);
 	}
 
+	[Test, Category("Gui"), Category("Internal"), Category("Curated"), NonParallelizable]
+	public void ControlManagerListViewHelpersParseOptionsAndFormatRows()
+	{
+		var rows = new IReadOnlyList<string>[]
+		{
+			["Alice", "Admin"],
+			["Bob", "User"],
+			["Cara", "Guest"]
+		};
+		var selected = new[] { 0, 2 };
+
+		var allOpts = Keysharp.Internals.Os.ControlManagerBase.ParseListViewQueryOptions("");
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryEvaluateListViewRows(rows, 2, 1, selected, in allOpts, out var allRes, out _), Is.True);
+		Assert.That(allRes, Is.EqualTo("Alice\tAdmin\nBob\tUser\nCara\tGuest"));
+
+		var selCol2 = Keysharp.Internals.Os.ControlManagerBase.ParseListViewQueryOptions("Selected Col2");
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryEvaluateListViewRows(rows, 2, 1, selected, in selCol2, out var selColRes, out _), Is.True);
+		Assert.That(selColRes, Is.EqualTo("Admin\nGuest"));
+
+		var countFocused = Keysharp.Internals.Os.ControlManagerBase.ParseListViewQueryOptions("Count Focused");
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryEvaluateListViewRows(rows, 2, 1, selected, in countFocused, out var countFocusedRes, out _), Is.True);
+		Assert.That(countFocusedRes, Is.EqualTo(2L));
+
+		var countCols = Keysharp.Internals.Os.ControlManagerBase.ParseListViewQueryOptions("Count Col");
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryEvaluateListViewRows(rows, 2, 1, selected, in countCols, out var countColsRes, out _), Is.True);
+		Assert.That(countColsRes, Is.EqualTo(2L));
+
+		var badCol = Keysharp.Internals.Os.ControlManagerBase.ParseListViewQueryOptions("Col3");
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryEvaluateListViewRows(rows, 2, 1, selected, in badCol, out _, out var colCount), Is.False);
+		Assert.That(colCount, Is.EqualTo(2));
+
+		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsListViewRole("AXTable"), Is.True);
+		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsListViewRole("AXOutline"), Is.True);
+		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsListViewRole("AXButton"), Is.False);
+	}
+
 #if WINDOWS
 	// The whole zero-copy design rests on one property: GDI+ drawing through the Bitmap and GDI reading
 	// through the DC address the same memory. If that ever stopped holding, presents would silently show

@@ -1075,43 +1075,48 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override object ListViewGetContent(string options, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+			var opts = ParseListViewQueryOptions(options);
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetListViewContent(
+					nativeWin,
+					selector,
+					in opts,
+					out var axResult,
+					out var foundControl,
+					out var unsupportedClass,
+					out var colCount))
+					return axResult;
+
+				if (!foundControl)
+					return Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+				if (unsupportedClass)
+					return Errors.TargetErrorOccurred($"Control {selector} did not match SysListView32", title, text, excludeTitle, excludeText);
+				return Errors.ValueErrorOccurred($"Column {opts.ColumnIndex + 1} is outside the list view column count of {colCount}.");
+			}
+#endif
 			object ret = null;
 
 			if (OwnControl(ctrl, title, text, excludeTitle, excludeText) is Control control)
 			{
-				var focused = false;
-				var count = false;
-				var sel = false;
-				var countcol = false;
-				var col = int.MinValue;
-				var opts = Options.ParseOptions(options);
-
-				foreach (var opt in opts)
-				{
-					if (string.Compare(opt, "focused", true) == 0) { focused = true; }
-					else if (string.Compare(opt, "count", true) == 0) { count = true; }
-					else if (string.Compare(opt, "selected", true) == 0) { sel = true; }
-					else if (string.Compare(opt, "col", true) == 0) { countcol = true; }
-					else if (Options.TryParse(opt, "col", ref col)) { col--; }
-				}
-
 				if (control is KeysharpListView lv)
 				{
 					//As in AutoHotkey, Focused takes precedence over Selected.
-					if (count && focused)
+					if (opts.Count && opts.Focused)
 						ret = lv.FocusedRow + 1L;
-					else if (count && sel)
+					else if (opts.Count && opts.Selected)
 						ret = (long)lv.SelectedIndices.Count;
-					else if (count && countcol)
+					else if (opts.Count && opts.CountCols)
 						ret = (long)lv.Columns.Count;
-					else if (count)
+					else if (opts.Count)
 						ret = (long)lv.Items.Count;
 					else
 					{
-						if (col != int.MinValue && (col < 0 || col >= lv.Columns.Count))
-							return Errors.ValueErrorOccurred($"Column {col + 1} is outside the list view column count of {lv.Columns.Count}.");
+						if (opts.ColumnIndex != int.MinValue && (opts.ColumnIndex < 0 || opts.ColumnIndex >= lv.Columns.Count))
+							return Errors.ValueErrorOccurred($"Column {opts.ColumnIndex + 1} is outside the list view column count of {lv.Columns.Count}.");
 
-						IEnumerable<int> rows = focused ? (lv.FocusedRow is var focusedRow and >= 0 ? [focusedRow] : []) : sel ? lv.SelectedIndices : Enumerable.Range(0, lv.Items.Count);
+						IEnumerable<int> rows = opts.Focused ? (lv.FocusedRow is var focusedRow and >= 0 ? [focusedRow] : []) : opts.Selected ? lv.SelectedIndices : Enumerable.Range(0, lv.Items.Count);
 						var sb = new StringBuilder(1024);
 						var firstRow = true;
 
@@ -1124,8 +1129,8 @@ namespace Keysharp.Internals.Os.Unix
 							firstRow = false;
 							var cells = lv.Items[row];
 
-							if (col >= 0)
-								_ = sb.Append(GetCellText(cells, col));
+							if (opts.ColumnIndex >= 0)
+								_ = sb.Append(GetCellText(cells, opts.ColumnIndex));
 							else
 								for (var c = 0; c < lv.Columns.Count; c++)
 									_ = (c > 0 ? sb.Append('\t') : sb).Append(GetCellText(cells, c));

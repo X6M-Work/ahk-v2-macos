@@ -384,6 +384,120 @@ namespace Keysharp.Internals.Os
 			return string.Concat(value.AsSpan(0, start), insert.AsSpan(), value.AsSpan(start + length));
 		}
 
+		internal readonly record struct ListViewQueryOptions(bool Focused, bool Count, bool Selected, bool CountCols, int ColumnIndex);
+
+		internal static ListViewQueryOptions ParseListViewQueryOptions(string options)
+		{
+			var focused = false;
+			var count = false;
+			var selected = false;
+			var countCols = false;
+			var col = int.MinValue;
+
+			foreach (var opt in Options.ParseOptions(options))
+			{
+				if (string.Compare(opt, "focused", true) == 0)
+					focused = true;
+				else if (string.Compare(opt, "count", true) == 0)
+					count = true;
+				else if (string.Compare(opt, "selected", true) == 0)
+					selected = true;
+				else if (string.Compare(opt, "col", true) == 0)
+					countCols = true;
+				else if (Options.TryParse(opt, "col", ref col))
+					col--;
+			}
+
+			return new ListViewQueryOptions(focused, count, selected, countCols, col);
+		}
+
+		internal static bool TryEvaluateListViewRows(
+			IReadOnlyList<IReadOnlyList<string>> rows,
+			int columnCount,
+			int focusedRowIndex,
+			IReadOnlyCollection<int> selectedIndices,
+			in ListViewQueryOptions opts,
+			out object result,
+			out int outOfRangeColumnCount)
+		{
+			result = string.Empty;
+			outOfRangeColumnCount = 0;
+
+			if (opts.Count && opts.Focused)
+			{
+				result = focusedRowIndex >= 0 ? focusedRowIndex + 1L : 0L;
+				return true;
+			}
+
+			if (opts.Count && opts.Selected)
+			{
+				result = (long)(selectedIndices?.Count ?? 0);
+				return true;
+			}
+
+			if (opts.Count && opts.CountCols)
+			{
+				result = (long)Math.Max(0, columnCount);
+				return true;
+			}
+
+			if (opts.Count)
+			{
+				result = (long)(rows?.Count ?? 0);
+				return true;
+			}
+
+			var effectiveCols = Math.Max(0, columnCount);
+
+			if (opts.ColumnIndex != int.MinValue && (opts.ColumnIndex < 0 || opts.ColumnIndex >= effectiveCols))
+			{
+				outOfRangeColumnCount = effectiveCols;
+				return false;
+			}
+
+			if (rows == null || rows.Count == 0)
+				return true;
+
+			IEnumerable<int> targetRows = opts.Focused
+				? (focusedRowIndex >= 0 && focusedRowIndex < rows.Count ? [focusedRowIndex] : [])
+				: opts.Selected
+					? (selectedIndices ?? [])
+					: Enumerable.Range(0, rows.Count);
+
+			var sb = new StringBuilder(256);
+			var firstRow = true;
+
+			foreach (var rowIndex in targetRows)
+			{
+				if (rowIndex < 0 || rowIndex >= rows.Count)
+					continue;
+
+				if (!firstRow)
+					_ = sb.Append('\n');
+
+				firstRow = false;
+				var cells = rows[rowIndex];
+
+				if (opts.ColumnIndex >= 0)
+				{
+					_ = sb.Append(opts.ColumnIndex < cells.Count ? cells[opts.ColumnIndex] ?? string.Empty : string.Empty);
+				}
+				else
+				{
+					for (var c = 0; c < effectiveCols; c++)
+					{
+						if (c > 0)
+							_ = sb.Append('\t');
+
+						_ = sb.Append(c < cells.Count ? cells[c] ?? string.Empty : string.Empty);
+					}
+				}
+			}
+
+			result = sb.ToString();
+			return true;
+		}
+
 		private static void ShowHideHelper(bool val, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
 			if (WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText) is WindowInfoBase item)

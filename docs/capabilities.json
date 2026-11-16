@@ -7697,8 +7697,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ListViewGetContent function returns content data from a list-view control, such as rows, columns, or count values.",
-                     "tested-by":  "ControlTests/listview_bug_report.ahk"
+                     "notes":  "The ListViewGetContent function returns content data from a list-view control, such as rows, columns, or count values. On macOS, supports both script-owned ListView controls and foreign AXTable/AXOutline/AXList controls via Accessibility (Count, Focused, Selected, Col, ColN).",
+                     "tested-by":  "ControlTests/listview_bug_report.ahk; GuiTests.ControlManagerListViewHelpersParseOptionsAndFormatRows"
                  },
                  {
                      "category":  "Core Language",
