@@ -270,9 +270,10 @@ namespace Keysharp.Internals.Os.Unix
 					if (clickCount < 1)
 						return;
 
+					bool foundForeign;
 					var okForeign = isWheelForeign
-						? Keysharp.Internals.Window.MacOS.MacAccessibility.TryScrollControl(foreignWin, foreignSelector, wheelDeltaForeign, horizontalForeign, clickCount, ctrlx, ctrly, out var foundForeign)
-						: Keysharp.Internals.Window.MacOS.MacAccessibility.TryClickControl(foreignWin, foreignSelector, foreignButton, clickCount, ctrlx, ctrly, out var foundForeign, sendDown: !u, sendUp: !d);
+						? Keysharp.Internals.Window.MacOS.MacAccessibility.TryScrollControl(foreignWin, foreignSelector, wheelDeltaForeign, horizontalForeign, clickCount, ctrlx, ctrly, out foundForeign)
+						: Keysharp.Internals.Window.MacOS.MacAccessibility.TryClickControl(foreignWin, foreignSelector, foreignButton, clickCount, ctrlx, ctrly, out foundForeign, sendDown: !u, sendUp: !d);
 
 					if (okForeign)
 					{

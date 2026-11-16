@@ -840,8 +840,8 @@ namespace Keysharp.Internals.Window.MacOS
 			}
 
 			var direction = horizontal
-				? Keysharp.Internals.Input.Mouse.MouseWheelScrollDirection.Horizontal
-				: Keysharp.Internals.Input.Mouse.MouseWheelScrollDirection.Vertical;
+				? Keysharp.Internals.Input.Hooks.Unix.MouseWheelScrollDirection.Horizontal
+				: Keysharp.Internals.Input.Hooks.Unix.MouseWheelScrollDirection.Vertical;
 
 			for (var i = 0; i < count; i++)
 			{
