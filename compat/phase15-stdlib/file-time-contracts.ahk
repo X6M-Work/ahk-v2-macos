@@ -6,9 +6,8 @@ OnError((err, mode) => (FileAppend("ERROR:" err.Message "`n", "**", "UTF-8-RAW")
 
 Emit(line) => FileAppend(line "`n", "*", "UTF-8-RAW")
 
-root := A_Temp "/ks_file_time_" ProcessExist()
-filePath := root "/sample.txt"
-dirPath := root "/folder"
+filePath := "sample.txt"
+dirPath := "folder"
 DirCreate(dirPath)
 FileAppend("hello", filePath, "UTF-8-RAW")
 
@@ -26,5 +25,6 @@ try {
     FileSetTime("20220304050607", dirPath, "M", "D")
     Emit("dir_m|" FileGetTime(dirPath, "M"))
 } finally {
-    try DirDelete(root, true)
+    try FileDelete(filePath)
+    try DirDelete(dirPath, true)
 }
