@@ -9,4 +9,4 @@ python compat/run.py --engine ahk --executable C:/tools/AutoHotkey64.exe --corpu
 python compat/run.py --engine keysharp --executable bin/Debug/net10.0-windows/Keysharp.exe --corpus compat/phase15-native-windows --output compat/reports/native-windows-keysharp.json --baseline compat/reports/native-windows-ahk.json
 ```
 
-Other platforms report `unsupported`, not a passing Windows ABI gate. `compat/phase15-architecture/macos/sqrtf.ahk` is a separate pending capability probe against libSystem.
+Other platforms report `unsupported`, not a passing Windows ABI gate. `compat/phase15-architecture/macos/sqrtf.ahk` and `compat/phase15-architecture/macos/float-return-output.ahk` provide the corresponding macOS native ABI checks (`libSystem.B.dylib\sqrtf` and compiled `parse-float.c` `"Float*"` output rewriting).

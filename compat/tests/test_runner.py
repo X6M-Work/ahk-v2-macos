@@ -8,8 +8,11 @@ import tempfile
 import time
 import unittest
 
+from unittest.mock import patch
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import runner
 from runner import (build_command, classify, compare_reports, execute, load_corpus,
                     normalize_output, run_corpus, validate_report, executable_identity)
 
@@ -230,6 +233,61 @@ class CorpusTests(unittest.TestCase):
                  "expected_stdout": "example.txt"}]}))
             with self.assertRaisesRegex(ValueError, "directives"):
                 load_corpus(corpus)
+
+    def test_assets_are_staged_fingerprinted_and_bounded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            corpus = Path(directory)
+            (corpus / "example.ahk").write_text(
+                "#ErrorStdOut\n#Warn All, StdOut\n#Requires AutoHotkey v2.0\n", encoding="utf-8")
+            (corpus / "example.txt").write_text("from-asset\n", encoding="utf-8")
+            (corpus / "sub").mkdir()
+            (corpus / "sub" / "helper.c").write_bytes(b"int v = 1;\n")
+            (corpus / "manifest.json").write_text(json.dumps({"schema_version": 1, "cases": [
+                {"id": "example", "category": "abi", "script": "example.ahk",
+                 "expected_stdout": "example.txt", "assets": ["sub/helper.c"]}]}))
+            cases_before, digest_before = load_corpus(corpus)
+            self.assertEqual([item[0] for item in cases_before[0]["asset_files"]], ["sub/helper.c"])
+
+            (corpus / "sub" / "helper.c").write_bytes(b"int v = 2;\n")
+            _, digest_after = load_corpus(corpus)
+            self.assertNotEqual(digest_before, digest_after)
+
+            observed = {}
+
+            def fake_execute(command, cwd, timeout):
+                observed["exists"] = (cwd / "sub" / "helper.c").read_bytes()
+                return {"stdout": "from-asset\n", "stderr": "", "exit_code": 0,
+                        "timed_out": False, "encoding_errors": False, "duration_ms": 1}
+
+            with patch.object(runner, "execute", side_effect=fake_execute):
+                report_data = run_corpus(corpus, "keysharp", Path(sys.executable), 5)
+            self.assertEqual(observed["exists"], b"int v = 2;\n")
+            self.assertEqual(report_data["cases"][0]["status"], "pass")
+
+            for bad_assets in (["../escape.c"], ["missing.c"], [str(corpus / "sub" / "helper.c")],
+                               ["sub/helper.c", "sub/helper.c"], "sub/helper.c"):
+                (corpus / "manifest.json").write_text(json.dumps({"schema_version": 1, "cases": [
+                    {"id": "example", "category": "abi", "script": "example.ahk",
+                     "expected_stdout": "example.txt", "assets": bad_assets}]}))
+                with self.subTest(bad_assets=bad_assets), self.assertRaises(ValueError):
+                    load_corpus(corpus)
+
+    def test_macos_native_abi_includes_float_return_output_and_windows_remains_separate(self):
+        compat_root = Path(__file__).resolve().parents[1]
+        mac_cases, _ = load_corpus(compat_root / "phase15-architecture" / "macos")
+        mac_by_id = {case["id"]: case for case in mac_cases}
+        self.assertIn("macos-float-return-output", mac_by_id)
+        mac_float = mac_by_id["macos-float-return-output"]
+        self.assertEqual(mac_float["platforms"], ["Darwin"])
+        self.assertEqual([item[0] for item in mac_float["asset_files"]], ["parse-float.c"])
+        self.assertEqual(mac_float["expected_stdout_bytes"],
+                         b"return|1.4142135381698608\noutput|1|1.2345000505447388\n")
+
+        win_cases, _ = load_corpus(compat_root / "phase15-native-windows")
+        win_by_id = {case["id"]: case for case in win_cases}
+        self.assertEqual(win_by_id["float-return-output"]["platforms"], ["Windows"])
+        self.assertEqual(win_by_id["float-return-output"]["expected_stdout_bytes"],
+                         b"return|1.4142135381698608\noutput|1|1.2345000505447388\n")
 
 
 if __name__ == "__main__":

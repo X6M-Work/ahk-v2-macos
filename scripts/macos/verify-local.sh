@@ -48,5 +48,21 @@ esac
 result=0
 python3 compat/suite.py --engine keysharp --executable "${engine}" --output-dir "${output}" --baseline-dir "${baseline}" --timeout 120 || result=1
 python3 compat/run.py --engine keysharp --executable "${engine}" --corpus compat/phase15-architecture/macos --output "${output}/native-abi.json" --timeout 120 || result=1
+python3 - "${output}/suite.json" "${output}/native-abi.json" <<'PY' || result=1
+import json, sys
+from pathlib import Path
+
+suite = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+gates = {gate["corpus"]: gate for gate in suite.get("gates", [])}
+win_gate = gates.get("phase15-native-windows")
+if not win_gate or not win_gate.get("passed") or not win_gate.get("skipped_platform"):
+    raise SystemExit("phase15-native-windows must remain an explicit platform-skipped gate on macOS")
+
+native_abi = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+cases = {case["id"]: case for case in native_abi.get("cases", [])}
+float_case = cases.get("macos-float-return-output")
+if not float_case or float_case.get("status") != "pass":
+    raise SystemExit("macos-float-return-output missing or failing in native-abi.json")
+PY
 printf 'Local reports: %s\n' "${output}"
 exit "${result}"

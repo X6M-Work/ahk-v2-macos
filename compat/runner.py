@@ -221,10 +221,36 @@ def load_corpus(directory: Path) -> tuple[list[dict], str]:
             raise ValueError(f"{case_id}: required safety/version directives are missing")
         case["source_sha256"] = sha256(case["script_bytes"])
         case["expected_sha256"] = sha256(case["expected_stdout_bytes"])
+        assets = case.get("assets", [])
+        if not isinstance(assets, list) or any(not isinstance(item, str) or not item for item in assets):
+            raise ValueError(f"{case_id}: assets must be a list of relative paths")
+        asset_files = []
+        seen_assets = set()
+        root = directory.resolve()
+        for rel in assets:
+            rel_path = Path(rel)
+            if rel_path.is_absolute():
+                raise ValueError(f"{case_id}: asset must be relative")
+            asset_path = (directory / rel_path).resolve()
+            if not asset_path.is_relative_to(root) or not asset_path.is_file():
+                raise ValueError(f"{case_id}: asset escapes corpus or is missing")
+            normalized_rel = rel_path.as_posix()
+            if normalized_rel in seen_assets:
+                raise ValueError(f"{case_id}: duplicate asset {normalized_rel}")
+            seen_assets.add(normalized_rel)
+            data = asset_path.read_bytes()
+            asset_files.append((normalized_rel, data, sha256(data)))
+        asset_files.sort(key=lambda item: item[0])
+        case["asset_files"] = asset_files
         loaded.append(case)
     loaded.sort(key=lambda case: case["id"])
-    fingerprint = {"manifest": sha256(manifest_bytes), "cases": [
-        [case["id"], case["source_sha256"], case["expected_sha256"]] for case in loaded]}
+    fingerprint_cases = []
+    for case in loaded:
+        entry = [case["id"], case["source_sha256"], case["expected_sha256"]]
+        if case["asset_files"]:
+            entry.append([[rel, digest] for rel, _, digest in case["asset_files"]])
+        fingerprint_cases.append(entry)
+    fingerprint = {"manifest": sha256(manifest_bytes), "cases": fingerprint_cases}
     return loaded, sha256(json.dumps(fingerprint, sort_keys=True).encode("utf-8"))
 
 
@@ -281,8 +307,15 @@ def run_corpus(directory: Path, engine: str, executable: Path, timeout: float,
             try:
                 with tempfile.TemporaryDirectory(prefix="ahk-conformance-") as temporary:
                     cwd = Path(temporary)
+                    cwd_root = cwd.resolve()
                     script = cwd / Path(case["script"]).name
                     script.write_bytes(case["script_bytes"])
+                    for rel, data, _ in case.get("asset_files", ()):
+                        dest = (cwd / rel).resolve()
+                        if not dest.is_relative_to(cwd_root):
+                            raise ValueError(f"{case['id']}: asset escapes working directory")
+                        dest.parent.mkdir(parents=True, exist_ok=True)
+                        dest.write_bytes(data)
                     execution = execute(build_command(engine, executable, script, host), cwd, timeout)
                 status, reasons = classify(execution, expected)
                 execution.pop("timed_out")
