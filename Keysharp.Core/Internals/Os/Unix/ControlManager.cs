@@ -742,7 +742,7 @@ namespace Keysharp.Internals.Os.Unix
 				}
 
 				Script.TheScript.Permissions.EnsureInputControl(operation: mode == SendRawModes.RawText ? "ControlSendText" : "ControlSend");
-				Script.TheScript.HookThread.kbdMsSender.SendKeys(str, mode, SendModes.Event, nativeWin.WindowNumber);
+				Script.TheScript.HookThread.kbdMsSender.SendKeys(str, mode, SendModes.Event, (nint)(long)nativeWin.WindowNumber);
 				return;
 			}
 #endif

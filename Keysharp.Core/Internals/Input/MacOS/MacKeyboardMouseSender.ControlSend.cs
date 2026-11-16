@@ -4,6 +4,7 @@ using Keysharp.Internals.Input.Hooks.Unix;
 using Keysharp.Internals.Input.Keyboard;
 using Keysharp.Internals.Window.Unix;
 using static Keysharp.Internals.Input.Keyboard.KeyboardMouseSender;
+using static Keysharp.Internals.Input.Keyboard.KeyboardUtils;
 using static Keysharp.Internals.Input.Keyboard.VirtualKeys;
 
 namespace Keysharp.Internals.Input.MacOS
