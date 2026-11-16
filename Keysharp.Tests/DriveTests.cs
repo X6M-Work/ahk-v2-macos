@@ -23,6 +23,20 @@ public class DriveTests : TestRunner
 	[Test, Category("Drive"), Category("Curated")]
 	public void DriveGetStatus() => Assert.IsTrue(TestScript("drive-getstatus", true));
 
+	[Test, Category("Drive"), Category("Internal"), Category("Curated")]
+	public void ParseMacVolumeSerialFromDiskutilInfoExtractsUuidHex()
+	{
+		const string sample = """
+			   Device Identifier:         disk3s1s1
+			   Volume Name:               Macintosh HD
+			   Volume UUID:               1A2B3C4D-5E6F-7080-90A0-B0C0D0E0F001
+			   Disk Size:                 494.38 GB
+			""";
+		Assert.That(Drive.ParseMacVolumeSerialFromDiskutilInfo(sample), Is.EqualTo(0x1A2B3C4DL));
+		Assert.That(Drive.ParseMacVolumeSerialFromDiskutilInfo("Device Name: disk0"), Is.EqualTo(0L));
+		Assert.That(Drive.ParseMacVolumeSerialFromDiskutilInfo(null), Is.EqualTo(0L));
+	}
+
 #if WINDOWS
 
 	[Test, Category("Drive"), Category("DisposableVolume")]

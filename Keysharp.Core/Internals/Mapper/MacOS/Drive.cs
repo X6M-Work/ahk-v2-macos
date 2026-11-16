@@ -8,32 +8,12 @@ namespace Keysharp.Internals.Mapper.MacOS
 	/// </summary>
 	internal class Drive : DriveBase
 	{
-		// Escapes characters that would otherwise let a volume name break out of the double-quoted
-		// argument when interpolated into a bash -c command string.
-		private static string EscapeForBashDoubleQuotes(string s) =>
-			s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("`", "\\`").Replace("$", "\\$");
-
 		internal override long Serial
 		{
 			get
 			{
-				if ($"diskutil info \"{EscapeForBashDoubleQuotes(drive.Name)}\" | grep \"Volume UUID\"".Bash(out var output) != 0)
-					return 0L;
-
-				if (!string.IsNullOrEmpty(output))
-				{
-					var components = output.Split(':');
-
-					if (components.Length >= 2)
-					{
-						var uuid = components[1].Trim().Replace("-", "");
-
-						if (uuid.Length >= 8 && long.TryParse(uuid.AsSpan(0, 8), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out var l))
-							return l;
-					}
-				}
-
-				return 0L;
+				var result = RunCommand("/usr/sbin/diskutil", ["info", drive.Name]);
+				return result.Succeeded ? Keysharp.Builtins.Drive.ParseMacVolumeSerialFromDiskutilInfo(result.StandardOutput) : 0L;
 			}
 		}
 
@@ -51,8 +31,9 @@ namespace Keysharp.Internals.Mapper.MacOS
 
 		internal override void Eject()
 		{
-			if ($"diskutil eject \"{EscapeForBashDoubleQuotes(drive.Name)}\"".Bash() != 0)
-				Diagnostics.Debug.WriteLine($"Drive.Eject failed for {drive.Name}");
+			var result = RunCommand("/usr/sbin/diskutil", ["eject", drive.Name]);
+			if (!result.Succeeded)
+				Diagnostics.Debug.WriteLine($"Drive.Eject failed for {drive.Name}: {result.ErrorMessage}");
 		}
 
 		internal override void Lock()
@@ -62,8 +43,9 @@ namespace Keysharp.Internals.Mapper.MacOS
 
 		internal override void Retract()
 		{
-			if ("drutil tray close".Bash() != 0)
-				Diagnostics.Debug.WriteLine($"Drive.Retract failed for {drive.Name}");
+			var result = RunCommand("/usr/bin/drutil", ["tray", "close"]);
+			if (!result.Succeeded)
+				Diagnostics.Debug.WriteLine($"Drive.Retract failed for {drive.Name}: {result.ErrorMessage}");
 		}
 
 		internal override void SetLabel(string label)

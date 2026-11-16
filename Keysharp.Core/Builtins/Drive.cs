@@ -388,5 +388,32 @@ namespace Keysharp.Builtins
 
 			return drive;
 		}
+
+		internal static long ParseMacVolumeSerialFromDiskutilInfo(string output)
+		{
+			if (string.IsNullOrWhiteSpace(output))
+				return 0L;
+
+			foreach (var rawLine in output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+			{
+				var colon = rawLine.IndexOf(':');
+				if (colon <= 0)
+					continue;
+
+				var key = rawLine[..colon].Trim();
+				if (!string.Equals(key, "Volume UUID", StringComparison.OrdinalIgnoreCase))
+					continue;
+
+				var uuid = rawLine[(colon + 1)..].Trim().Replace("-", "");
+				if (uuid.Length >= 8 && long.TryParse(
+					uuid.AsSpan(0, 8),
+					System.Globalization.NumberStyles.HexNumber,
+					System.Globalization.CultureInfo.InvariantCulture,
+					out var serial))
+					return serial;
+			}
+
+			return 0L;
+		}
 	}
 }

@@ -10,7 +10,7 @@ namespace Keysharp.Builtins
 	/// <summary>
 	/// Public interface for file-related functions.
 	/// </summary>
-	public static class Files
+	public static partial class Files
 	{
 		private static readonly SearchValues<char> wildcardsSv = SearchValues.Create("*?");
 		private static readonly SearchValues<char> fileOptionSeparators = SearchValues.Create(" \t\n");
@@ -400,13 +400,17 @@ namespace Keysharp.Builtins
 					creator.Add("Type", "Application");
 
 				creator.Save(l);
-				if ($"chmod +x '{l}'".Bash() != 0)
-					return Errors.OSErrorOccurred("", $"Failed to set executable bit on shortcut {l}.");
+				File.SetUnixFileMode(l,
+					UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
+					| UnixFileMode.GroupRead | UnixFileMode.GroupExecute
+					| UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
 			}
 			else
 			{
-				if ($"ln -sf '{t}' '{l}'".Bash() != 0)
-					return Errors.OSErrorOccurred("", $"Failed to create symlink {l}.");
+				if (File.Exists(l) || Directory.Exists(l) || File.ResolveLinkTarget(l, returnFinalTarget: false) != null)
+					File.Delete(l);
+
+				_ = File.CreateSymbolicLink(l, t);
 			}
 
 #elif WINDOWS
@@ -1445,10 +1449,49 @@ namespace Keysharp.Builtins
 		}
 
 #if OSX
+		[LibraryImport("/usr/lib/libobjc.dylib", StringMarshalling = StringMarshalling.Utf8)]
+		private static partial nint sel_registerName(string name);
+
+		[LibraryImport("/usr/lib/libobjc.dylib", EntryPoint = "objc_msgSend")]
+		[return: MarshalAs(UnmanagedType.I1)]
+		private static partial bool objc_msgSend_trash(nint receiver, nint selector, nint url, out nint resultingUrl, out nint error);
+
+		private static readonly nint selTrashItemAtUrl = sel_registerName("trashItemAtURL:resultingItemURL:error:");
+
 		private static string GetMacTrashPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".Trash");
+
+		internal static bool TryTrashMacItemWithNSFileManager(string sourcePath, out string resultingPath)
+		{
+			resultingPath = null;
+
+			try
+			{
+				using var pool = new MonoMac.Foundation.NSAutoreleasePool();
+				using var url = MonoMac.Foundation.NSUrl.FromFilename(sourcePath);
+
+				if (url == null)
+					return false;
+
+				if (!objc_msgSend_trash(MonoMac.Foundation.NSFileManager.DefaultManager.Handle, selTrashItemAtUrl, url.Handle, out var resultingUrlPtr, out _))
+					return false;
+
+				if (resultingUrlPtr != 0
+					&& MonoMac.ObjCRuntime.Runtime.GetNSObject(resultingUrlPtr) is MonoMac.Foundation.NSUrl resultingUrl)
+					resultingPath = resultingUrl.Path;
+
+				return true;
+			}
+			catch
+			{
+				return false;
+			}
+		}
 
 		private static void MovePathToMacTrash(string sourcePath)
 		{
+			if (TryTrashMacItemWithNSFileManager(sourcePath, out _))
+				return;
+
 			var trash = GetMacTrashPath();
 			Directory.CreateDirectory(trash);
 			var name = sourcePath.TrimEnd(dirSeparators);

@@ -250,6 +250,29 @@ public class FileAndDirTests : TestRunner
 				Directory.Delete(root, true);
 		}
 	}
+
+	[Test, Category("FileAndDir"), Category("Curated")]
+	public void MacFileRecycleUsesNSFileManagerTrash()
+	{
+		var tempFile = Path.Combine(Path.GetTempPath(), $"ks-mac-trash-{Guid.NewGuid():N}.txt");
+		File.WriteAllText(tempFile, "trash-probe");
+		string trashedPath = null;
+
+		try
+		{
+			Assert.That(Files.TryTrashMacItemWithNSFileManager(tempFile, out trashedPath), Is.True);
+			Assert.That(File.Exists(tempFile), Is.False);
+			Assert.That(string.IsNullOrEmpty(trashedPath), Is.False);
+			Assert.That(File.Exists(trashedPath), Is.True);
+		}
+		finally
+		{
+			if (File.Exists(tempFile))
+				File.Delete(tempFile);
+			if (!string.IsNullOrEmpty(trashedPath) && File.Exists(trashedPath))
+				File.Delete(trashedPath);
+		}
+	}
 #endif
 
 	[Test, Category("FileAndDir")]

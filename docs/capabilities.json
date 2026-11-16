@@ -5600,8 +5600,8 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "partial",
-                     "notes":  "Windows uses the recycle bin and Linux uses the freedesktop Trash through GIO. macOS currently moves only to the user ~/.Trash folder, without per-volume trash or Finder Put Back metadata.",
+                     "macos":  "full",
+                     "notes":  "Windows uses the recycle bin, Linux uses the freedesktop Trash through GIO, and macOS moves files and folders to Trash via NSFileManager.trashItemAtURL (preserving per-volume Trash and Finder Put Back metadata) with ~/.Trash fallback.",
                      "tested-by":  "file-filerecycle.ahk"
                  },
                  {
