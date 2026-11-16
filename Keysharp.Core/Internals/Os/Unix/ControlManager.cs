@@ -1075,7 +1075,7 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override void PostMessage(uint msg, nint wparam, nint lparam, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
-			_ = TryDispatchWindowMessage(msg, wparam, lparam, ctrl, title, text, excludeTitle, excludeText, true);
+			_ = TryDispatchWindowMessage(msg, wparam, lparam, ctrl, title, text, excludeTitle, excludeText, post: true, out _);
 		}
 
 		internal override long SendMessage(uint msg, object wparam, object lparam, object ctrl, object title, object text, object excludeTitle, object excludeText, int timeout)
@@ -1083,17 +1083,32 @@ namespace Keysharp.Internals.Os.Unix
 			if (!wparam.CoerceInt(out var wp) || !lparam.CoerceInt(out var lp))
 				return 0L;
 
-			return TryDispatchWindowMessage(msg, wp, lp, ctrl, title, text, excludeTitle, excludeText, false) ? 1L : 0L;
+			return TryDispatchWindowMessage(msg, wp, lp, ctrl, title, text, excludeTitle, excludeText, post: false, out var result) ? result : 0L;
 		}
 
-		private static bool TryDispatchWindowMessage(uint msg, nint wparam, nint lparam, object ctrl, object title, object text, object excludeTitle, object excludeText, bool post)
+		private static bool TryDispatchWindowMessage(uint msg, nint wparam, nint lparam, object ctrl, object title, object text, object excludeTitle, object excludeText, bool post, out long result)
 		{
-			if (WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText, false) is not ControlInfo item)
+			result = 0L;
+			if (WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText, false) is not WindowInfoBase target)
 				return false;
 
-			var action = CreateWindowMessageAction(item.Control, msg, wparam, lparam);
+			if (target is not ControlInfo item)
+			{
+				if (msg == (uint)WindowsAPI.WM_CLOSE)
+				{
+					if (post)
+						Application.Instance.AsyncInvoke(() => _ = Platform.Window.TryClose(target.Handle));
+					else
+						result = Platform.Window.TryClose(target.Handle) ? 1L : 0L;
+					return true;
+				}
 
-			if (action == null)
+				return false;
+			}
+
+			var handler = CreateWindowMessageHandler(item.Control, msg, wparam, lparam);
+
+			if (handler == null)
 				return false;
 
 			if (post)
@@ -1101,57 +1116,120 @@ namespace Keysharp.Internals.Os.Unix
 				//AsyncInvoke (GtkSharp's Application.Invoke) runs at a higher priority than GTK's
 				//layout finalization, so it can fire before freshly-changed text is laid out (e.g. a
 				//scroll-to-end would land one line short). A default-priority idle runs after layout.
-				_ = GLib.Idle.Add(() => { action(); return false; });
+				_ = GLib.Idle.Add(() => { _ = handler(); return false; });
 #else
-				Application.Instance.AsyncInvoke(action);
+				Application.Instance.AsyncInvoke(() => _ = handler());
 #endif
 			else
-				InvokeWindowMessageAction(action);
+				result = InvokeWindowMessageHandler(handler);
 
 			return true;
 		}
 
-		private static Action CreateWindowMessageAction(Control control, uint msg, nint wparam, nint lparam) =>
+		internal static Func<long> CreateWindowMessageHandler(Control control, uint msg, nint wparam, nint lparam) =>
 			msg switch
 			{
-				(uint)WindowsAPI.WM_VSCROLL => CreateTextAreaScrollAction(control, wparam),
-				(uint)WindowsAPI.EM_SCROLLCARET => CreateTextAreaScrollCaretAction(control),
-				(uint)WindowsAPI.EM_SETSEL => CreateTextAreaSetSelAction(control, wparam, lparam),
+				(uint)WindowsAPI.WM_CLOSE => control is Form form ? () => { form.Close(); return 0L; } : null,
+				(uint)WindowsAPI.WM_GETTEXTLENGTH => () => control.Text?.Length ?? 0L,
+				(uint)WindowsAPI.WM_VSCROLL => WrapVoidAction(CreateTextAreaScrollAction(control, wparam)),
+				(uint)WindowsAPI.EM_SCROLLCARET => WrapVoidAction(CreateTextAreaScrollCaretAction(control)),
+				(uint)WindowsAPI.EM_SETSEL => WrapVoidAction(CreateTextControlSetSelAction(control, wparam, lparam)),
+				(uint)WindowsAPI.EM_GETLINECOUNT => control is TextControl edit ? () => (edit.Text ?? "").AsSpan().Count('\n') + 1L : null,
+				(uint)WindowsAPI.EM_SETREADONLY => CreateSetReadOnlyHandler(control, wparam != 0),
+				(uint)WindowsAPI.BM_GETCHECK => () => control switch
+				{
+					CheckBox cb => cb.Checked == true ? (long)WindowsAPI.BST_CHECKED : (long)WindowsAPI.BST_UNCHECKED,
+					RadioButton rb => rb.Checked ? (long)WindowsAPI.BST_CHECKED : (long)WindowsAPI.BST_UNCHECKED,
+					_ => 0L
+				},
+				(uint)WindowsAPI.BM_SETCHECK => control switch
+				{
+					CheckBox cb => () => { cb.Checked = wparam.ToInt64() == WindowsAPI.BST_CHECKED; return 0L; },
+					RadioButton rb => () => { rb.Checked = wparam.ToInt64() == WindowsAPI.BST_CHECKED; return 0L; },
+					_ => null
+				},
+				(uint)WindowsAPI.BM_CLICK => control is Button btn ? () => { if (btn.Enabled) btn.PerformClick(); return 0L; } : null,
+				(uint)WindowsAPI.CB_GETCOUNT => control is KeysharpComboBox cb ? () => cb.Items.Count : null,
+				(uint)WindowsAPI.CB_GETCURSEL => control is KeysharpComboBox cb ? () => cb.SelectedIndex : null,
+				(uint)WindowsAPI.CB_SETCURSEL => control is KeysharpComboBox cb ? () => SetListControlSelection(cb, wparam, WindowsAPI.CB_ERR) : null,
+				(uint)WindowsAPI.CB_RESETCONTENT => control is KeysharpComboBox cb ? () => { cb.Items.Clear(); return 0L; } : null,
+				(uint)WindowsAPI.LB_GETCOUNT => control is KeysharpListBox lb ? () => lb.Items.Count : null,
+				(uint)WindowsAPI.LB_GETCURSEL => control is KeysharpListBox lb ? () => lb.SelectedIndex : null,
+				(uint)WindowsAPI.LB_SETCURSEL => control is KeysharpListBox lb ? () => SetListControlSelection(lb, wparam, WindowsAPI.LB_ERR) : null,
+				(uint)WindowsAPI.LB_RESETCONTENT => control is KeysharpListBox lb ? () => { lb.Items.Clear(); return 0L; } : null,
 				_ => null
 			};
+
+		private static Func<long> WrapVoidAction(Action action) =>
+			action == null ? null : () => { action(); return 1L; };
+
+		private static long SetListControlSelection(ListControl list, nint wparam, long errorResult)
+		{
+			var index = (int)wparam.ToInt64();
+			if (index < -1 || index >= list.Items.Count)
+				return errorResult;
+
+			list.SelectedIndex = index;
+			return index;
+		}
+
+		private static Func<long> CreateSetReadOnlyHandler(Control control, bool readOnly) =>
+			control switch
+			{
+				TextBox box => () => { box.ReadOnly = readOnly; return 1L; },
+				TextArea area => () => { area.ReadOnly = readOnly; return 1L; },
+				PasswordBox pw => () => { pw.ReadOnly = readOnly; return 1L; },
+				_ => null
+			};
+
+		internal static (int From, int To) ComputeEditSelectionBounds(int textLength, int caretIndex, int start, int end)
+		{
+			var clampedLen = Math.Max(0, textLength);
+
+			if (start == -1)
+			{
+				var caret = Math.Clamp(caretIndex, 0, clampedLen);
+				return (caret, caret);
+			}
+
+			var from = Math.Clamp(start, 0, clampedLen);
+			var to = end == -1 ? clampedLen : Math.Clamp(end, 0, clampedLen);
+
+			if (to < from)
+				(from, to) = (to, from);
+
+			return (from, to);
+		}
 
 		//EM_SETSEL(start, end): select a character range. The two documented special cases are honoured
 		//because scripts rely on them: start == -1 deselects and parks the caret at the current end, and
 		//end == -1 selects to the end of the text.
 		//Eto's Range<int> is INCLUSIVE (see ScrollTextAreaToOffset), so an exclusive [start, end)
 		//becomes Range(start, end - 1), and an empty selection becomes Range(caret, caret - 1).
-		private static Action CreateTextAreaSetSelAction(Control control, nint wparam, nint lparam)
+		private static Action CreateTextControlSetSelAction(Control control, nint wparam, nint lparam)
 		{
-			if (control is not TextArea area)
-				return null;
-
 			var start = (int)wparam.ToInt64();
 			var end = (int)lparam.ToInt64();
 
-			return () =>
+			if (control is TextArea area)
 			{
-				var len = area.Text?.Length ?? 0;
-
-				if (start == -1)//Deselect; caret stays where the selection ended.
+				return () =>
 				{
-					var caret = Math.Clamp(area.CaretIndex, 0, len);
-					area.Selection = new Range<int>(caret, caret - 1);
-					return;
-				}
+					var (from, to) = ComputeEditSelectionBounds(area.Text?.Length ?? 0, area.CaretIndex, start, end);
+					area.Selection = new Range<int>(from, to - 1);
+				};
+			}
 
-				var from = Math.Clamp(start, 0, len);
-				var to = end == -1 ? len : Math.Clamp(end, 0, len);
+			if (control is TextBox box)
+			{
+				return () =>
+				{
+					var (from, to) = ComputeEditSelectionBounds(box.Text?.Length ?? 0, box.CaretIndex, start, end);
+					box.Selection = new Range<int>(from, to - 1);
+				};
+			}
 
-				if (to < from)
-					(from, to) = (to, from);
-
-				area.Selection = new Range<int>(from, to - 1);
-			};
+			return null;
 		}
 
 		private static Action CreateTextAreaScrollAction(Control control, nint wparam)
@@ -1172,14 +1250,14 @@ namespace Keysharp.Internals.Os.Unix
 		private static Action CreateTextAreaScrollCaretAction(Control control) =>
 			control is TextArea area ? () => ScrollTextAreaToOffset(area, area.CaretIndex) : null;
 
-		private static void InvokeWindowMessageAction(Action action)
+		private static long InvokeWindowMessageHandler(Func<long> handler)
 		{
 			var app = Application.Instance;
 
-			if (app.IsUIThread)
-				action();
-			else
-				app.Invoke(action);
+			if (app == null || app.IsUIThread)
+				return handler();
+
+			return app.Invoke(handler);
 		}
 
 		private static void ScrollTextAreaToOffset(TextArea area, int offset)

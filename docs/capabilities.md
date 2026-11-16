@@ -976,7 +976,7 @@ Status legend:
 | SendEvent() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Sends keystrokes via Event mode. |
 | SendInput() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Sends keystrokes via Input mode. |
 | SendLevel() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Sets the send level for generated input. |
-| SendMessage() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | The SendMessage function sends a message to a window or control and waits for acknowledgement. |
+| SendMessage() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | The SendMessage function sends a message to a window or control and waits for acknowledgement. Non-Windows builds map common Win32 control messages (EM_SETSEL/EM_GETLINECOUNT/EM_SETREADONLY/EM_SCROLLCARET, WM_GETTEXTLENGTH/WM_VSCROLL/WM_CLOSE, BM_GETCHECK/BM_SETCHECK/BM_CLICK, CB_GETCOUNT/CB_GETCURSEL/CB_SETCURSEL/CB_RESETCONTENT, LB_GETCOUNT/LB_GETCURSEL/LB_SETCURSEL/LB_RESETCONTENT) to Eto controls and window closing. |
 | SendMode() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Sets the default send mode. "Play" has no journal-playback equivalent on Linux or macOS and is downgraded to "Event" with a one-time warning to stderr; Input and Event behave as documented. |
 | SendPlay() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Sends keystrokes via Play mode. Play mode depends on the Win32 journal-playback hook, which has no equivalent elsewhere: Linux and macOS silently downgrade to Event mode and print a one-time warning to stderr. |
 | SendText() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Sends text without translating key names. |

@@ -10138,8 +10138,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The SendMessage function sends a message to a window or control and waits for acknowledgement.",
-                     "tested-by":  "external-onmessage.ahk"
+                     "notes":  "The SendMessage function sends a message to a window or control and waits for acknowledgement. Non-Windows builds map common Win32 control messages (EM_SETSEL/EM_GETLINECOUNT/EM_SETREADONLY/EM_SCROLLCARET, WM_GETTEXTLENGTH/WM_VSCROLL/WM_CLOSE, BM_GETCHECK/BM_SETCHECK/BM_CLICK, CB_GETCOUNT/CB_GETCURSEL/CB_SETCURSEL/CB_RESETCONTENT, LB_GETCOUNT/LB_GETCURSEL/LB_SETCURSEL/LB_RESETCONTENT) to Eto controls and window closing.",
+                     "tested-by":  "external-onmessage.ahk; window-functions.ahk; GuiTests.UnixControlManagerEditSelectionBoundsClampAndOrder"
                  },
                  {
                      "category":  "Input/Automation",
