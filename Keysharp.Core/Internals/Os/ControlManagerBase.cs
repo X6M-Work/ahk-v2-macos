@@ -554,6 +554,9 @@ namespace Keysharp.Internals.Os
 		internal static bool IsMacAccessibilityControlVisible(bool hasHiddenAttr, bool hidden, Rectangle bounds) =>
 			!(hasHiddenAttr && hidden) && bounds.Width > 0 && bounds.Height > 0;
 
+		internal static bool ResolveToggleValue(ToggleValueType toggle, bool current) =>
+			toggle == ToggleValueType.Toggle ? !current : toggle == ToggleValueType.On;
+
 		private static void ShowHideHelper(bool val, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
 			if (WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText) is WindowInfoBase item)

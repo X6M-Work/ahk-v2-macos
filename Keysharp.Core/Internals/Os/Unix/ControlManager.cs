@@ -884,11 +884,29 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override void ControlSetEnabled(object val, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+			var onoff = Conversions.ConvertOnOffToggle(val);
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TrySetControlEnabled(nativeWin, selector, onoff, out var foundControl, out var unsupported))
+				{
+					WindowInfoBase.DoControlDelay();
+					return;
+				}
+
+				if (!foundControl)
+					_ = Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+				else if (unsupported)
+					_ = WindowHelper.WindowOperationUnsupported("ControlSetEnabled");
+				else
+					_ = Errors.OSErrorOccurred("", $"macOS Accessibility could not update enabled state for control '{selector}'.");
+				return;
+			}
+#endif
 			if (OwnControl(ctrl, title, text, excludeTitle, excludeText) is not Control control)
 				return;
 
-			var onoff = Conversions.ConvertOnOffToggle(val);
-			control.Enabled = onoff == ToggleValueType.Toggle ? !control.Enabled : onoff == ToggleValueType.On;
+			control.Enabled = ControlManagerBase.ResolveToggleValue(onoff, control.Enabled);
 			WindowInfoBase.DoControlDelay();
 		}
 

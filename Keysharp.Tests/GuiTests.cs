@@ -3134,4 +3134,13 @@ public class GuiTests : TestRunner
 		Assert.IsFalse(Keysharp.Internals.Os.ControlManagerBase.IsMacAccessibilityControlVisible(true, true, new Rectangle(10, 20, 80, 24)));
 		Assert.IsFalse(Keysharp.Internals.Os.ControlManagerBase.IsMacAccessibilityControlVisible(false, false, new Rectangle(10, 20, 0, 24)));
 	}
+
+	[Test, Category("Internal"), Category("Curated")]
+	public void ControlManagerResolveToggleValueComputesOnOffAndToggleStates()
+	{
+		Assert.IsTrue(Keysharp.Internals.Os.ControlManagerBase.ResolveToggleValue(ToggleValueType.On, false));
+		Assert.IsFalse(Keysharp.Internals.Os.ControlManagerBase.ResolveToggleValue(ToggleValueType.Off, true));
+		Assert.IsTrue(Keysharp.Internals.Os.ControlManagerBase.ResolveToggleValue(ToggleValueType.Toggle, false));
+		Assert.IsFalse(Keysharp.Internals.Os.ControlManagerBase.ResolveToggleValue(ToggleValueType.Toggle, true));
+	}
 }

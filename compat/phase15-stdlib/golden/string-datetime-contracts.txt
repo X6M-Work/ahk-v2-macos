@@ -1,0 +1,15 @@
+add_days|20240301230000
+add_hours|20240229010000
+diff_hours|26
+diff_secs|65
+fmt_iso|2024-02-29 09:08:07
+fmt_compact|20240229090807
+cmp_ci|0
+cmp_cs_diff|1
+cmp_cs_ord|-1
+cmp_num|-1
+sort_nu|1,2,3,10
+sort_nur|10,3,2,1
+sort_cs|a,b,c
+sort_ci|a,B,C
+sort_custom|a,bb,ccc

@@ -2323,6 +2323,37 @@ namespace Keysharp.Internals.Window.MacOS
 			}
 		}
 
+		internal static bool TrySetControlEnabled(MacNativeWindow info, string selector, ToggleValueType toggle, out bool foundControl, out bool unsupported)
+		{
+			foundControl = false;
+			unsupported = false;
+			using var window = ResolveWindowElement(info, "set control enabled state");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out _))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (!IsAttributeSettable(ctrl, attrEnabled))
+				{
+					unsupported = true;
+					return false;
+				}
+
+				if (!TryReadBool(ctrl, attrEnabled, out var current))
+					current = true;
+
+				var target = ControlManagerBase.ResolveToggleValue(toggle, current);
+				return AXUIElementSetAttributeValue(ctrl, attrEnabled, target ? cfBoolTrue : cfBoolFalse) == kAXErrorSuccess;
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
 		internal static bool TryGetControlChecked(MacNativeWindow info, string selector, out bool isChecked, out bool foundControl)
 		{
 			isChecked = false;

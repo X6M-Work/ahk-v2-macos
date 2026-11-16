@@ -4479,8 +4479,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlSetEnabled function enables or disables a control.",
-                     "tested-by":  "ControlTests/control_set_enabled.ahk"
+                     "notes":  "The ControlSetEnabled function enables or disables a control. On macOS, supports script-owned controls and attempts AXEnabled updates on foreign Accessibility controls (reporting UnsupportedError when read-only).",
+                     "tested-by":  "ControlTests/control_set_enabled.ahk; GuiTests.ControlManagerResolveToggleValueComputesOnOffAndToggleStates"
                  },
                  {
                      "category":  "Windowing/GUI",

@@ -54,6 +54,12 @@
       "category": "stdlib",
       "script": "file-time-contracts.ahk",
       "expected_stdout": "golden/file-time-contracts.txt"
+    },
+    {
+      "id": "string-datetime-contracts",
+      "category": "stdlib",
+      "script": "string-datetime-contracts.ahk",
+      "expected_stdout": "golden/string-datetime-contracts.txt"
     }
   ]
 }
