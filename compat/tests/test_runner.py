@@ -282,6 +282,14 @@ class CorpusTests(unittest.TestCase):
         self.assertEqual([item[0] for item in mac_float["asset_files"]], ["parse-float.c"])
         self.assertEqual(mac_float["expected_stdout_bytes"],
                          b"return|1.4142135381698608\noutput|1|1.2345000505447388\n")
+        self.assertIn("macos-mixed-abi-callback", mac_by_id)
+        mac_mixed = mac_by_id["macos-mixed-abi-callback"]
+        self.assertEqual(mac_mixed["platforms"], ["Darwin"])
+        self.assertEqual([item[0] for item in mac_mixed["asset_files"]], ["mixed-abi.c"])
+        self.assertEqual(
+            mac_mixed["expected_stdout_bytes"],
+            b"cb_arg|3000000003|6.5|1.75|-6\nreturn|41.5\nsum|2999999996\nprod|11.25\n",
+        )
 
         win_cases, _ = load_corpus(compat_root / "phase15-native-windows")
         win_by_id = {case["id"]: case for case in win_cases}

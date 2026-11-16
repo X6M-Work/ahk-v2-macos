@@ -630,14 +630,9 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override long ControlGetFocus(object title, object text, object excludeTitle, object excludeText)
 		{
-			if (WindowSearch.SearchWindow(title, text, excludeTitle, excludeText, true) is WindowInfoBase item)
-			{
-				if (Control.FromHandle(item.Handle) is Form form)
-				{
-					if (form.ActiveControl != null)
-						return form.ActiveControl.Handle.ToInt64();
-				}
-			}
+			if (WindowSearch.SearchWindow(title, text, excludeTitle, excludeText, true) is WindowInfoBase item
+				&& Control.FromHandle(item.Handle) is Form form)
+				return form.CheckedInvoke(() => form.ActiveControl?.Handle.ToInt64() ?? 0L, true);
 
 			return 0L;
 		}
