@@ -3,11 +3,28 @@ using Keysharp.Builtins;
 namespace Keysharp.Internals.Interop
 {
 	/// <summary>
+	/// ABI slot widths used when a platform ABI (notably Darwin ARM64) packs spilled stack parameters tighter than 8 bytes.
+	/// </summary>
+	internal enum NativeSlotKind : byte
+	{
+		I64 = 0,
+		I32 = 1,
+		U32 = 2,
+		I16 = 3,
+		U16 = 4,
+		I8 = 5,
+		U8 = 6,
+		F32 = 7,
+		F64 = 8
+	}
+
+	/// <summary>
 	/// A generated native call: the function pointer plus the argument slots it reads, which live in the
 	/// caller's stack frame. The two forms differ only in which register the return value comes back in.
 	/// </summary>
 	internal unsafe delegate long NativeCall(nint fn, long* args);
 	internal unsafe delegate double NativeCallFloat(nint fn, long* args);
+	internal unsafe delegate float NativeCallFloat32(nint fn, long* args);
 
 	internal class DllData
 	{
@@ -18,6 +35,8 @@ namespace Keysharp.Internals.Interop
 		// Signatures with more than 57 arguments, whose float mask does not fit alongside the count in the
 		// packed key above. Vanishingly rare, so a tuple key costs nothing worth measuring.
 		internal readonly ConcurrentDictionary<(int, ulong), Delegate> wideDelegateCache = new ();
+		// Exact-width invokers keyed by slot-kind string, used only when >8 args spill narrow/float values on Darwin ARM64.
+		internal readonly ConcurrentDictionary<string, Delegate> exactDelegateCache = new (StringComparer.Ordinal);
 		// The signature nearly every call has -- every argument and the return value an integer -- is indexed by
 		// argument count alone, so the common case is an array read rather than a hash lookup.
 		internal readonly Delegate[] integerInvokers = new Delegate[NativeInvoker.MaxArguments + 1];
@@ -46,6 +65,96 @@ namespace Keysharp.Internals.Interop
 		/// it also bounds the stack space each call reserves for its argument slots.
 		/// </summary>
 		internal const int MaxArguments = 63;
+
+		internal static readonly bool IsDarwinArm64 = OperatingSystem.IsMacOS() && RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
+
+		internal static NativeSlotKind MapSlotKind(NativeTypeCode code, bool byAddress) => byAddress ? NativeSlotKind.I64 : code switch
+		{
+			NativeTypeCode.Char => NativeSlotKind.I8,
+			NativeTypeCode.UChar => NativeSlotKind.U8,
+			NativeTypeCode.Short => NativeSlotKind.I16,
+			NativeTypeCode.UShort => NativeSlotKind.U16,
+			NativeTypeCode.Int or NativeTypeCode.HResult => NativeSlotKind.I32,
+			NativeTypeCode.UInt => NativeSlotKind.U32,
+			NativeTypeCode.Float => NativeSlotKind.F32,
+			NativeTypeCode.Double => NativeSlotKind.F64,
+			_ => NativeSlotKind.I64
+		};
+
+		internal static bool RequiresExactDarwinArm64Signature(ReadOnlySpan<NativeSlotKind> argKinds)
+		{
+			if (argKinds.Length <= 8)
+				return false;
+
+			var gprCount = 0;
+			var fprCount = 0;
+
+			foreach (var kind in argKinds)
+			{
+				if (kind is NativeSlotKind.F32 or NativeSlotKind.F64)
+				{
+					if (fprCount >= 8 && kind == NativeSlotKind.F32)
+						return true;
+
+					fprCount++;
+				}
+				else
+				{
+					if (gprCount >= 8 && kind != NativeSlotKind.I64)
+						return true;
+
+					gprCount++;
+				}
+			}
+
+			return false;
+		}
+
+		internal static string BuildExactSignatureKey(ReadOnlySpan<NativeSlotKind> argKinds, NativeSlotKind returnKind)
+		{
+			Span<char> chars = stackalloc char[argKinds.Length + 1];
+
+			for (var i = 0; i < argKinds.Length; i++)
+				chars[i] = (char)('0' + (int)argKinds[i]);
+
+			chars[argKinds.Length] = (char)('0' + (int)returnKind);
+			return new string(chars);
+		}
+
+		internal static unsafe long NativeInvokeExact(nint fnPtr, Span<long> args, ReadOnlySpan<NativeSlotKind> argKinds, NativeSlotKind returnKind)
+		{
+			int n = args.Length;
+
+			if ((uint)n > MaxArguments)
+				return (long)Errors.ValueErrorOccurred($"A native call cannot take more than {MaxArguments} arguments.", ret: 0L);
+
+			if (argKinds.Length != n)
+				return (long)Errors.ValueErrorOccurred($"Argument slot kinds length ({argKinds.Length}) does not match argument count ({n}).", ret: 0L);
+
+			var dllData = TheScript.DllData;
+			var key = BuildExactSignatureKey(argKinds, returnKind);
+
+			if (!dllData.exactDelegateCache.TryGetValue(key, out var del))
+			{
+				var kindsCopy = argKinds.ToArray();
+				del = dllData.exactDelegateCache.GetOrAdd(key, static (_, state) => CreateExactInvoker(state.kindsCopy, state.returnKind), (kindsCopy, returnKind));
+			}
+
+			long result;
+
+			fixed (long* p = args)
+			{
+				result = returnKind switch
+				{
+					NativeSlotKind.F32 => BitConverter.SingleToInt32Bits(((NativeCallFloat32)del)(fnPtr, p)),
+					NativeSlotKind.F64 => BitConverter.DoubleToInt64Bits(((NativeCallFloat)del)(fnPtr, p)),
+					_ => ((NativeCall)del)(fnPtr, p)
+				};
+			}
+
+			ThreadAccessors.A_LastError = Marshal.GetLastSystemError();
+			return result;
+		}
 
 		/// <summary>
 		/// Performs the call, compiling and caching an invoker for its signature the first time that signature
@@ -225,9 +334,24 @@ namespace Keysharp.Internals.Interop
 		private static unsafe Delegate CreateInvoker(int n, ulong mask)
 		{
 			var floatReturn = ((mask >> n) & 1) != 0;
-			Type returnType = floatReturn ? typeof(double) : typeof(long);
-			// method name only depends on n and floatingTypeMask
-			string name = $"NativeCall_{n}_{mask}";
+			var returnType = floatReturn ? typeof(double) : typeof(long);
+			var delegateType = floatReturn ? typeof(NativeCallFloat) : typeof(NativeCall);
+			return CreateInvokerCore($"NativeCall_{n}_{mask}", n, returnType, delegateType, i => ((mask >> i) & 1) != 0 ? NativeSlotKind.F64 : NativeSlotKind.I64);
+		}
+
+		private static unsafe Delegate CreateExactInvoker(NativeSlotKind[] argKinds, NativeSlotKind returnKind)
+		{
+			var (returnType, delegateType) = returnKind switch
+			{
+				NativeSlotKind.F32 => (typeof(float), typeof(NativeCallFloat32)),
+				NativeSlotKind.F64 => (typeof(double), typeof(NativeCallFloat)),
+				_ => (typeof(long), typeof(NativeCall))
+			};
+			return CreateInvokerCore($"NativeCallExact_{BuildExactSignatureKey(argKinds, returnKind)}", argKinds.Length, returnType, delegateType, i => argKinds[i]);
+		}
+
+		private static unsafe Delegate CreateInvokerCore(string name, int n, Type returnType, Type delegateType, Func<int, NativeSlotKind> getSlotKind)
+		{
 			var dm = new DynamicMethod(
 				name,
 				returnType,
@@ -237,7 +361,7 @@ namespace Keysharp.Internals.Interop
 			var il = dm.GetILGenerator();
 			var paramTypes = new Type[n];
 
-			// 1) load each argument slot
+			// 1) load each argument slot at its ABI width
 			for (int i = 0; i < n; i++)
 			{
 				il.Emit(OpCodes.Ldarg_1);           // args
@@ -248,9 +372,20 @@ namespace Keysharp.Internals.Interop
 					il.Emit(OpCodes.Add);
 				}
 
-				var isFloat = ((mask >> i) & 1) != 0;
-				il.Emit(isFloat ? OpCodes.Ldind_R8 : OpCodes.Ldind_I8);
-				paramTypes[i] = isFloat ? typeof(double) : typeof(long);
+				var (loadOp, paramType) = getSlotKind(i) switch
+				{
+					NativeSlotKind.I32 => (OpCodes.Ldind_I4, typeof(int)),
+					NativeSlotKind.U32 => (OpCodes.Ldind_U4, typeof(uint)),
+					NativeSlotKind.I16 => (OpCodes.Ldind_I2, typeof(short)),
+					NativeSlotKind.U16 => (OpCodes.Ldind_U2, typeof(ushort)),
+					NativeSlotKind.I8 => (OpCodes.Ldind_I1, typeof(sbyte)),
+					NativeSlotKind.U8 => (OpCodes.Ldind_U1, typeof(byte)),
+					NativeSlotKind.F32 => (OpCodes.Ldind_R4, typeof(float)),
+					NativeSlotKind.F64 => (OpCodes.Ldind_R8, typeof(double)),
+					_ => (OpCodes.Ldind_I8, typeof(long))
+				};
+				il.Emit(loadOp);
+				paramTypes[i] = paramType;
 			}
 
 			// 2) load fn pointer
@@ -262,7 +397,7 @@ namespace Keysharp.Internals.Interop
 				returnType,
 				paramTypes);
 			il.Emit(OpCodes.Ret);
-			return dm.CreateDelegate(floatReturn ? typeof(NativeCallFloat) : typeof(NativeCall));
+			return dm.CreateDelegate(delegateType);
 		}
 	}
 }

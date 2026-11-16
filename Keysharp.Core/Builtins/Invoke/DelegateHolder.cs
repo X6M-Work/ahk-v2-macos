@@ -119,7 +119,7 @@ namespace Keysharp.Builtins
 		/// integer registers reuses the same arity-based delegates and slots as an untyped callback; only a
 		/// floating-point parameter or return value needs a native signature of its own.
 		/// </summary>
-		internal DelegateHolder(Any function, Struct.CallbackConversion[] conversions, bool typedVoid, bool fast, bool cdecl)
+		internal DelegateHolder(Any function, Struct.CallbackConversion[] conversions, bool typedVoid, bool fast, bool cdecl, bool? darwinArm64 = null)
 		{
 			funcObj = function;
 			_fn = Script.ResolveDirectCallTarget(function);
@@ -138,9 +138,10 @@ namespace Keysharp.Builtins
 				throw new ObjectDisposedException(nameof(Script));
 			}
 
-			_slotId = Publish(id => TypedCallbackSignature.IsAllInteger(conversions)
+			var useDarwinArm64 = darwinArm64 ?? NativeInvoker.IsDarwinArm64;
+			_slotId = Publish(id => !TypedCallbackSignature.RequiresCustomSignature(conversions, useDarwinArm64)
 								? CallbackPointerCache.GetOrCreateForArity(_arity, id)
-								: TypedCallbackSignature.GetOrCreate(conversions, cdecl, id));
+								: TypedCallbackSignature.GetOrCreate(conversions, cdecl, id, useDarwinArm64));
 		}
 
 		// DelegateHolder doesn't need a finalizer because the scheduler owns it until it is disposed.
@@ -488,17 +489,85 @@ namespace Keysharp.Builtins
 			return true;
 		}
 
-		internal static nint GetOrCreate(Struct.CallbackConversion[] conversions, bool cdecl, int slotId)
+		internal static bool RequiresCustomSignature(Struct.CallbackConversion[] conversions, bool isDarwinArm64) =>
+			!IsAllInteger(conversions) || (isDarwinArm64 && HasSpilledNarrowInteger(conversions));
+
+		internal static bool HasSpilledNarrowInteger(Struct.CallbackConversion[] conversions)
 		{
-			var shape = (cdecl ? "c" : "s") + string.Concat(conversions.Select(c => (char)('a' + (int)c.Slot)));
+			var paramCount = conversions.Length - 1;
+
+			if (paramCount <= 8)
+				return false;
+
+			var gprCount = 0;
+
+			for (var i = 0; i < paramCount; i++)
+			{
+				if (conversions[i].Slot != Struct.CallbackSlot.Integer)
+					continue;
+
+				if (gprCount >= 8 && NativeSlotKindOf(conversions[i], exactNarrow: true) != NativeSlotKind.I64)
+					return true;
+
+				gprCount++;
+			}
+
+			return false;
+		}
+
+		internal static nint GetOrCreate(Struct.CallbackConversion[] conversions, bool cdecl, int slotId, bool isDarwinArm64 = false)
+		{
+			var exactNarrow = isDarwinArm64 && HasSpilledNarrowInteger(conversions);
+			var shape = exactNarrow
+						? (cdecl ? "cx" : "sx") + string.Concat(conversions.Select(c => (char)('0' + (int)NativeSlotKindOf(c, true))))
+						: (cdecl ? "c" : "s") + string.Concat(conversions.Select(c => (char)('a' + (int)c.Slot)));
 			// Called under the cache's lock, which is also what guards _delegateTypes, _module and _nextId.
 			return CallbackPointerCache.GetOrCreate(shape, slotId, () =>
 			{
 				if (!_delegateTypes.TryGetValue(shape, out var delegateType))
-					_delegateTypes[shape] = delegateType = CreateDelegateType(conversions, cdecl);
+					_delegateTypes[shape] = delegateType = CreateDelegateType(conversions, cdecl, exactNarrow);
 
-				return CreateStub(conversions, slotId, delegateType);
+				return CreateStub(conversions, slotId, delegateType, exactNarrow);
 			});
+		}
+
+		private static NativeSlotKind NativeSlotKindOf(Struct.CallbackConversion conversion, bool exactNarrow)
+		{
+			if (conversion.Slot == Struct.CallbackSlot.Float32)
+				return NativeSlotKind.F32;
+
+			if (conversion.Slot == Struct.CallbackSlot.Float64)
+				return NativeSlotKind.F64;
+
+			if (!exactNarrow)
+				return NativeSlotKind.I64;
+
+			if (conversion.Kind == StructPrimitiveKind.None)
+			{
+				if (!conversion.IsArray && conversion.Aggregate != null)
+				{
+					return Struct.GetSize(conversion.Aggregate) switch
+					{
+						1 => NativeSlotKind.U8,
+						2 => NativeSlotKind.U16,
+						4 => NativeSlotKind.U32,
+						_ => NativeSlotKind.I64
+					};
+				}
+
+				return NativeSlotKind.I64;
+			}
+
+			return conversion.Kind switch
+			{
+				StructPrimitiveKind.Int8 => NativeSlotKind.I8,
+				StructPrimitiveKind.UInt8 => NativeSlotKind.U8,
+				StructPrimitiveKind.Int16 => NativeSlotKind.I16,
+				StructPrimitiveKind.UInt16 => NativeSlotKind.U16,
+				StructPrimitiveKind.Int32 => NativeSlotKind.I32,
+				StructPrimitiveKind.UInt32 => NativeSlotKind.U32,
+				_ => NativeSlotKind.I64
+			};
 		}
 
 		private static Type NativeTypeOf(Struct.CallbackSlot slot) => slot switch
@@ -508,24 +577,37 @@ namespace Keysharp.Builtins
 			_ => typeof(long)
 		};
 
+		private static Type NativeTypeOf(NativeSlotKind kind) => kind switch
+		{
+			NativeSlotKind.I8 => typeof(sbyte),
+			NativeSlotKind.U8 => typeof(byte),
+			NativeSlotKind.I16 => typeof(short),
+			NativeSlotKind.U16 => typeof(ushort),
+			NativeSlotKind.I32 => typeof(int),
+			NativeSlotKind.U32 => typeof(uint),
+			NativeSlotKind.F32 => typeof(float),
+			NativeSlotKind.F64 => typeof(double),
+			_ => typeof(long)
+		};
+
 		// The native parameter types of a shape, which is its conversions minus the trailing return value.
-		private static Type[] NativeParameterTypes(Struct.CallbackConversion[] conversions)
+		private static Type[] NativeParameterTypes(Struct.CallbackConversion[] conversions, bool exactNarrow)
 		{
 			var parameterTypes = new Type[conversions.Length - 1];
 
 			for (var i = 0; i < parameterTypes.Length; ++i)
-				parameterTypes[i] = NativeTypeOf(conversions[i].Slot);
+				parameterTypes[i] = NativeTypeOf(NativeSlotKindOf(conversions[i], exactNarrow));
 
 			return parameterTypes;
 		}
 
 		// Emits the stub body: pack every argument into a long[] of raw bits, call the shared dispatcher, then
 		// reinterpret its result as the declared return type.
-		private static Delegate CreateStub(Struct.CallbackConversion[] conversions, int slotId, Type delegateType)
+		private static Delegate CreateStub(Struct.CallbackConversion[] conversions, int slotId, Type delegateType, bool exactNarrow)
 		{
 			var arity = conversions.Length - 1;
 			var returnSlot = conversions[arity].Slot;
-			var dm = new DynamicMethod("TypedCallbackStub", NativeTypeOf(returnSlot), NativeParameterTypes(conversions),
+			var dm = new DynamicMethod("TypedCallbackStub", NativeTypeOf(returnSlot), NativeParameterTypes(conversions, exactNarrow),
 									   typeof(DelegateHolder).Module, skipVisibility: true);
 			var il = dm.GetILGenerator();
 			il.Emit(OpCodes.Ldc_I4, slotId);
@@ -540,13 +622,29 @@ namespace Keysharp.Builtins
 				// would write 4 bytes and leave two stray bytes in the instruction stream.
 				il.Emit(OpCodes.Ldarg, (short)i);
 
-				if (conversions[i].Slot == Struct.CallbackSlot.Float32)
+				switch (NativeSlotKindOf(conversions[i], exactNarrow))
 				{
-					il.Emit(OpCodes.Call, singleToBits);
-					il.Emit(OpCodes.Conv_U8);// The reader only looks at the low 32 bits, so keep them unpolluted.
+					case NativeSlotKind.F32:
+						il.Emit(OpCodes.Call, singleToBits);
+						il.Emit(OpCodes.Conv_U8);// The reader only looks at the low 32 bits, so keep them unpolluted.
+						break;
+
+					case NativeSlotKind.F64:
+						il.Emit(OpCodes.Call, doubleToBits);
+						break;
+
+					case NativeSlotKind.I8:
+					case NativeSlotKind.I16:
+					case NativeSlotKind.I32:
+						il.Emit(OpCodes.Conv_I8);
+						break;
+
+					case NativeSlotKind.U8:
+					case NativeSlotKind.U16:
+					case NativeSlotKind.U32:
+						il.Emit(OpCodes.Conv_U8);
+						break;
 				}
-				else if (conversions[i].Slot == Struct.CallbackSlot.Float64)
-					il.Emit(OpCodes.Call, doubleToBits);
 
 				il.Emit(OpCodes.Stelem_I8);
 			}
@@ -566,11 +664,11 @@ namespace Keysharp.Builtins
 		}
 
 		// A delegate type is the one thing DynamicMethod cannot express, so the shape's signature is emitted once.
-		private static Type CreateDelegateType(Struct.CallbackConversion[] conversions, bool cdecl)
+		private static Type CreateDelegateType(Struct.CallbackConversion[] conversions, bool cdecl, bool exactNarrow)
 		{
 			_module ??= AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Keysharp.TypedCallbacks"),
 						AssemblyBuilderAccess.Run).DefineDynamicModule("Keysharp.TypedCallbacks");
-			var parameterTypes = NativeParameterTypes(conversions);
+			var parameterTypes = NativeParameterTypes(conversions, exactNarrow);
 			var builder = _module.DefineType("TypedCallback_" + (++_nextId),
 											 TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed,
 											 typeof(MulticastDelegate));

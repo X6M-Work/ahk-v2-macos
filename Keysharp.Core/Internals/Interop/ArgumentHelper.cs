@@ -59,6 +59,7 @@ namespace Keysharp.Internals.Interop
 		internal bool Failed => failed;
 
 		private Span<ArgumentSlot> slots;
+		private Span<NativeSlotKind> exactArgKinds;
 		private readonly bool isCom;
 		private bool failed;
 		private bool returnByAddress;
@@ -69,16 +70,22 @@ namespace Keysharp.Internals.Interop
 		private NativeTypeCode returnCode;
 		private Func<long, object> structReturnConverter;
 
+		internal NativeSlotKind ReturnSlotKind => voidReturn ? NativeSlotKind.I64 : NativeInvoker.MapSlotKind(returnCode, returnByAddress);
+
 		/// <summary>
 		/// <paramref name="args"/> and <paramref name="slots"/> must be stack memory belonging to the caller,
 		/// because a by-address argument is handed the address of its own slot and the callee writes there.
 		/// </summary>
-		internal ArgumentHelper(object[] parameters, Span<long> args, Span<ArgumentSlot> slots, bool isCom = false)
+		internal ArgumentHelper(object[] parameters, Span<long> args, Span<ArgumentSlot> slots, bool isCom = false, Span<NativeSlotKind> exactArgKinds = default)
 		{
 			this.args = args;
 			this.slots = slots;
+			this.exactArgKinds = exactArgKinds;
 			this.isCom = isCom;
 			returnCode = NativeTypeCode.Int;//An omitted return type is an integer.
+
+			if (!this.exactArgKinds.IsEmpty)
+				this.exactArgKinds.Fill(NativeSlotKind.I64);
 
 			try
 			{
@@ -241,7 +248,8 @@ namespace Keysharp.Internals.Interop
 
 				if (code == NativeTypeCode.Invalid)
 				{
-					args[n] = ReadStructValueArg(p, structType);
+					args[n] = ReadStructValueArg(p, structType, out var structSlotKind);
+					SetExactArgKind(n, structSlotKind);
 					return true;
 				}
 
@@ -274,6 +282,7 @@ namespace Keysharp.Internals.Interop
 					if (NativeType.IsFloating(code))
 						floatingTypeMask |= 1UL << n;
 
+					SetExactArgKind(n, NativeInvoker.MapSlotKind(code, false));
 					return true;
 				}
 			}
@@ -446,6 +455,7 @@ namespace Keysharp.Internals.Interop
 					return ConvertString(parameters, valueIndex, n, code, p);
 			}
 
+			SetExactArgKind(n, NativeInvoker.MapSlotKind(code, false));
 			return true;
 		}
 
@@ -727,14 +737,30 @@ namespace Keysharp.Internals.Interop
 			return true;
 		}
 
-		private static long ReadStructValueArg(object input, Type structType)
+		private void SetExactArgKind(int n, NativeSlotKind kind)
+		{
+			if (!exactArgKinds.IsEmpty)
+				exactArgKinds[n] = kind;
+		}
+
+		private static long ReadStructValueArg(object input, Type structType, out NativeSlotKind slotKind)
 		{
 			var value = GetStructValue(structType, input);
 			var size = Struct.GetSize(structType);
 
 			if (size > sizeof(long))
+			{
+				slotKind = NativeSlotKind.I64;
 				return (long)Errors.ValueErrorOccurred("Struct arguments larger than 8 bytes are not supported yet.", null, 0L);
+			}
 
+			slotKind = size switch
+			{
+				1 => NativeSlotKind.U8,
+				2 => NativeSlotKind.U16,
+				4 => NativeSlotKind.U32,
+				_ => NativeSlotKind.I64
+			};
 			return Struct.ReadArgumentSlot(value);
 		}
 

@@ -6,6 +6,7 @@
     {"id":"macos-qsort-callback","category":"native-capability","script":"qsort-callback.ahk","expected_stdout":"golden/qsort-callback.txt","platforms":["Darwin"]},
     {"id":"macos-sqrtf","category":"native-capability","script":"sqrtf.ahk","expected_stdout":"golden/sqrtf.txt","platforms":["Darwin"]},
     {"id":"macos-float-return-output","category":"native-abi","script":"float-return-output.ahk","expected_stdout":"golden/float-return-output.txt","assets":["parse-float.c"],"platforms":["Darwin"]},
-    {"id":"macos-mixed-abi-callback","category":"native-abi","script":"mixed-abi-callback.ahk","expected_stdout":"golden/mixed-abi-callback.txt","assets":["mixed-abi.c"],"platforms":["Darwin"]}
+    {"id":"macos-mixed-abi-callback","category":"native-abi","script":"mixed-abi-callback.ahk","expected_stdout":"golden/mixed-abi-callback.txt","assets":["mixed-abi.c"],"platforms":["Darwin"]},
+    {"id":"macos-stack-abi-spilled","category":"native-abi","script":"stack-abi-spilled.ahk","expected_stdout":"golden/stack-abi-spilled.txt","assets":["stack-abi.c"],"platforms":["Darwin"]}
   ]
 }

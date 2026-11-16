@@ -3595,8 +3595,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Creates a native callback address which redirects to a script function. Supports both parameter-count callbacks and typed parameter/return signatures on every platform.",
-                     "tested-by":  "external-callbackcreate.ahk"
+                     "notes":  "Creates a native callback address which redirects to a script function. Supports both parameter-count callbacks and typed parameter/return signatures (including Darwin ARM64 stack-spilled narrow integer parameters past the eighth) on every platform.",
+                     "tested-by":  "external-callbackcreate.ahk; compat/phase15-architecture/macos/mixed-abi-callback.ahk; compat/phase15-architecture/macos/stack-abi-spilled.ahk; ExternalTests.TypedCallbackExactNarrowSignatureRoundTripsSpilledArguments"
                  },
                  {
                      "category":  "Interop/Memory",
@@ -4831,8 +4831,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Calls native functions, including numeric type classes and void returns. v2.0 Float return/output values widen exactly to Double; v2.1 retains shortest-decimal widening. Structured arrays pass by address but cannot be returned. Verified natively on Windows, macOS Intel, and Apple Silicon (including Float* output writeback via parse_float).",
-                     "tested-by":  "external-dllcall.ahk; struct-array.ahk; struct-basic.ahk; compat/phase15-native-windows/; compat/phase15-architecture/macos/sqrtf.ahk; compat/phase15-architecture/macos/float-return-output.ahk"
+                     "notes":  "Calls native functions, including numeric type classes, void returns, and Darwin ARM64 stack-spilled narrow/Float parameters past the 8 register slots. v2.0 Float return/output values widen exactly to Double; v2.1 retains shortest-decimal widening. Structured arrays pass by address but cannot be returned. Verified natively on Windows, macOS Intel, and Apple Silicon (including Float* output writeback via parse_float, mixed-ABI callbacks, and spilled stack packing).",
+                     "tested-by":  "external-dllcall.ahk; struct-array.ahk; struct-basic.ahk; compat/phase15-native-windows/; compat/phase15-architecture/macos/sqrtf.ahk; compat/phase15-architecture/macos/float-return-output.ahk; compat/phase15-architecture/macos/mixed-abi-callback.ahk; compat/phase15-architecture/macos/stack-abi-spilled.ahk"
                  },
                  {
                      "category":  "FileSystem",

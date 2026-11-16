@@ -98,15 +98,18 @@ namespace Keysharp.Builtins
 
 			Span<long> args = stackalloc long[argCount];
 			Span<ArgumentSlot> slots = stackalloc ArgumentSlot[argCount];
+			Span<NativeSlotKind> exactArgKinds = argCount > 8 && NativeInvoker.IsDarwinArm64 ? stackalloc NativeSlotKind[argCount] : default;
 
 			try
 			{
-				using var helper = new ArgumentHelper(parameters, args, slots);
+				using var helper = new ArgumentHelper(parameters, args, slots, exactArgKinds: exactArgKinds);
 
 				if (helper.Failed)//The error was reported and suppressed; the argument list is incomplete.
 					return DefaultObject;
 
-				var value = NativeInvoker.NativeInvoke(address, args, helper.floatingTypeMask);
+				var value = !exactArgKinds.IsEmpty && NativeInvoker.RequiresExactDarwinArm64Signature(exactArgKinds)
+							? NativeInvoker.NativeInvokeExact(address, args, exactArgKinds, helper.ReturnSlotKind)
+							: NativeInvoker.NativeInvoke(address, args, helper.floatingTypeMask);
 				helper.CopyBack(parameters);
 				return helper.ConvertReturnValue(value);
 			}

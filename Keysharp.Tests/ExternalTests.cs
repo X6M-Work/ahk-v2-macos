@@ -1,3 +1,5 @@
+using Keysharp.Internals.Interop;
+
 namespace Keysharp.Tests;
 
 public partial class ExternalTests : TestRunner
@@ -212,4 +214,128 @@ public partial class ExternalTests : TestRunner
 	public void OnMessage() => Assert.IsTrue(TestScript("external-onmessage", false));
 
 #endif
+
+	[System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+	private static float ComputeSpilledNarrowAndFloatSum(
+		int i0, int i1, int i2, int i3, int i4, int i5, int i6, int i7,
+		int i8, short s9, sbyte c10, byte u11,
+		float f0, float f1, float f2, float f3, float f4, float f5, float f6, float f7,
+		float f8, double d9)
+	{
+		return (float)(i0 + i1 + i2 + i3 + i4 + i5 + i6 + i7 + i8 + s9 + c10 + u11
+			+ f0 + f1 + f2 + f3 + f4 + f5 + f6 + f7 + f8 + d9);
+	}
+
+	[Test, Category("External"), Category("Internal"), Category("Curated")]
+	public void DarwinArm64SignatureDetectionDistinguishesRegisterOnlyAndSpilledCalls()
+	{
+		NativeSlotKind[] eightInts = [.. Enumerable.Repeat(NativeSlotKind.I32, 8)];
+		Assert.IsFalse(NativeInvoker.RequiresExactDarwinArm64Signature(eightInts));
+
+		NativeSlotKind[] nineInt64s = [.. Enumerable.Repeat(NativeSlotKind.I64, 9)];
+		Assert.IsFalse(NativeInvoker.RequiresExactDarwinArm64Signature(nineInt64s));
+
+		NativeSlotKind[] spilledInt32 = [.. Enumerable.Repeat(NativeSlotKind.I64, 8), NativeSlotKind.I32];
+		Assert.IsTrue(NativeInvoker.RequiresExactDarwinArm64Signature(spilledInt32));
+
+		NativeSlotKind[] eightF32AndEightI32 = [.. Enumerable.Repeat(NativeSlotKind.I32, 8), .. Enumerable.Repeat(NativeSlotKind.F32, 8)];
+		Assert.IsFalse(NativeInvoker.RequiresExactDarwinArm64Signature(eightF32AndEightI32));
+
+		NativeSlotKind[] spilledF32 = [.. Enumerable.Repeat(NativeSlotKind.F64, 8), NativeSlotKind.F32];
+		Assert.IsTrue(NativeInvoker.RequiresExactDarwinArm64Signature(spilledF32));
+
+		Struct.CallbackConversion[] callbackEightInts = [.. Enumerable.Repeat(new Struct.CallbackConversion(StructPrimitiveKind.Int32, null), 9)];
+		Assert.IsFalse(TypedCallbackSignature.RequiresCustomSignature(callbackEightInts, isDarwinArm64: true));
+
+		Struct.CallbackConversion[] callbackSpilledInt16 =
+		[
+			.. Enumerable.Repeat(new Struct.CallbackConversion(StructPrimitiveKind.Int64, null), 8),
+			new Struct.CallbackConversion(StructPrimitiveKind.Int16, null),
+			new Struct.CallbackConversion(StructPrimitiveKind.Int64, null)
+		];
+		Assert.IsFalse(TypedCallbackSignature.RequiresCustomSignature(callbackSpilledInt16, isDarwinArm64: false));
+		Assert.IsTrue(TypedCallbackSignature.RequiresCustomSignature(callbackSpilledInt16, isDarwinArm64: true));
+	}
+
+	[Test, Category("External"), Category("Internal"), Category("Curated")]
+	public unsafe void DllCallAndExactNativeInvokePreserveSpilledNarrowAndFloatArguments()
+	{
+		delegate* unmanaged[Cdecl]<
+			int, int, int, int, int, int, int, int, int, short, sbyte, byte,
+			float, float, float, float, float, float, float, float, float, double, float> fn = &ComputeSpilledNarrowAndFloatSum;
+		var fnPtr = (nint)fn;
+
+		// Expected sum: (1..8 = 36) + (-9) + (-10) + (-11) + 200 = 206; floats (0.25*1..8 = 11.25 -> 1..9 = 45*0.25=11.25) + 0.5 = 217.75
+		const double expected = 217.75;
+		var dllResult = (double)Dll.DllCall(fnPtr,
+			"Int", 1, "Int", 2, "Int", 3, "Int", 4, "Int", 5, "Int", 6, "Int", 7, "Int", 8,
+			"Int", -9, "Short", -10, "Char", -11, "UChar", 200,
+			"Float", 0.25, "Float", 0.5, "Float", 0.75, "Float", 1.0,
+			"Float", 1.25, "Float", 1.5, "Float", 1.75, "Float", 2.0,
+			"Float", 2.25, "Double", 0.5, "CDecl Float");
+		Assert.That(dllResult, Is.EqualTo(expected).Within(1e-5));
+
+		NativeSlotKind[] argKinds =
+		[
+			NativeSlotKind.I32, NativeSlotKind.I32, NativeSlotKind.I32, NativeSlotKind.I32,
+			NativeSlotKind.I32, NativeSlotKind.I32, NativeSlotKind.I32, NativeSlotKind.I32,
+			NativeSlotKind.I32, NativeSlotKind.I16, NativeSlotKind.I8, NativeSlotKind.U8,
+			NativeSlotKind.F32, NativeSlotKind.F32, NativeSlotKind.F32, NativeSlotKind.F32,
+			NativeSlotKind.F32, NativeSlotKind.F32, NativeSlotKind.F32, NativeSlotKind.F32,
+			NativeSlotKind.F32, NativeSlotKind.F64
+		];
+		Span<long> args =
+		[
+			1, 2, 3, 4, 5, 6, 7, 8, -9, -10, -11, 200,
+			BitConverter.SingleToInt32Bits(0.25f), BitConverter.SingleToInt32Bits(0.5f),
+			BitConverter.SingleToInt32Bits(0.75f), BitConverter.SingleToInt32Bits(1.0f),
+			BitConverter.SingleToInt32Bits(1.25f), BitConverter.SingleToInt32Bits(1.5f),
+			BitConverter.SingleToInt32Bits(1.75f), BitConverter.SingleToInt32Bits(2.0f),
+			BitConverter.SingleToInt32Bits(2.25f), BitConverter.DoubleToInt64Bits(0.5)
+		];
+		var rawBits = NativeInvoker.NativeInvokeExact(fnPtr, args, argKinds, NativeSlotKind.F32);
+		var exactFloat = BitConverter.Int32BitsToSingle(unchecked((int)rawBits));
+		Assert.That(exactFloat, Is.EqualTo(217.75f).Within(1e-5f));
+	}
+
+	[Test, Category("External"), Category("Internal"), Category("Curated")]
+	public void TypedCallbackExactNarrowSignatureRoundTripsSpilledArguments()
+	{
+		object[] captured = null;
+		var cbFunc = (Any)Functions.Func((object a0, object a1, object a2, object a3, object a4, object a5,
+							  object a6, object a7, object a8, object a9, object a10, object a11) =>
+		{
+			captured = [a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11];
+			return (long)a8 + (long)a9 + (long)a10 + (long)a11;
+		});
+		Struct.CallbackConversion[] conversions =
+		[
+			new(StructPrimitiveKind.Int32, null), new(StructPrimitiveKind.Int32, null),
+			new(StructPrimitiveKind.Int32, null), new(StructPrimitiveKind.Int32, null),
+			new(StructPrimitiveKind.Int32, null), new(StructPrimitiveKind.Int32, null),
+			new(StructPrimitiveKind.Int32, null), new(StructPrimitiveKind.Int32, null),
+			new(StructPrimitiveKind.Int32, null), new(StructPrimitiveKind.Int16, null),
+			new(StructPrimitiveKind.Int8, null), new(StructPrimitiveKind.UInt8, null),
+			new(StructPrimitiveKind.Int64, null)
+		];
+		var holder = new DelegateHolder(cbFunc, conversions, typedVoid: false, fast: true, cdecl: true, darwinArm64: true);
+
+		try
+		{
+			NativeSlotKind[] argKinds =
+			[
+				NativeSlotKind.I32, NativeSlotKind.I32, NativeSlotKind.I32, NativeSlotKind.I32,
+				NativeSlotKind.I32, NativeSlotKind.I32, NativeSlotKind.I32, NativeSlotKind.I32,
+				NativeSlotKind.I32, NativeSlotKind.I16, NativeSlotKind.I8, NativeSlotKind.U8
+			];
+			Span<long> args = [1, 2, 3, 4, 5, 6, 7, 8, -100, -200, -5, 250];
+			var result = NativeInvoker.NativeInvokeExact((nint)holder.Ptr, args, argKinds, NativeSlotKind.I64);
+			Assert.That(result, Is.EqualTo(-55L));
+			Assert.That(captured, Is.EqualTo(new object[] { 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, -100L, -200L, -5L, 250L }));
+		}
+		finally
+		{
+			_ = DelegateHolder.TryDispose(holder.Ptr);
+		}
+	}
 }

@@ -642,11 +642,10 @@ namespace Keysharp.Builtins
 		/// release; and the constructed Struct is handed to the script, which may retain it, so it cannot be
 		/// pooled or reused between invocations. Giving small structs inline storage would remove both.
 		///
-		/// One platform caveat: reading any integer-like value out of a long-wide slot assumes stack arguments
-		/// are promoted to 8 bytes, which holds on Win64, SysV x64 and Linux AArch64 but not on Apple arm64,
-		/// which packs them at their natural size. A narrow integer parameter past the eighth would therefore be
-		/// misread there. Expressing exact widths would push signatures that need no code generation today onto
-		/// the emitted path, so this is left as a documented limitation.
+		/// On Win64, SysV x64, and Linux AArch64, stack-spilled integer arguments are promoted to 8 bytes. On
+		/// Apple arm64, where spilled narrow integers are packed at their natural size, signatures with >8 arguments
+		/// containing narrow integer parameters past the eighth are routed through <see cref="TypedCallbackSignature"/>
+		/// with exact parameter widths so register-only signatures stay on the pre-declared arity slots.
 		/// </summary>
 		internal readonly struct CallbackConversion(StructPrimitiveKind kind, Type aggregate, bool isArray = false)
 		{
