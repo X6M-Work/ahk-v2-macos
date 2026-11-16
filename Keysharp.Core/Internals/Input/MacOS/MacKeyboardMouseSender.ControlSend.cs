@@ -301,7 +301,7 @@ namespace Keysharp.Internals.Input.MacOS
 						if (area.AcceptsReturn)
 							DeliverTextToTextControl(edit, "\n");
 					}
-					else if (edit.ParentWindow is Forms.Form form && form.DefaultButton is Button def && def.Enabled)
+					else if (edit.ParentWindow is Forms.Dialog dialog && dialog.DefaultButton is Button def && def.Enabled)
 						def.PerformClick();
 					return;
 				case VK_TAB:
