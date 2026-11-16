@@ -5335,8 +5335,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Retrieves the datetime stamp of a file or folder.",
-                     "tested-by":  "file-filegettime.ahk"
+                     "notes":  "Retrieves the datetime stamp of a file or folder (defaulting blank whichTime to M).",
+                     "tested-by":  "file-filegettime.ahk; compat/phase15-stdlib/file-time-contracts.ahk; FileAndDirTests.FileGetTimeSupportsDirectoriesAndEmptyWhichTime"
                  },
                  {
                      "category":  "FileSystem",

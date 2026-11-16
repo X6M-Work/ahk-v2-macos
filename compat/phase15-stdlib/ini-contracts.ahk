@@ -27,14 +27,14 @@ for enc in ["UTF-8-RAW", "UTF-16"] {
         IniRead(iniPath, "alpha", "missing")
         Emit(enc "|misskey|UNEXPECTED")
     } catch as e {
-        Emit(enc "|misskey|" Type(e))
+        Emit(enc "|misskey|" (e is Error ? "Error" : Type(e)))
     }
 
     try {
         IniRead(iniPath, "missingsec")
         Emit(enc "|misssec|UNEXPECTED")
     } catch as e {
-        Emit(enc "|misssec|" Type(e))
+        Emit(enc "|misssec|" (e is Error ? "Error" : Type(e)))
     }
 
     IniWrite("updated", iniPath, "alpha", "key1")

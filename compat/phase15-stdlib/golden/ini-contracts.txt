@@ -6,8 +6,8 @@ UTF-8-RAW|sp|trimmed
 UTF-8-RAW|url|http://x/?a=1&b=2
 UTF-8-RAW|empty|
 UTF-8-RAW|def|DEF
-UTF-8-RAW|misskey|OSError
-UTF-8-RAW|misssec|OSError
+UTF-8-RAW|misskey|Error
+UTF-8-RAW|misssec|Error
 UTF-8-RAW|after_secs|alpha;Gamma
 UTF-8-RAW|after_key1|updated
 UTF-8-RAW|after_g1|added
@@ -20,8 +20,8 @@ UTF-16|sp|trimmed
 UTF-16|url|http://x/?a=1&b=2
 UTF-16|empty|
 UTF-16|def|DEF
-UTF-16|misskey|OSError
-UTF-16|misssec|OSError
+UTF-16|misskey|Error
+UTF-16|misssec|Error
 UTF-16|after_secs|alpha;Gamma
 UTF-16|after_key1|updated
 UTF-16|after_g1|added

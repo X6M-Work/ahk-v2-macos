@@ -192,6 +192,34 @@ public class FileAndDirTests : TestRunner
 	[Test, Category("FileAndDir")]
 	public void FileGetTime() => Assert.IsTrue(TestScript("file-filegettime", true));
 
+	[Test, Category("FileAndDir"), Category("Internal"), Category("Curated")]
+	public void FileGetTimeSupportsDirectoriesAndEmptyWhichTime()
+	{
+		var root = Path.Combine(Path.GetTempPath(), $"ks-fgt-{Guid.NewGuid():N}");
+		var filePath = Path.Combine(root, "sample.txt");
+		var dirPath = Path.Combine(root, "folder");
+		Directory.CreateDirectory(dirPath);
+		File.WriteAllText(filePath, "hello");
+
+		try
+		{
+			_ = Files.FileSetTime("20210203040506", filePath, "M");
+			Assert.That(Files.FileGetTime(filePath, "M"), Is.EqualTo("20210203040506"));
+			Assert.That(Files.FileGetTime(filePath, ""), Is.EqualTo("20210203040506"));
+
+			var dirTime = Files.FileGetTime(dirPath);
+			Assert.That(dirTime, Has.Length.EqualTo(14));
+
+			_ = Files.FileSetTime("20220304050607", dirPath, "M", "D");
+			Assert.That(Files.FileGetTime(dirPath, "M"), Is.EqualTo("20220304050607"));
+		}
+		finally
+		{
+			if (Directory.Exists(root))
+				Directory.Delete(root, true);
+		}
+	}
+
 	[Test, Category("FileAndDir")]
 	public void FileGetVersion() => Assert.IsTrue(TestScript("file-filegetversion", true));
 

@@ -48,6 +48,12 @@
       "category": "stdlib",
       "script": "process-contracts.ahk",
       "expected_stdout": "golden/process-contracts.txt"
+    },
+    {
+      "id": "file-time-contracts",
+      "category": "stdlib",
+      "script": "file-time-contracts.ahk",
+      "expected_stdout": "golden/file-time-contracts.txt"
     }
   ]
 }

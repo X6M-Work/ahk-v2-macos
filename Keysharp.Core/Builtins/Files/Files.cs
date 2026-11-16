@@ -936,18 +936,23 @@ namespace Keysharp.Builtins
 			if (!whichTime.CoerceString(out var time, "M"))
 				return "";
 
+			var kind = string.IsNullOrEmpty(time) ? 'M' : time[0];
+
 			try
 			{
 				if (file?.Length == 0)
 					file = A_LoopFileFullPath;
 
-				if (!File.Exists(file))
+				FileSystemInfo info = File.Exists(file)
+					? new FileInfo(file)
+					: Directory.Exists(file)
+						? new DirectoryInfo(file)
+						: null;
+
+				if (info == null)
 					return DefaultObject;
 
-				var date = new DateTime();
-				var info = new FileInfo(file);
-
-				date = time[0] switch
+				var date = kind switch
 				{
 					'c' or 'C' => info.CreationTime,
 					'a' or 'A' => info.LastAccessTime,
@@ -1791,6 +1796,8 @@ namespace Keysharp.Builtins
 					|| !whichTime.CoerceString(out var whichtime, "M") || !mode.CoerceString(out var m))
 				return DefaultObject;
 
+			var whichChar = string.IsNullOrEmpty(whichtime) ? 'M' : whichtime[0];
+
 			var dodirs = m.Contains('d', StringComparison.OrdinalIgnoreCase);
 			var dofiles = m.Contains('f', StringComparison.OrdinalIgnoreCase);
 			var recurse = m.Contains('r', StringComparison.OrdinalIgnoreCase);
@@ -1810,29 +1817,57 @@ namespace Keysharp.Builtins
 			foreach (var item in MatchFiles(file, dofiles, dodirs, recurse))
 			{
 				var path = item.FullName;
+				var isDir = item is DirectoryInfo || (item.Attributes & FileAttributes.Directory) != 0;
 
 				try
 				{
 					var set = new DateTime();
 
-					switch (whichtime[0])
+					switch (whichChar)
 					{
 						case 'm':
 						case 'M':
-							File.SetLastWriteTime(path, time);
-							set = File.GetLastWriteTime(path);
+							if (isDir)
+							{
+								Directory.SetLastWriteTime(path, time);
+								set = Directory.GetLastWriteTime(path);
+							}
+							else
+							{
+								File.SetLastWriteTime(path, time);
+								set = File.GetLastWriteTime(path);
+							}
+
 							break;
 
 						case 'c':
 						case 'C':
-							File.SetCreationTime(path, time);
-							set = File.GetCreationTime(path);
+							if (isDir)
+							{
+								Directory.SetCreationTime(path, time);
+								set = Directory.GetCreationTime(path);
+							}
+							else
+							{
+								File.SetCreationTime(path, time);
+								set = File.GetCreationTime(path);
+							}
+
 							break;
 
 						case 'a':
 						case 'A':
-							File.SetLastAccessTime(path, time);
-							set = File.GetLastAccessTime(path);
+							if (isDir)
+							{
+								Directory.SetLastAccessTime(path, time);
+								set = Directory.GetLastAccessTime(path);
+							}
+							else
+							{
+								File.SetLastAccessTime(path, time);
+								set = File.GetLastAccessTime(path);
+							}
+
 							break;
 
 						default:
@@ -1841,7 +1876,7 @@ namespace Keysharp.Builtins
 					}
 
 					if (set != time)
-							failures++;
+						failures++;
 				}
 				catch { failures++; }
 			}
