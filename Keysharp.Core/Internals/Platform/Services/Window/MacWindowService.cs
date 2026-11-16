@@ -372,16 +372,32 @@ namespace Keysharp.Internals
 				&& MacNativeWindows.TryRedrawOwnWindow(native.WindowNumber));
 
 		public override bool TryClick(nint h, Point at, uint button, int count)
+			=> TryClick(h, at, button, count, down: true, up: true);
+
+		public override bool TryClick(nint h, Point at, uint button, int count, bool down, bool up)
 		{
 			if (TryOwnControl(h, out _) || !MacNativeWindows.TryGetWindowInfo(h, out var native))
-				return base.TryClick(h, at, button, count);
+				return base.TryClick(h, at, button, count, down, up);
 
 			using var window = MacAccessibility.ResolveWindowElement(native, "post mouse click");
-			var clicked = MacAccessibility.TryClickWindow(window, at, button, count);
+			var clicked = MacAccessibility.TryClickWindow(window, at, button, count, down, up);
 			if (!clicked)
 				Diagnostics.Debug.WriteLine("Native click failed on macOS window.");
 
 			return clicked;
+		}
+
+		public override bool TryScroll(nint h, Point at, short delta, bool horizontal, int count)
+		{
+			if (TryOwnControl(h, out _) || !MacNativeWindows.TryGetWindowInfo(h, out var native))
+				return base.TryScroll(h, at, delta, horizontal, count);
+
+			using var window = MacAccessibility.ResolveWindowElement(native, "post mouse wheel");
+			var scrolled = MacAccessibility.TryScrollWindow(window, at, delta, horizontal, count);
+			if (!scrolled)
+				Diagnostics.Debug.WriteLine("Native mouse wheel failed on macOS window.");
+
+			return scrolled;
 		}
 
 		public override bool TrySetTitle(nint h, string title)

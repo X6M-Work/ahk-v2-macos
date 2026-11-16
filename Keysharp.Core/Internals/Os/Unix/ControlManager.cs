@@ -261,29 +261,20 @@ namespace Keysharp.Internals.Os.Unix
 				if (winx == int.MinValue && winy == int.MinValue
 					&& TryResolveForeignMacControlTarget(ctrlorpos, title, text, excludeTitle, excludeText, out var foreignWin, out var foreignSelector))
 				{
-					var vkIsWheelEarly = MouseUtils.IsWheelVK(vk);
-					if (d || u || vkIsWheelEarly)
+					if (!TryMapMacControlClickInput(vk, out var isWheelForeign, out var wheelDeltaForeign, out var horizontalForeign, out var foreignButton))
 					{
-						_ = Errors.ValueErrorOccurred("macOS native ControlClick supports Left, Right, Middle, X1 and X2 clicks; D/U and wheel input are unsupported.");
-						return;
-					}
-
-					uint foreignButton;
-					if (vk == VK_LBUTTON) foreignButton = 1;
-					else if (vk == VK_RBUTTON) foreignButton = 2;
-					else if (vk == VK_MBUTTON) foreignButton = 3;
-					else if (vk == VK_XBUTTON1) foreignButton = 4;
-					else if (vk == VK_XBUTTON2) foreignButton = 5;
-					else
-					{
-						_ = Errors.ValueErrorOccurred($"Invalid macOS ControlClick button '{whichButton}'. Expected Left, Right, Middle, X1 or X2.");
+						_ = Errors.ValueErrorOccurred($"Invalid macOS ControlClick button '{whichButton}'. Expected Left, Right, Middle, X1, X2, WheelUp, WheelDown, WheelLeft or WheelRight.");
 						return;
 					}
 
 					if (clickCount < 1)
 						return;
 
-					if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryClickControl(foreignWin, foreignSelector, foreignButton, clickCount, ctrlx, ctrly, out var foundForeign))
+					var okForeign = isWheelForeign
+						? Keysharp.Internals.Window.MacOS.MacAccessibility.TryScrollControl(foreignWin, foreignSelector, wheelDeltaForeign, horizontalForeign, clickCount, ctrlx, ctrly, out var foundForeign)
+						: Keysharp.Internals.Window.MacOS.MacAccessibility.TryClickControl(foreignWin, foreignSelector, foreignButton, clickCount, ctrlx, ctrly, out var foundForeign, sendDown: !u, sendUp: !d);
+
+					if (okForeign)
 					{
 						WindowInfoBase.DoControlDelay();
 						return;
@@ -372,25 +363,17 @@ namespace Keysharp.Internals.Os.Unix
 			else return;
 
 #elif OSX
-			if (d || u || vkIsWheel)
+			if (!TryMapMacControlClickInput(vk, out var isWheel, out var wheelDelta, out var horizontalWheel, out var button))
 			{
-				_ = Errors.ValueErrorOccurred("macOS native ControlClick supports Left, Right, Middle, X1 and X2 clicks; D/U and wheel input are unsupported.");
+				_ = Errors.ValueErrorOccurred($"Invalid macOS ControlClick button '{whichButton}'. Expected Left, Right, Middle, X1, X2, WheelUp, WheelDown, WheelLeft or WheelRight.");
 				return;
 			}
 
-			uint button;
-			if (vk == VK_LBUTTON) button = 1;
-			else if (vk == VK_RBUTTON) button = 2;
-			else if (vk == VK_MBUTTON) button = 3;
-			else if (vk == VK_XBUTTON1) button = 4;
-			else if (vk == VK_XBUTTON2) button = 5;
-			else
-			{
-				_ = Errors.ValueErrorOccurred($"Invalid macOS ControlClick button '{whichButton}'. Expected Left, Right, Middle, X1 or X2.");
-				return;
-			}
+			var acted = isWheel
+				? Platform.Window.TryScroll(item.Handle, clickPoint, wheelDelta, horizontalWheel, clickCount)
+				: Platform.Window.TryClick(item.Handle, clickPoint, button, clickCount, !u, !d);
 
-			if (Platform.Window.TryClick(item.Handle, clickPoint, button, clickCount))
+			if (acted)
 				WindowInfoBase.DoControlDelay();
 #else
 #error Unsupported platform. Only WINDOWS, LINUX, and OSX are supported.
@@ -418,6 +401,58 @@ namespace Keysharp.Internals.Os.Unix
 		private static bool SendX11MouseEvent(nint handle, uint button, Point location, bool down)
 			=> Keysharp.Internals.Window.Linux.Wayland.DesktopBackend.X11
 				.TrySendWindowButton(handle, location, button, down);
+#elif OSX
+		internal static bool TryMapMacControlClickInput(
+			uint vk,
+			out bool isWheel,
+			out short wheelDelta,
+			out bool horizontalWheel,
+			out uint mouseButton)
+		{
+			isWheel = false;
+			wheelDelta = 0;
+			horizontalWheel = false;
+			mouseButton = 0;
+
+			switch (vk)
+			{
+				case VK_LBUTTON:
+					mouseButton = 1;
+					return true;
+				case VK_RBUTTON:
+					mouseButton = 2;
+					return true;
+				case VK_MBUTTON:
+					mouseButton = 3;
+					return true;
+				case VK_XBUTTON1:
+					mouseButton = 4;
+					return true;
+				case VK_XBUTTON2:
+					mouseButton = 5;
+					return true;
+				case VK_WHEEL_UP:
+					isWheel = true;
+					wheelDelta = (short)MouseUtils.WHEEL_DELTA;
+					return true;
+				case VK_WHEEL_DOWN:
+					isWheel = true;
+					wheelDelta = (short)-MouseUtils.WHEEL_DELTA;
+					return true;
+				case VK_WHEEL_LEFT:
+					isWheel = true;
+					horizontalWheel = true;
+					wheelDelta = (short)-MouseUtils.WHEEL_DELTA;
+					return true;
+				case VK_WHEEL_RIGHT:
+					isWheel = true;
+					horizontalWheel = true;
+					wheelDelta = (short)MouseUtils.WHEEL_DELTA;
+					return true;
+				default:
+					return false;
+			}
+		}
 #endif
 
 		internal override void ControlDeleteItem(int n, object ctrl, object title, object text, object excludeTitle, object excludeText)

@@ -4227,7 +4227,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlClick function sends a mouse button or mouse wheel event to a window or control. On macOS, supports both script-owned controls and foreign windows/controls via Accessibility (AXUIElement AXPress or CGEvent click by ClassNN/AXRole+index or title/description/identifier)."
+                     "notes":  "The ControlClick function sends a mouse button or mouse wheel event to a window or control. On macOS, supports both script-owned controls and foreign windows/controls via Accessibility (AXUIElement AXPress or CGEvent click/down/up and vertical/horizontal scroll wheel by ClassNN/AXRole+index, title/description/identifier, or coordinates)."
                  },
                  {
                      "category":  "Windowing/GUI",

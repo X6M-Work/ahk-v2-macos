@@ -494,6 +494,8 @@ namespace Keysharp.Internals
 			return Unsupported();
 		}
 		public virtual bool TryClick(nint h, Point at, uint button, int count) => Unsupported();
+		public virtual bool TryClick(nint h, Point at, uint button, int count, bool down, bool up) => down && up ? TryClick(h, at, button, count) : Unsupported();
+		public virtual bool TryScroll(nint h, Point at, short delta, bool horizontal, int count) => Unsupported();
 		public virtual bool TrySetTitle(nint h, string title)
 		{
 #if !WINDOWS

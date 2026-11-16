@@ -33,6 +33,7 @@ namespace Keysharp.Internals.Window.MacOS
 			LeftMouseUp = 2,
 			RightMouseDown = 3,
 			RightMouseUp = 4,
+			MouseMoved = 5,
 			OtherMouseDown = 25,
 			OtherMouseUp = 26
 		}
@@ -231,6 +232,9 @@ namespace Keysharp.Internals.Window.MacOS
 
 		[LibraryImport("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")]
 		private static partial void CGEventPost(uint tap, nint @event);
+
+		[LibraryImport("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")]
+		private static partial void CGEventSetLocation(nint @event, CGPointNative location);
 
 		[LibraryImport("/System/Library/Frameworks/ApplicationServices.framework/ApplicationServices")]
 		private static partial void CGEventSetIntegerValueField(nint @event, uint field, long value);
@@ -749,7 +753,7 @@ namespace Keysharp.Internals.Window.MacOS
 			return ok;
 		}
 
-		internal static bool TryClickWindow(WindowElement window, Point location, uint buttonNumber, int count)
+		internal static bool TryClickWindow(WindowElement window, Point location, uint buttonNumber, int count, bool sendDown = true, bool sendUp = true)
 		{
 			if (window == null || !EnsurePostEventAccess("post mouse click", prompt: true))
 				return false;
@@ -760,7 +764,7 @@ namespace Keysharp.Internals.Window.MacOS
 				return false;
 			}
 
-			if (count <= 0)
+			if (count <= 0 || (!sendDown && !sendUp))
 				return true;
 
 			if (!TryActivateWindow(window))
@@ -775,22 +779,84 @@ namespace Keysharp.Internals.Window.MacOS
 
 			for (var i = 0; i < count; i++)
 			{
-				var down = CGEventCreateMouseEvent(0, downType, point, button);
-				var up = CGEventCreateMouseEvent(0, upType, point, button);
+				nint down = 0;
+				nint up = 0;
 				try
 				{
-					if (down == 0 || up == 0)
-						return false;
+					if (sendDown)
+					{
+						down = CGEventCreateMouseEvent(0, downType, point, button);
+						if (down == 0)
+							return false;
 
-					CGEventSetIntegerValueField(down, 1, i + 1L); // kCGMouseEventClickState
-					CGEventSetIntegerValueField(up, 1, i + 1L);
-					CGEventPost(kCGHIDEventTap, down);
-					CGEventPost(kCGHIDEventTap, up);
+						CGEventSetIntegerValueField(down, 1, i + 1L); // kCGMouseEventClickState
+						CGEventPost(kCGHIDEventTap, down);
+					}
+
+					if (sendUp)
+					{
+						up = CGEventCreateMouseEvent(0, upType, point, button);
+						if (up == 0)
+							return false;
+
+						CGEventSetIntegerValueField(up, 1, i + 1L);
+						CGEventPost(kCGHIDEventTap, up);
+					}
 				}
 				finally
 				{
 					if (down != 0) CFRelease(down);
 					if (up != 0) CFRelease(up);
+				}
+			}
+
+			return true;
+		}
+
+		internal static bool TryScrollWindow(WindowElement window, Point location, short delta, bool horizontal, int count)
+		{
+			if (window == null || !EnsurePostEventAccess("post mouse wheel", prompt: true))
+				return false;
+
+			if (count <= 0 || delta == 0)
+				return true;
+
+			if (!TryActivateWindow(window))
+				return false;
+
+			var info = window.Info;
+			var point = new CGPointNative(info.Bounds.X + location.X, info.Bounds.Y + location.Y);
+			var move = CGEventCreateMouseEvent(0, CGEventType.MouseMoved, point, CGMouseButton.Left);
+			if (move != 0)
+			{
+				try
+				{
+					CGEventPost(kCGHIDEventTap, move);
+				}
+				finally
+				{
+					CFRelease(move);
+				}
+			}
+
+			var direction = horizontal
+				? Keysharp.Internals.Input.Mouse.MouseWheelScrollDirection.Horizontal
+				: Keysharp.Internals.Input.Mouse.MouseWheelScrollDirection.Vertical;
+
+			for (var i = 0; i < count; i++)
+			{
+				var ev = Keysharp.Internals.Input.MacOS.MacNativeInput.CreateScrollWheelEvent(delta, direction, 0L);
+				if (ev == 0)
+					return false;
+
+				try
+				{
+					CGEventSetLocation(ev, point);
+					CGEventPost(kCGHIDEventTap, ev);
+				}
+				finally
+				{
+					CFRelease(ev);
 				}
 			}
 
@@ -878,7 +944,7 @@ namespace Keysharp.Internals.Window.MacOS
 			}
 		}
 
-		internal static bool TryClickControl(MacNativeWindow info, string selector, uint buttonNumber, int count, int relX, int relY, out bool foundControl)
+		internal static bool TryClickControl(MacNativeWindow info, string selector, uint buttonNumber, int count, int relX, int relY, out bool foundControl, bool sendDown = true, bool sendUp = true)
 		{
 			foundControl = false;
 			using var window = ResolveWindowElement(info, "click control");
@@ -890,7 +956,7 @@ namespace Keysharp.Internals.Window.MacOS
 
 			try
 			{
-				if (buttonNumber == 1 && count == 1 && relX == int.MinValue && relY == int.MinValue
+				if (sendDown && sendUp && buttonNumber == 1 && count == 1 && relX == int.MinValue && relY == int.MinValue
 					&& AXUIElementPerformAction(ctrl, actionPress) == kAXErrorSuccess)
 					return true;
 
@@ -900,7 +966,33 @@ namespace Keysharp.Internals.Window.MacOS
 				var clickX = relX != int.MinValue ? relX : rect.Width / 2;
 				var clickY = relY != int.MinValue ? relY : rect.Height / 2;
 				var winRelative = new Point(rect.X - window.Info.Bounds.X + clickX, rect.Y - window.Info.Bounds.Y + clickY);
-				return TryClickWindow(window, winRelative, buttonNumber, count);
+				return TryClickWindow(window, winRelative, buttonNumber, count, sendDown, sendUp);
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryScrollControl(MacNativeWindow info, string selector, short delta, bool horizontal, int count, int relX, int relY, out bool foundControl)
+		{
+			foundControl = false;
+			using var window = ResolveWindowElement(info, "scroll control");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out _))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (!TryReadRect(ctrl, out var rect))
+					return false;
+
+				var clickX = relX != int.MinValue ? relX : rect.Width / 2;
+				var clickY = relY != int.MinValue ? relY : rect.Height / 2;
+				var winRelative = new Point(rect.X - window.Info.Bounds.X + clickX, rect.Y - window.Info.Bounds.Y + clickY);
+				return TryScrollWindow(window, winRelative, delta, horizontal, count);
 			}
 			finally
 			{

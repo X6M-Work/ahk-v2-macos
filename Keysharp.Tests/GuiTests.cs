@@ -1092,6 +1092,29 @@ public class GuiTests : TestRunner
 	}
 #endif
 
+#if OSX
+	[Test, Category("Gui"), Category("Internal"), Category("Curated"), NonParallelizable]
+	public void ControlClickMapsMacButtonsAndWheelInputs()
+	{
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x01, out var isWheel, out _, out _, out var btn), Is.True);
+		Assert.That((isWheel, btn), Is.EqualTo((false, 1u)));
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x02, out isWheel, out _, out _, out btn), Is.True);
+		Assert.That((isWheel, btn), Is.EqualTo((false, 2u)));
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x06, out isWheel, out _, out _, out btn), Is.True);
+		Assert.That((isWheel, btn), Is.EqualTo((false, 5u)));
+
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x9C, out isWheel, out var delta, out var horiz, out _), Is.True);
+		Assert.That((isWheel, horiz, delta), Is.EqualTo((true, false, (short)120)));
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x9D, out isWheel, out delta, out horiz, out _), Is.True);
+		Assert.That((isWheel, horiz, delta), Is.EqualTo((true, false, (short)-120)));
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x9E, out isWheel, out delta, out horiz, out _), Is.True);
+		Assert.That((isWheel, horiz, delta), Is.EqualTo((true, true, (short)-120)));
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x9F, out isWheel, out delta, out horiz, out _), Is.True);
+		Assert.That((isWheel, horiz, delta), Is.EqualTo((true, true, (short)120)));
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x41, out _, out _, out _, out _), Is.False);
+	}
+#endif
+
 #if WINDOWS
 	// The whole zero-copy design rests on one property: GDI+ drawing through the Bitmap and GDI reading
 	// through the DC address the same memory. If that ever stopped holding, presents would silently show

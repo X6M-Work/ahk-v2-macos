@@ -110,6 +110,8 @@ namespace Keysharp.Internals
 		bool TryShow(nint h);
 		bool TryRedraw(nint h);
 		bool TryClick(nint h, Point at, uint button, int count);
+		bool TryClick(nint h, Point at, uint button, int count, bool down, bool up) => down && up && TryClick(h, at, button, count);
+		bool TryScroll(nint h, Point at, short delta, bool horizontal, int count) => false;
 		bool TrySetTitle(nint h, string title);
 		bool TrySetVisible(nint h, bool visible);
 		bool TrySetEnabled(nint h, bool enabled);
