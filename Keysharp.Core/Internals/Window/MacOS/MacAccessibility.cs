@@ -452,6 +452,26 @@ namespace Keysharp.Internals.Window.MacOS
 			=> window != null && (AXUIElementPerformAction(window.Element, actionClose) == kAXErrorSuccess
 				|| TryPressButton(window.Element, attrCloseButton));
 
+		internal static bool TryGetWindowText(MacNativeWindow info, out List<string> lines)
+		{
+			lines = null;
+			using var window = ResolveWindowElement(info, "read window text", prompt: false);
+
+			if (window == null || !TryCollectControlCandidates(window.Element, out var elements, out var candidates))
+				return false;
+
+			try
+			{
+				lines = MacControlSelector.CollectWindowTexts(info.Title, candidates);
+				return lines.Count > 0;
+			}
+			finally
+			{
+				for (var i = 0; i < elements.Count; i++)
+					CFRelease(elements[i]);
+			}
+		}
+
 		internal static bool TryGetWindowState(MacNativeWindow info, out FormWindowState state)
 		{
 			state = FormWindowState.Normal;

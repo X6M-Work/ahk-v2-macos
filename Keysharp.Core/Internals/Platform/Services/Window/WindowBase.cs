@@ -22,9 +22,8 @@ namespace Keysharp.Internals
 			return control != null;
 		}
 
-		private static IReadOnlyList<nint> OwnChildHandles(Control root)
+		private static void CollectOwnControls(Control root, List<Control> results)
 		{
-			var handles = new List<nint>();
 			var seen = new HashSet<Control>();
 
 			void AddChildren(Control control)
@@ -35,13 +34,24 @@ namespace Keysharp.Internals
 						continue;
 
 					if (child is not Layout && child.Handle != 0)
-						handles.Add(child.Handle);
+						results.Add(child);
 
 					AddChildren(child);
 				}
 			}
 
 			AddChildren(root);
+		}
+
+		private static IReadOnlyList<nint> OwnChildHandles(Control root)
+		{
+			var controls = new List<Control>();
+			CollectOwnControls(root, controls);
+			var handles = new List<nint>(controls.Count);
+
+			foreach (var control in controls)
+				handles.Add(control.Handle);
+
 			return handles;
 		}
 #endif
@@ -140,8 +150,33 @@ namespace Keysharp.Internals
 #if !WINDOWS
 			if (TryOwnControl(h, out var control))
 			{
-				var value = control.CheckedInvoke(() => control.Text, true);
-				text = string.IsNullOrEmpty(value) ? [] : [value];
+				text = control.CheckedInvoke(() =>
+				{
+					var lines = new List<string>();
+					var value = control.Text;
+
+					if (!string.IsNullOrEmpty(value))
+						lines.Add(value);
+
+					if (control is Eto.Forms.Window)
+					{
+						var children = new List<Control>();
+						CollectOwnControls(control, children);
+
+						foreach (var child in children)
+						{
+							if (detectHidden || child.Visible)
+							{
+								var childText = child.Text;
+
+								if (!string.IsNullOrEmpty(childText))
+									lines.Add(childText);
+							}
+						}
+					}
+
+					return lines;
+				}, true);
 				return true;
 			}
 #endif

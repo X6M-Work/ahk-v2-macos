@@ -1096,20 +1096,20 @@ public class GuiTests : TestRunner
 	[Test, Category("Gui"), Category("Internal"), Category("Curated"), NonParallelizable]
 	public void ControlClickMapsMacButtonsAndWheelInputs()
 	{
-		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x01, out var isWheel, out _, out _, out var btn), Is.True);
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(Keysharp.Internals.Input.Keyboard.VirtualKeys.VK_LBUTTON, out var isWheel, out _, out _, out var btn), Is.True);
 		Assert.That((isWheel, btn), Is.EqualTo((false, 1u)));
-		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x02, out isWheel, out _, out _, out btn), Is.True);
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(Keysharp.Internals.Input.Keyboard.VirtualKeys.VK_RBUTTON, out isWheel, out _, out _, out btn), Is.True);
 		Assert.That((isWheel, btn), Is.EqualTo((false, 2u)));
-		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x06, out isWheel, out _, out _, out btn), Is.True);
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(Keysharp.Internals.Input.Keyboard.VirtualKeys.VK_XBUTTON2, out isWheel, out _, out _, out btn), Is.True);
 		Assert.That((isWheel, btn), Is.EqualTo((false, 5u)));
 
-		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x9C, out isWheel, out var delta, out var horiz, out _), Is.True);
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(Keysharp.Internals.Input.Keyboard.VirtualKeys.VK_WHEEL_UP, out isWheel, out var delta, out var horiz, out _), Is.True);
 		Assert.That((isWheel, horiz, delta), Is.EqualTo((true, false, (short)120)));
-		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x9D, out isWheel, out delta, out horiz, out _), Is.True);
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(Keysharp.Internals.Input.Keyboard.VirtualKeys.VK_WHEEL_DOWN, out isWheel, out delta, out horiz, out _), Is.True);
 		Assert.That((isWheel, horiz, delta), Is.EqualTo((true, false, (short)-120)));
-		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x9E, out isWheel, out delta, out horiz, out _), Is.True);
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(Keysharp.Internals.Input.Keyboard.VirtualKeys.VK_WHEEL_LEFT, out isWheel, out delta, out horiz, out _), Is.True);
 		Assert.That((isWheel, horiz, delta), Is.EqualTo((true, true, (short)-120)));
-		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x9F, out isWheel, out delta, out horiz, out _), Is.True);
+		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(Keysharp.Internals.Input.Keyboard.VirtualKeys.VK_WHEEL_RIGHT, out isWheel, out delta, out horiz, out _), Is.True);
 		Assert.That((isWheel, horiz, delta), Is.EqualTo((true, true, (short)120)));
 		Assert.That(Keysharp.Internals.Os.Unix.ControlManager.TryMapMacControlClickInput(0x41, out _, out _, out _, out _), Is.False);
 	}
@@ -1122,6 +1122,21 @@ public class GuiTests : TestRunner
 		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsComboOrPopUpRole("AXPopUpButton"), Is.True);
 		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsComboOrPopUpRole("AXList"), Is.False);
 		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsComboOrPopUpRole(null), Is.False);
+	}
+
+	[Test, Category("Gui"), Category("Internal"), Category("Curated"), NonParallelizable]
+	public void MacControlSelectorCollectsWindowTextsWithCheckboxCaption()
+	{
+		var candidates = new[]
+		{
+			new Keysharp.Internals.Window.MacOS.MacControlCandidate("AXStaticText", "", "", "", "Prefs"),
+			new Keysharp.Internals.Window.MacOS.MacControlCandidate("AXTextField", "", "", "", "hello world"),
+			new Keysharp.Internals.Window.MacOS.MacControlCandidate("AXCheckBox", "Enable Auto", "", "", "1"),
+			new Keysharp.Internals.Window.MacOS.MacControlCandidate("AXButton", "Save", "", "", "")
+		};
+
+		var lines = Keysharp.Internals.Window.MacOS.MacControlSelector.CollectWindowTexts("Prefs", candidates);
+		Assert.That(lines, Is.EqualTo(new[] { "Prefs", "hello world", "Enable Auto", "Save" }));
 	}
 
 #if WINDOWS

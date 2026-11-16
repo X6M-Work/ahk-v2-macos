@@ -220,6 +220,10 @@ namespace Keysharp.Internals.Window.MacOS
 		// Read-shaped non-scalars: native here (so a held item never routes them back through Platform.Window).
 		internal override List<string> GetText(bool detectHidden, bool fast)
 		{
+			if (TryGetNativeInfo(out var native, includeTextMetadata: true)
+				&& MacAccessibility.TryGetWindowText(native, out var lines))
+				return lines;
+
 			var titleText = Title;
 			return titleText.IsNullOrEmpty() ? [] : [titleText];
 		}

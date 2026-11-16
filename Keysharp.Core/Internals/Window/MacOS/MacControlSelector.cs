@@ -159,6 +159,43 @@ namespace Keysharp.Internals.Window.MacOS
 		}
 
 		/// <summary>
+		/// Collects non-empty text lines for a window and its discovered Accessibility control candidates.
+		/// Toggle controls prefer their label (<c>AXTitle</c>/<c>AXDescription</c>) over their numeric state,
+		/// and a leading child echoing the window title is skipped to avoid duplicating the title line.
+		/// </summary>
+		internal static List<string> CollectWindowTexts(string windowTitle, IReadOnlyList<MacControlCandidate> candidates)
+		{
+			var lines = new List<string>();
+
+			if (!string.IsNullOrEmpty(windowTitle))
+				lines.Add(windowTitle);
+
+			if (candidates == null || candidates.Count == 0)
+				return lines;
+
+			for (var i = 0; i < candidates.Count; i++)
+			{
+				var candidate = candidates[i];
+				var isToggleRole = string.Equals(candidate.Role, "AXCheckBox", StringComparison.OrdinalIgnoreCase)
+					|| string.Equals(candidate.Role, "AXRadioButton", StringComparison.OrdinalIgnoreCase)
+					|| string.Equals(candidate.Role, "AXDisclosureTriangle", StringComparison.OrdinalIgnoreCase);
+				var text = isToggleRole
+					? (!string.IsNullOrEmpty(candidate.Title) ? candidate.Title : candidate.Description ?? string.Empty)
+					: ExtractControlText(candidate);
+
+				if (string.IsNullOrEmpty(text))
+					continue;
+
+				if (lines.Count == 1 && i == 0 && string.Equals(text, windowTitle, StringComparison.Ordinal))
+					continue;
+
+				lines.Add(text);
+			}
+
+			return lines;
+		}
+
+		/// <summary>
 		/// Builds the 1-based <c>AXRoleN</c> <c>ClassNN</c> list for all candidates that have a non-empty role.
 		/// </summary>
 		internal static List<string> BuildClassNNs(IReadOnlyList<MacControlCandidate> candidates)
