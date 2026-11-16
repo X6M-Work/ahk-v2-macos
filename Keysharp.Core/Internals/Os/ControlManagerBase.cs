@@ -329,6 +329,61 @@ namespace Keysharp.Internals.Os
 
 		internal abstract long SendMessage(uint msg, object wparam, object lparam, object ctrl, object title, object text, object excludeTitle, object excludeText, int timeout);
 
+		internal static long CountTextLines(string text) =>
+			(text ?? string.Empty).AsSpan().Count('\n') + 1L;
+
+		internal static bool TryGetTextLine(string text, int oneBasedLine, out string lineText, out int totalLines)
+		{
+			lineText = string.Empty;
+			totalLines = 0;
+
+			if (oneBasedLine < 1)
+				return false;
+
+			var rest = (text ?? string.Empty).AsSpan();
+
+			for (var i = 1; i < oneBasedLine; i++)
+			{
+				var lineBreak = rest.IndexOf('\n');
+
+				if (lineBreak < 0)
+				{
+					totalLines = i;
+					return false;
+				}
+
+				rest = rest[(lineBreak + 1)..];
+			}
+
+			var end = rest.IndexOf('\n');
+			lineText = (end < 0 ? rest : rest[..end]).TrimEnd('\r').ToString();
+			return true;
+		}
+
+		internal static long ComputeLineFromOffset(string text, int offset)
+		{
+			var value = text ?? string.Empty;
+			var clamped = Math.Clamp(offset, 0, value.Length);
+			return value.AsSpan(0, clamped).Count('\n') + 1L;
+		}
+
+		internal static long ComputeColFromOffset(string text, int offset)
+		{
+			var value = text ?? string.Empty;
+			var clamped = Math.Clamp(offset, 0, value.Length);
+			var before = value.AsSpan(0, clamped);
+			return before.Length - before.LastIndexOf('\n');
+		}
+
+		internal static string ApplyTextPaste(string existingText, int selStart, int selLength, string replacement)
+		{
+			var value = existingText ?? string.Empty;
+			var insert = replacement ?? string.Empty;
+			var start = Math.Clamp(selStart, 0, value.Length);
+			var length = Math.Clamp(selLength, 0, value.Length - start);
+			return string.Concat(value.AsSpan(0, start), insert.AsSpan(), value.AsSpan(start + length));
+		}
+
 		private static void ShowHideHelper(bool val, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
 			if (WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText) is WindowInfoBase item)

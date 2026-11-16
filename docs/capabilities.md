@@ -486,12 +486,12 @@ Status legend:
 | DriveSetLabel() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Changes a volume label. Windows uses DriveInfo, Linux dispatches to the installed filesystem-specific label utility, and macOS uses diskutil renameVolume. Unix operations can require elevated privileges; filesystem/backend coverage needs manual verification. |
 | DriveUnlock() | 🟢 Full | 🟢 Full | 🟢 Full | 🔴 Unsupported | Restores media ejection. Linux uses the eject utility; eject locking is permanently unsupported on macOS. |
 | Edit() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Opens the script, or the file named by the optional argument, in a text editor rather than the extension's handler. |
-| EditGetCurrentCol() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditGetCurrentCol function returns the column number in an edit control where the caret resides. |
-| EditGetCurrentLine() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditGetCurrentLine function returns the line number in an edit control where the caret resides. |
-| EditGetLine() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditGetLine function returns the text of a line in an edit control by line number. |
-| EditGetLineCount() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditGetLineCount function returns the number of lines in an edit control. |
-| EditGetSelectedText() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditGetSelectedText function returns the selected text in an edit control. |
-| EditPaste() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditPaste function pastes a string at the caret in an edit control. |
+| EditGetCurrentCol() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditGetCurrentCol function returns the column number in an edit control where the caret resides. On macOS, supports both script-owned controls and foreign AX text controls via AXSelectedTextRange. |
+| EditGetCurrentLine() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditGetCurrentLine function returns the line number in an edit control where the caret resides. On macOS, supports both script-owned controls and foreign AX text controls via AXSelectedTextRange. |
+| EditGetLine() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditGetLine function returns the text of a line in an edit control by line number. On macOS, supports both script-owned controls and foreign AX text controls. |
+| EditGetLineCount() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditGetLineCount function returns the number of lines in an edit control. On macOS, supports both script-owned controls and foreign AX text controls. |
+| EditGetSelectedText() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditGetSelectedText function returns the selected text in an edit control. On macOS, supports both script-owned controls and foreign AX text controls via AXSelectedText and AXSelectedTextRange. |
+| EditPaste() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The EditPaste function pastes a string at the caret in an edit control. On macOS, supports both script-owned controls and foreign AX text controls via AXSelectedText or AXValue/AXSelectedTextRange update. |
 | Else | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Alternate branch executed when if condition is false. |
 | Enumerator | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Enumerator object used for iteration. |
 | EnvGet() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Returns the value of the specified environment variable if it exists, else it returns an empty string. |

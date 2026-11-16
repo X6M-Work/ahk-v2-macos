@@ -922,45 +922,107 @@ namespace Keysharp.Internals.Os.Unix
 		//a Windows edit control.
 		internal override long EditGetCurrentCol(object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
-			if (GetEtoTextControl(ctrl, title, text, excludeTitle, excludeText) is not TextControl edit)
-				return 0L;
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetEditCurrentPos(nativeWin, selector, false, out var col, out var foundControl, out var unsupportedClass))
+					return col;
 
-			var before = BeforeSelection(edit);
-			return before.Length - before.LastIndexOf('\n');
+				if (!foundControl)
+					return (long)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				if (unsupportedClass)
+					return (long)Errors.TargetErrorOccurred("The control is not an Edit", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				return 0L;
+			}
+#endif
+			return GetEtoTextControl(ctrl, title, text, excludeTitle, excludeText) is TextControl edit
+				? ComputeColFromOffset(edit.Text ?? "", edit.Selection.Start)
+				: 0L;
 		}
 
-		internal override long EditGetCurrentLine(object ctrl, object title, object text, object excludeTitle, object excludeText) =>
-			GetEtoTextControl(ctrl, title, text, excludeTitle, excludeText) is TextControl edit ? BeforeSelection(edit).Count('\n') + 1L : 0L;
+		internal override long EditGetCurrentLine(object ctrl, object title, object text, object excludeTitle, object excludeText)
+		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetEditCurrentPos(nativeWin, selector, true, out var line, out var foundControl, out var unsupportedClass))
+					return line;
+
+				if (!foundControl)
+					return (long)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				if (unsupportedClass)
+					return (long)Errors.TargetErrorOccurred("The control is not an Edit", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				return 0L;
+			}
+#endif
+			return GetEtoTextControl(ctrl, title, text, excludeTitle, excludeText) is TextControl edit
+				? ComputeLineFromOffset(edit.Text ?? "", edit.Selection.Start)
+				: 0L;
+		}
 
 		internal override string EditGetLine(int n, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
-			if (GetEtoTextControl(ctrl, title, text, excludeTitle, excludeText) is not TextControl edit)
-				return DefaultObject;
-
 			if (n < 1)
 				return (string)Errors.InvalidParameterErrorOccurred(1, "EditGetLine", n, DefaultErrorString);
 
-			var rest = (edit.Text ?? "").AsSpan();
-
-			for (var i = 1; i < n; i++)
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
 			{
-				var lineBreak = rest.IndexOf('\n');
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetEditLine(nativeWin, selector, n, out var lineText, out var totalLines, out var foundControl, out var unsupportedClass))
+					return lineText;
 
-				if (lineBreak < 0)
-					return (string)Errors.ValueErrorOccurred($"Requested line of {n} is greater than the number of lines ({i}) in the text box in window with criteria: title: {title}, text: {text}, exclude title: {excludeTitle}, exclude text: {excludeText}", null, DefaultErrorString);
-
-				rest = rest[(lineBreak + 1)..];
+				if (!foundControl)
+					return (string)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorString);
+				if (unsupportedClass)
+					return (string)Errors.TargetErrorOccurred("The control is not an Edit", title, text, excludeTitle, excludeText, DefaultErrorString);
+				if (totalLines > 0)
+					return (string)Errors.ValueErrorOccurred($"Requested line of {n} is greater than the number of lines ({totalLines}) in the text box in window with criteria: title: {title}, text: {text}, exclude title: {excludeTitle}, exclude text: {excludeText}", null, DefaultErrorString);
+				return DefaultObject;
 			}
+#endif
+			if (GetEtoTextControl(ctrl, title, text, excludeTitle, excludeText) is not TextControl edit)
+				return DefaultObject;
 
-			var end = rest.IndexOf('\n');
-			return (end < 0 ? rest : rest[..end]).TrimEnd('\r').ToString();
+			return TryGetTextLine(edit.Text ?? "", n, out var line, out var lineTotal)
+				? line
+				: (string)Errors.ValueErrorOccurred($"Requested line of {n} is greater than the number of lines ({lineTotal}) in the text box in window with criteria: title: {title}, text: {text}, exclude title: {excludeTitle}, exclude text: {excludeText}", null, DefaultErrorString);
 		}
 
-		internal override long EditGetLineCount(object ctrl, object title, object text, object excludeTitle, object excludeText) =>
-			GetEtoTextControl(ctrl, title, text, excludeTitle, excludeText) is TextControl edit ? (edit.Text ?? "").AsSpan().Count('\n') + 1L : 0L;
+		internal override long EditGetLineCount(object ctrl, object title, object text, object excludeTitle, object excludeText)
+		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetEditLineCount(nativeWin, selector, out var lineCount, out var foundControl, out var unsupportedClass))
+					return lineCount;
+
+				if (!foundControl)
+					return (long)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				if (unsupportedClass)
+					return (long)Errors.TargetErrorOccurred("The control is not an Edit", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				return 0L;
+			}
+#endif
+			return GetEtoTextControl(ctrl, title, text, excludeTitle, excludeText) is TextControl edit
+				? CountTextLines(edit.Text ?? "")
+				: 0L;
+		}
 
 		internal override string EditGetSelectedText(object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetEditSelectedText(nativeWin, selector, out var selectedText, out var foundControl, out var unsupportedClass))
+					return selectedText;
+
+				if (!foundControl)
+					return (string)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorString);
+				if (unsupportedClass)
+					return (string)Errors.TargetErrorOccurred("The control is not an Edit", title, text, excludeTitle, excludeText, DefaultErrorString);
+				return DefaultObject;
+			}
+#endif
 			if (GetEtoTextControl(ctrl, title, text, excludeTitle, excludeText) is not TextControl edit)
 				return DefaultObject;
 
@@ -970,6 +1032,24 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override void EditPaste(string str, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryPasteEditText(nativeWin, selector, str, out var foundControl, out var unsupportedClass))
+				{
+					WindowInfoBase.DoControlDelay();
+					return;
+				}
+
+				if (!foundControl)
+					_ = Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+				else if (unsupportedClass)
+					_ = Errors.TargetErrorOccurred("The control is not an Edit", title, text, excludeTitle, excludeText);
+				else
+					_ = Errors.OSErrorOccurred("", $"macOS Accessibility could not paste into edit control '{selector}'.");
+				return;
+			}
+#endif
 			if (GetEtoTextControl(ctrl, title, text, excludeTitle, excludeText) is not TextControl edit)
 				return;
 
@@ -996,12 +1076,6 @@ namespace Keysharp.Internals.Os.Unix
 
 			_ = Errors.TargetErrorOccurred("The control is not an Edit", title, text, excludeTitle, excludeText);
 			return null;
-		}
-
-		private static ReadOnlySpan<char> BeforeSelection(TextControl edit)
-		{
-			var all = edit.Text ?? "";
-			return all.AsSpan(0, Math.Min(edit.Selection.Start, all.Length));
 		}
 
 		internal override object ListViewGetContent(string options, object ctrl, object title, object text, object excludeTitle, object excludeText)

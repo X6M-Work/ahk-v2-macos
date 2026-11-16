@@ -1139,6 +1139,25 @@ public class GuiTests : TestRunner
 		Assert.That(lines, Is.EqualTo(new[] { "Prefs", "hello world", "Enable Auto", "Save" }));
 	}
 
+	[Test, Category("Gui"), Category("Internal"), Category("Curated"), NonParallelizable]
+	public void ControlManagerTextEditHelpersComputeLinesColumnsAndPaste()
+	{
+		const string sample = "alpha\r\nbeta\ngamma";
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.CountTextLines(sample), Is.EqualTo(3));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryGetTextLine(sample, 1, out var l1, out _), Is.True);
+		Assert.That(l1, Is.EqualTo("alpha"));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryGetTextLine(sample, 3, out var l3, out _), Is.True);
+		Assert.That(l3, Is.EqualTo("gamma"));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryGetTextLine(sample, 4, out _, out var total), Is.False);
+		Assert.That(total, Is.EqualTo(3));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.ComputeLineFromOffset(sample, 9), Is.EqualTo(2));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.ComputeColFromOffset(sample, 9), Is.EqualTo(3));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.ApplyTextPaste("hello world", 6, 5, "macOS"), Is.EqualTo("hello macOS"));
+		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsTextEditRole("AXTextField"), Is.True);
+		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsTextEditRole("AXTextArea"), Is.True);
+		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsTextEditRole("AXButton"), Is.False);
+	}
+
 #if WINDOWS
 	// The whole zero-copy design rests on one property: GDI+ drawing through the Bitmap and GDI reading
 	// through the DC address the same memory. If that ever stopped holding, presents would silently show

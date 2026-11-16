@@ -344,6 +344,13 @@ namespace Keysharp.Internals.Window.MacOS
 			string.Equals(role, "AXPopUpButton", StringComparison.OrdinalIgnoreCase)
 			|| string.Equals(role, "AXComboBox", StringComparison.OrdinalIgnoreCase);
 
+		internal static bool IsTextEditRole(string role) =>
+			string.Equals(role, "AXTextField", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXTextArea", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXSearchField", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXSecureTextField", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXComboBox", StringComparison.OrdinalIgnoreCase);
+
 		private static bool MatchesField(string fieldValue, string selector)
 			=> !string.IsNullOrEmpty(fieldValue)
 				&& fieldValue.Contains(selector, StringComparison.OrdinalIgnoreCase);

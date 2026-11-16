@@ -93,6 +93,7 @@ namespace Keysharp.Internals.Window.MacOS
 			private static readonly nint attrFocusedWindow = CreateCFString("AXFocusedWindow");
 			private static readonly nint attrFocusedUIElement = CreateCFString("AXFocusedUIElement");
 			private static readonly nint attrSelectedTextRange = CreateCFString("AXSelectedTextRange");
+			private static readonly nint attrSelectedText = CreateCFString("AXSelectedText");
 			private static readonly nint attrBoundsForRange = CreateCFString("AXBoundsForRange");
 			private static readonly nint attrWindow = CreateCFString("AXWindow");
 			private static readonly nint attrTitle = CreateCFString("AXTitle");
@@ -938,6 +939,274 @@ namespace Keysharp.Internals.Window.MacOS
 			{
 				CFRelease(strRef);
 				CFRelease(ctrl);
+			}
+		}
+
+		private static bool TryResolveForeignTextControl(
+			MacNativeWindow info,
+			string selector,
+			string operation,
+			out WindowElement window,
+			out nint ctrl,
+			out MacControlCandidate candidate,
+			out bool foundControl,
+			out bool unsupportedClass)
+		{
+			window = ResolveWindowElement(info, operation);
+			ctrl = 0;
+			candidate = default;
+			foundControl = false;
+			unsupportedClass = false;
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out ctrl, out candidate))
+			{
+				window?.Dispose();
+				window = null;
+				return false;
+			}
+
+			foundControl = true;
+
+			if (!MacControlSelector.IsTextEditRole(candidate.Role))
+			{
+				unsupportedClass = true;
+				CFRelease(ctrl);
+				ctrl = 0;
+				window.Dispose();
+				window = null;
+				return false;
+			}
+
+			return true;
+		}
+
+		private static bool TryReadSelectedRange(nint element, out int start, out int length)
+		{
+			start = 0;
+			length = 0;
+
+			if (element == 0 || !TryCopyAttributeValue(element, attrSelectedTextRange, out var rangeValue))
+				return false;
+
+			try
+			{
+				if (!AXValueGetValue(rangeValue, kAXValueCFRangeType, out CFRangeNative range)
+					|| range.Location < 0 || range.Length < 0)
+					return false;
+
+				start = (int)Math.Min(range.Location, int.MaxValue);
+				length = (int)Math.Min(range.Length, int.MaxValue);
+				return true;
+			}
+			finally
+			{
+				CFRelease(rangeValue);
+			}
+		}
+
+		internal static bool TryGetEditLineCount(
+			MacNativeWindow info,
+			string selector,
+			out long lineCount,
+			out bool foundControl,
+			out bool unsupportedClass)
+		{
+			lineCount = 0L;
+
+			if (!TryResolveForeignTextControl(info, selector, "query edit line count", out var window, out var ctrl, out var candidate, out foundControl, out unsupportedClass))
+				return false;
+
+			try
+			{
+				lineCount = Keysharp.Internals.Os.ControlManagerBase.CountTextLines(candidate.Value);
+				return true;
+			}
+			finally
+			{
+				CFRelease(ctrl);
+				window.Dispose();
+			}
+		}
+
+		internal static bool TryGetEditLine(
+			MacNativeWindow info,
+			string selector,
+			int oneBasedLine,
+			out string lineText,
+			out int totalLines,
+			out bool foundControl,
+			out bool unsupportedClass)
+		{
+			lineText = string.Empty;
+			totalLines = 0;
+
+			if (!TryResolveForeignTextControl(info, selector, "query edit line", out var window, out var ctrl, out var candidate, out foundControl, out unsupportedClass))
+				return false;
+
+			try
+			{
+				return Keysharp.Internals.Os.ControlManagerBase.TryGetTextLine(candidate.Value, oneBasedLine, out lineText, out totalLines);
+			}
+			finally
+			{
+				CFRelease(ctrl);
+				window.Dispose();
+			}
+		}
+
+		internal static bool TryGetEditCurrentPos(
+			MacNativeWindow info,
+			string selector,
+			bool returnLine,
+			out long result,
+			out bool foundControl,
+			out bool unsupportedClass)
+		{
+			result = 0L;
+
+			if (!TryResolveForeignTextControl(info, selector, returnLine ? "query edit line" : "query edit column", out var window, out var ctrl, out var candidate, out foundControl, out unsupportedClass))
+				return false;
+
+			try
+			{
+				var text = candidate.Value ?? string.Empty;
+				var selStart = TryReadSelectedRange(ctrl, out var start, out _) ? start : text.Length;
+				result = returnLine
+					? Keysharp.Internals.Os.ControlManagerBase.ComputeLineFromOffset(text, selStart)
+					: Keysharp.Internals.Os.ControlManagerBase.ComputeColFromOffset(text, selStart);
+				return true;
+			}
+			finally
+			{
+				CFRelease(ctrl);
+				window.Dispose();
+			}
+		}
+
+		internal static bool TryGetEditSelectedText(
+			MacNativeWindow info,
+			string selector,
+			out string selectedText,
+			out bool foundControl,
+			out bool unsupportedClass)
+		{
+			selectedText = string.Empty;
+
+			if (!TryResolveForeignTextControl(info, selector, "query selected edit text", out var window, out var ctrl, out var candidate, out foundControl, out unsupportedClass))
+				return false;
+
+			try
+			{
+				var direct = ReadStringAttribute(ctrl, attrSelectedText);
+
+				if (!string.IsNullOrEmpty(direct))
+				{
+					selectedText = direct;
+					return true;
+				}
+
+				if (TryReadSelectedRange(ctrl, out var start, out var length))
+				{
+					var text = candidate.Value ?? string.Empty;
+					var clampedStart = Math.Clamp(start, 0, text.Length);
+					var clampedLen = Math.Clamp(length, 0, text.Length - clampedStart);
+					selectedText = clampedLen > 0 ? text.Substring(clampedStart, clampedLen) : string.Empty;
+					return true;
+				}
+
+				return true;
+			}
+			finally
+			{
+				CFRelease(ctrl);
+				window.Dispose();
+			}
+		}
+
+		internal static bool TryPasteEditText(
+			MacNativeWindow info,
+			string selector,
+			string replacement,
+			out bool foundControl,
+			out bool unsupportedClass)
+		{
+			if (!TryResolveForeignTextControl(info, selector, "paste into edit control", out var window, out var ctrl, out var candidate, out foundControl, out unsupportedClass))
+				return false;
+
+			var insertText = replacement ?? string.Empty;
+
+			try
+			{
+				var insertRef = CreateCFString(insertText);
+
+				if (insertRef != 0)
+				{
+					try
+					{
+						if (IsAttributeSettable(ctrl, attrSelectedText)
+							&& AXUIElementSetAttributeValue(ctrl, attrSelectedText, insertRef) == kAXErrorSuccess)
+							return true;
+					}
+					finally
+					{
+						CFRelease(insertRef);
+					}
+				}
+
+				var existing = candidate.Value ?? string.Empty;
+				var hasRange = TryReadSelectedRange(ctrl, out var start, out var length);
+
+				if (!hasRange)
+				{
+					start = existing.Length;
+					length = 0;
+				}
+
+				var updated = Keysharp.Internals.Os.ControlManagerBase.ApplyTextPaste(existing, start, length, insertText);
+				var updatedRef = CreateCFString(updated);
+
+				if (updatedRef == 0)
+					return false;
+
+				try
+				{
+					if (!IsAttributeSettable(ctrl, attrValue)
+						|| AXUIElementSetAttributeValue(ctrl, attrValue, updatedRef) != kAXErrorSuccess)
+						return false;
+				}
+				finally
+				{
+					CFRelease(updatedRef);
+				}
+
+				if (hasRange && IsAttributeSettable(ctrl, attrSelectedTextRange))
+				{
+					var caret = new CFRangeNative
+					{
+						Location = Math.Clamp(start, 0, existing.Length) + insertText.Length,
+						Length = 0
+					};
+					var caretVal = AXValueCreateRange(kAXValueCFRangeType, in caret);
+
+					if (caretVal != 0)
+					{
+						try
+						{
+							_ = AXUIElementSetAttributeValue(ctrl, attrSelectedTextRange, caretVal);
+						}
+						finally
+						{
+							CFRelease(caretVal);
+						}
+					}
+				}
+
+				return true;
+			}
+			finally
+			{
+				CFRelease(ctrl);
+				window.Dispose();
 			}
 		}
 

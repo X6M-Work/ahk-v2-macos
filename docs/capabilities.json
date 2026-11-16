@@ -5017,8 +5017,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The EditGetCurrentCol function returns the column number in an edit control where the caret resides.",
-                     "tested-by":  "ControlTests/edit_get_current_col.ahk"
+                     "notes":  "The EditGetCurrentCol function returns the column number in an edit control where the caret resides. On macOS, supports both script-owned controls and foreign AX text controls via AXSelectedTextRange.",
+                     "tested-by":  "ControlTests/edit_get_current_col.ahk; GuiTests.ControlManagerTextEditHelpersComputeLinesColumnsAndPaste"
                  },
                  {
                      "category":  "Core Language",
@@ -5028,8 +5028,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The EditGetCurrentLine function returns the line number in an edit control where the caret resides.",
-                     "tested-by":  "ControlTests/edit_get_current_line.ahk"
+                     "notes":  "The EditGetCurrentLine function returns the line number in an edit control where the caret resides. On macOS, supports both script-owned controls and foreign AX text controls via AXSelectedTextRange.",
+                     "tested-by":  "ControlTests/edit_get_current_line.ahk; GuiTests.ControlManagerTextEditHelpersComputeLinesColumnsAndPaste"
                  },
                  {
                      "category":  "Core Language",
@@ -5039,8 +5039,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The EditGetLine function returns the text of a line in an edit control by line number.",
-                     "tested-by":  "ControlTests/edit_get_line.ahk"
+                     "notes":  "The EditGetLine function returns the text of a line in an edit control by line number. On macOS, supports both script-owned controls and foreign AX text controls.",
+                     "tested-by":  "ControlTests/edit_get_line.ahk; GuiTests.ControlManagerTextEditHelpersComputeLinesColumnsAndPaste"
                  },
                  {
                      "category":  "Core Language",
@@ -5050,8 +5050,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The EditGetLineCount function returns the number of lines in an edit control.",
-                     "tested-by":  "ControlTests/edit_get_line_count.ahk"
+                     "notes":  "The EditGetLineCount function returns the number of lines in an edit control. On macOS, supports both script-owned controls and foreign AX text controls.",
+                     "tested-by":  "ControlTests/edit_get_line_count.ahk; GuiTests.ControlManagerTextEditHelpersComputeLinesColumnsAndPaste"
                  },
                  {
                      "category":  "Core Language",
@@ -5061,8 +5061,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The EditGetSelectedText function returns the selected text in an edit control.",
-                     "tested-by":  "ControlTests/edit_get_selected_text.ahk"
+                     "notes":  "The EditGetSelectedText function returns the selected text in an edit control. On macOS, supports both script-owned controls and foreign AX text controls via AXSelectedText and AXSelectedTextRange.",
+                     "tested-by":  "ControlTests/edit_get_selected_text.ahk; GuiTests.ControlManagerTextEditHelpersComputeLinesColumnsAndPaste"
                  },
                  {
                      "category":  "Core Language",
@@ -5072,8 +5072,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The EditPaste function pastes a string at the caret in an edit control.",
-                     "tested-by":  "ControlTests/edit_paste.ahk"
+                     "notes":  "The EditPaste function pastes a string at the caret in an edit control. On macOS, supports both script-owned controls and foreign AX text controls via AXSelectedText or AXValue/AXSelectedTextRange update.",
+                     "tested-by":  "ControlTests/edit_paste.ahk; GuiTests.ControlManagerTextEditHelpersComputeLinesColumnsAndPaste"
                  },
                  {
                      "category":  "Core Language",
