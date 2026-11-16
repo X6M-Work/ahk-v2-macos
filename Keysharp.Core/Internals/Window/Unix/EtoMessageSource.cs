@@ -493,6 +493,79 @@ namespace Keysharp.Internals.Window.Unix
 				_ => 0u
 			};
 		}
+
+		internal static Forms.Keys FromVirtualKey(uint vk)
+		{
+			if (vk >= 'A' && vk <= 'Z')
+				return Forms.Keys.A + (int)(vk - 'A');
+
+			if (vk >= '0' && vk <= '9')
+				return Forms.Keys.D0 + (int)(vk - '0');
+
+			if (vk >= VK_F1 && vk <= VK_F12)
+				return Forms.Keys.F1 + (int)(vk - VK_F1);
+
+			if (vk >= VK_F13 && vk <= VK_F24)
+				return Forms.Keys.F13 + (int)(vk - VK_F13);
+
+			if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9)
+				return Forms.Keys.Keypad0 + (int)(vk - VK_NUMPAD0);
+
+			return vk switch
+			{
+				VK_BACK => Forms.Keys.Backspace,
+				VK_TAB => Forms.Keys.Tab,
+				VK_CLEAR => Forms.Keys.Clear,
+				VK_RETURN => Forms.Keys.Enter,
+				VK_PAUSE => Forms.Keys.Pause,
+				VK_CAPITAL => Forms.Keys.CapsLock,
+				VK_ESCAPE => Forms.Keys.Escape,
+				VK_SPACE => Forms.Keys.Space,
+				VK_PRIOR => Forms.Keys.PageUp,
+				VK_NEXT => Forms.Keys.PageDown,
+				VK_END => Forms.Keys.End,
+				VK_HOME => Forms.Keys.Home,
+				VK_LEFT => Forms.Keys.Left,
+				VK_UP => Forms.Keys.Up,
+				VK_RIGHT => Forms.Keys.Right,
+				VK_DOWN => Forms.Keys.Down,
+				VK_SNAPSHOT => Forms.Keys.PrintScreen,
+				VK_INSERT => Forms.Keys.Insert,
+				VK_DELETE => Forms.Keys.Delete,
+				VK_HELP => Forms.Keys.Help,
+				VK_MULTIPLY => Forms.Keys.Multiply,
+				VK_ADD => Forms.Keys.Add,
+				VK_SUBTRACT => Forms.Keys.Subtract,
+				VK_DECIMAL => Forms.Keys.Decimal,
+				VK_DIVIDE => Forms.Keys.Divide,
+				VK_NUMLOCK => Forms.Keys.NumberLock,
+				VK_SCROLL => Forms.Keys.ScrollLock,
+				VK_LSHIFT => Forms.Keys.LeftShift,
+				VK_RSHIFT => Forms.Keys.RightShift,
+				VK_SHIFT => Forms.Keys.Shift,
+				VK_LCONTROL => Forms.Keys.LeftControl,
+				VK_RCONTROL => Forms.Keys.RightControl,
+				VK_CONTROL => Forms.Keys.Control,
+				VK_LMENU => Forms.Keys.LeftAlt,
+				VK_RMENU => Forms.Keys.RightAlt,
+				VK_MENU => Forms.Keys.Alt,
+				VK_LWIN => Forms.Keys.LeftApplication,
+				VK_RWIN => Forms.Keys.RightApplication,
+				VK_APPS => Forms.Keys.ContextMenu,
+				VK_OEM_1 => Forms.Keys.Semicolon,
+				VK_OEM_PLUS => Forms.Keys.Equal,
+				VK_OEM_COMMA => Forms.Keys.Comma,
+				VK_OEM_MINUS => Forms.Keys.Minus,
+				VK_OEM_PERIOD => Forms.Keys.Period,
+				VK_OEM_2 => Forms.Keys.Slash,
+				VK_OEM_3 => Forms.Keys.Grave,
+				VK_OEM_4 => Forms.Keys.LeftBracket,
+				VK_OEM_5 => Forms.Keys.Backslash,
+				VK_OEM_6 => Forms.Keys.RightBracket,
+				VK_OEM_7 => Forms.Keys.Quote,
+				_ => Forms.Keys.None
+			};
+		}
 	}
 }
 #endif

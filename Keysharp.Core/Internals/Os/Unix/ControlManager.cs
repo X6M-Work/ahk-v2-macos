@@ -729,6 +729,23 @@ namespace Keysharp.Internals.Os.Unix
 		/// </summary>
 		private static void ControlSendHelper(string str, object ctrl, object title, object text, object excludeTitle, object excludeText, SendRawModes mode)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (!Keysharp.Internals.Window.MacOS.MacAccessibility.TryFocusControl(nativeWin, selector, out var foundControl, activateWindow: false))
+				{
+					if (!foundControl)
+						_ = Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+					else
+						_ = WindowHelper.WindowOperationUnsupported(mode == SendRawModes.RawText ? "ControlSendText" : "ControlSend");
+					return;
+				}
+
+				Script.TheScript.Permissions.EnsureInputControl(operation: mode == SendRawModes.RawText ? "ControlSendText" : "ControlSend");
+				Script.TheScript.HookThread.kbdMsSender.SendKeys(str, mode, SendModes.Event, nativeWin.WindowNumber);
+				return;
+			}
+#endif
 			if (WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText) is not WindowInfoBase item)
 				return;
 
@@ -744,18 +761,14 @@ namespace Keysharp.Internals.Os.Unix
 				? "ControlSendText cannot send text to another program's window on Linux."
 				: "ControlSend cannot send keys to another program's window on Linux.");
 #else
-			if (mode == SendRawModes.RawText && own is TextBox or TextArea or PasswordBox)
+			if (own != null)
 			{
-				//A read-only Edit ignores typing.
-				if (own is not (TextBox { ReadOnly: true } or TextArea { ReadOnly: true } or PasswordBox { ReadOnly: true }))
-					ReplaceSelection((TextControl)own, str);
-
+				Script.TheScript.HookThread.kbdMsSender.SendKeys(str, mode, SendModes.Event, item.Handle);
 				return;
 			}
 
-			_ = Errors.UnsupportedErrorOccurred(mode == SendRawModes.RawText
-				? "ControlSendText on macOS reaches only the script's own Edit controls."
-				: "ControlSend cannot send keys on macOS.");
+			Script.TheScript.Permissions.EnsureInputControl(operation: mode == SendRawModes.RawText ? "ControlSendText" : "ControlSend");
+			Script.TheScript.HookThread.kbdMsSender.SendKeys(str, mode, SendModes.Event, item.Handle);
 #endif
 		}
 

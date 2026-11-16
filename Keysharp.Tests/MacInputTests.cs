@@ -251,6 +251,42 @@ public class MacInputTests
 	}
 
 	[Test, Category("Input")]
+	public void ControlSendMapsVirtualKeysAndModifiersToEtoKeys()
+	{
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(MacKeyboardMouseSender.BuildEtoKeyData((uint)'A', MOD_LCONTROL),
+				Is.EqualTo(Eto.Forms.Keys.A | Eto.Forms.Keys.Control));
+			Assert.That(MacKeyboardMouseSender.BuildEtoKeyData((uint)'D', MOD_LSHIFT | MOD_LALT),
+				Is.EqualTo(Eto.Forms.Keys.D | Eto.Forms.Keys.Shift | Eto.Forms.Keys.Alt));
+			Assert.That(MacKeyboardMouseSender.BuildEtoKeyData(VK_LEFT, 0u),
+				Is.EqualTo(Eto.Forms.Keys.Left));
+			Assert.That(MacKeyboardMouseSender.BuildEtoKeyData(VK_ESCAPE, 0u),
+				Is.EqualTo(Eto.Forms.Keys.Escape));
+			Assert.That(MacKeyboardMouseSender.BuildEtoKeyData(VK_INSERT, 0u),
+				Is.EqualTo(Eto.Forms.Keys.Insert));
+			Assert.That(EtoMessageSource.FromVirtualKey(VK_RETURN),
+				Is.EqualTo(Eto.Forms.Keys.Enter));
+			Assert.That(MacKeyboardMouseSender.TryResolveKeyChar((uint)'A', 0u),
+				Is.EqualTo('a'));
+			Assert.That(MacKeyboardMouseSender.TryResolveKeyChar((uint)'A', MOD_LSHIFT),
+				Is.EqualTo('A'));
+			Assert.That(MacKeyboardMouseSender.TryResolveKeyChar((uint)'A', MOD_LCONTROL),
+				Is.Null);
+		}
+	}
+
+	[Test, Category("Input")]
+	public void ControlSendTargetedStateIgnoresZeroTargetHandleSafely()
+	{
+		var sender = new MacKeyboardMouseSender(script, new MacKeyboardState(), new MacMouseEventStream());
+		sender.SetModifierLRState(MOD_LSHIFT, 0u, (nint)1, false, false);
+		sender.SendKeyEventToTargetWindow(KeyEventTypes.KeyDownAndUp, VK_LEFT, 0u, (nint)0);
+		sender.SendCharToTargetWindow('\uD83D', (nint)0);
+		Assert.Pass();
+	}
+
+	[Test, Category("Input")]
 	public void SidedModifiers()
 	{
 		var state = new MacKeyboardState();

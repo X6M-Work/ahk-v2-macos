@@ -76,12 +76,15 @@ ControlSendText("hello world", typed)
 SendMessage(0xB1, 0, 3, ed)   ; EM_SETSEL
 ControlSendText("six", ed)
 Sleep 50
+#if !WINDOWS
+_WaitForText(typed, "hello world")
+#endif
 AssertEq(typed.Value, "hello world", A_LineNumber)
 Assert(SubStr(ed.Value, 1, 3) == "six" && !InStr(ed.Value, "one"), A_LineNumber)
 
-#if LINUX
-; On Linux the keys reach the Edit as GTK key events with their modifiers, and a window passes keys on to its focused
-; control.
+#if !WINDOWS
+; On Linux and macOS the keys reach the Edit as toolkit events with their modifiers, and a window passes keys on to
+; its focused control.
 keys := g.AddEdit("x170 y+10 w150")
 ControlSend("ab{sc" Format("{:X}", GetKeySC("Left")) "}C{End}{Shift down}d{Shift up}", keys)
 _WaitForText(keys, "aCbD")
@@ -217,10 +220,6 @@ AssertEq(numericPassword.Value, "12", A_LineNumber)
 ControlSendText("3", numericPassword)
 Assert(_WaitForText(numericPassword, "3"), A_LineNumber)
 SetKeyDelay savedKeyDelay
-#elif OSX
-; macOS types ControlSendText into the script's own Edits only, and sends keys nowhere.
-Throws(() => ControlSend("a", typed), A_LineNumber, UnsupportedError)
-Throws(() => ControlSendText("a", lb), A_LineNumber, UnsupportedError)
 #endif
 
 #if WINDOWS

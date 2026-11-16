@@ -846,7 +846,7 @@ namespace Keysharp.Internals.Window.MacOS
 			}
 		}
 
-		internal static bool TryFocusControl(MacNativeWindow info, string selector, out bool foundControl)
+		internal static bool TryFocusControl(MacNativeWindow info, string selector, out bool foundControl, bool activateWindow = true)
 		{
 			foundControl = false;
 			using var window = ResolveWindowElement(info, "focus control");
@@ -858,8 +858,13 @@ namespace Keysharp.Internals.Window.MacOS
 
 			try
 			{
-				_ = TryActivateWindow(window);
-				return TryWriteBool(ctrl, attrFocused, true);
+				if (activateWindow)
+					_ = TryActivateWindow(window);
+
+				if (TryWriteBool(ctrl, attrFocused, true))
+					return true;
+
+				return !activateWindow && TryReadBool(ctrl, attrFocused, out var alreadyFocused) && alreadyFocused;
 			}
 			finally
 			{

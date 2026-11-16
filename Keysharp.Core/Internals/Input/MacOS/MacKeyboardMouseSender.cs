@@ -35,6 +35,9 @@ namespace Keysharp.Internals.Input.MacOS
 
 		protected override void OnSendKeysStarting()
 		{
+			if (sendInvocationDepth == 0)
+				ResetTargetedSendState();
+
 			var depth = ++sendInvocationDepth;
 			sendScopes.EnsureCapacity(sendScopes.Count + 1);
 			var scope = ((UnixHookThread)script.HookThread).EnterSendScope();
@@ -72,6 +75,8 @@ namespace Keysharp.Internals.Input.MacOS
 			finally
 			{
 				sendInvocationDepth--;
+				if (sendInvocationDepth == 0)
+					ResetTargetedSendState();
 			}
 		}
 
@@ -277,16 +282,6 @@ namespace Keysharp.Internals.Input.MacOS
 
 			FlushText();
 			keyboardState.SetModifiers(modifiersLR);
-		}
-
-		internal override void SetModifierLRState(uint modifiersLRnew, uint modifiersLRnow, nint targetWindow,
-			bool disguiseDownWinAlt, bool disguiseUpWinAlt, long extraInfo = KeyIgnoreAllExceptModifier)
-		{
-			// Seed the native event stream from the sender's synchronous prediction. Each modifier event posted
-			// by base updates this field before the next event is created, independently of WindowServer timing.
-			keyboardState.SetModifiers(modifiersLRnow);
-			base.SetModifierLRState(modifiersLRnew, modifiersLRnow, targetWindow,
-				disguiseDownWinAlt, disguiseUpWinAlt, extraInfo);
 		}
 
 		internal override void PerformMouseCommon(Actions actionType, uint vk, int x1, int y1, int x2, int y2,

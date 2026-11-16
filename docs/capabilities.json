@@ -4446,8 +4446,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Sends simulated keystrokes to a window or control. Linux supports the script\u0027s own GTK windows and controls only; a window forwards input to its focused control. Input is posted asynchronously, with modifiers carried in the target events rather than changing global keyboard state.",
-                     "tested-by":  "ControlTests/control_send.ahk; window-functions.ahk"
+                     "notes":  "Sends simulated keystrokes to a window or control. Linux supports the script\u0027s own GTK windows and controls only; macOS delivers keystrokes and modifiers to the script\u0027s own Eto controls/windows on the UI thread without Accessibility permission and posts to foreign windows/controls via AX focus plus CGEventPostToPid. Modifiers stay local to the target rather than changing global keyboard state.",
+                     "tested-by":  "ControlTests/control_send.ahk; window-functions.ahk; MacInputTests.ControlSendMapsVirtualKeysAndModifiersToEtoKeys"
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -4457,8 +4457,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Sends literal text to a window or control. Linux supports the script\u0027s own GTK windows and controls only; text and edit keys are posted in order to the UI thread and respect read-only controls and text-input cancellation.",
-                     "tested-by":  "ControlTests/control_send.ahk; window-functions.ahk"
+                     "notes":  "Sends literal text to a window or control. Linux supports the script\u0027s own GTK windows and controls only; macOS delivers literal Unicode text and edit keys in order to the script\u0027s own controls (respecting ReadOnly, TextChanging and TextInput cancellation) and posts Unicode events to foreign windows/controls via AX focus plus CGEventPostToPid.",
+                     "tested-by":  "ControlTests/control_send.ahk; window-functions.ahk; MacInputTests.ControlSendTargetedStateIgnoresZeroTargetHandleSafely"
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -4831,8 +4831,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Calls native functions, including numeric type classes and void returns. v2.0 Float return/output values widen exactly to Double; v2.1 retains shortest-decimal widening. Structured arrays pass by address but cannot be returned. Native macOS ABI verification remains pending.",
-                     "tested-by":  "external-dllcall.ahk; struct-array.ahk; struct-basic.ahk; compat/phase15-native-windows/; compat/phase15-architecture/macos/sqrtf.ahk"
+                     "notes":  "Calls native functions, including numeric type classes and void returns. v2.0 Float return/output values widen exactly to Double; v2.1 retains shortest-decimal widening. Structured arrays pass by address but cannot be returned. Verified natively on Windows, macOS Intel, and Apple Silicon (including Float* output writeback via parse_float).",
+                     "tested-by":  "external-dllcall.ahk; struct-array.ahk; struct-basic.ahk; compat/phase15-native-windows/; compat/phase15-architecture/macos/sqrtf.ahk; compat/phase15-architecture/macos/float-return-output.ahk"
                  },
                  {
                      "category":  "FileSystem",
