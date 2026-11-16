@@ -73,6 +73,34 @@ namespace Keysharp.Internals.Os
 			return true;
 		}
 
+		internal static int FindExactListItemIndex(IReadOnlyList<string> items, string target)
+		{
+			if (items == null || target == null)
+				return -1;
+
+			for (var i = 0; i < items.Count; i++)
+			{
+				if (string.Equals(items[i], target, StringComparison.OrdinalIgnoreCase))
+					return i;
+			}
+
+			return -1;
+		}
+
+		internal static int FindPrefixListItemIndex(IReadOnlyList<string> items, string prefix)
+		{
+			if (items == null || prefix == null)
+				return -1;
+
+			for (var i = 0; i < items.Count; i++)
+			{
+				if (items[i] != null && items[i].StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+					return i;
+			}
+
+			return -1;
+		}
+
 		internal static bool TryGetMenuItem(MenuStrip strip, out ToolStripMenuItem menuItem, params object[] items)
 		{
 			menuItem = null;

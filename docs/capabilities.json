@@ -4205,8 +4205,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlChooseIndex function selects an entry in a list box, combo box, or drop-down list, or a tab control page, by index.",
-                     "tested-by":  "ControlTests/control_choose_index.ahk"
+                     "notes":  "The ControlChooseIndex function selects an entry in a list box, combo box, or drop-down list, or a tab control page, by index. On macOS, supports both script-owned controls and foreign Accessibility list/table/combo/tab controls.",
+                     "tested-by":  "ControlTests/control_choose_index.ahk; GuiTests.ControlListLookupHelpersMatchExactAndPrefix"
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -4216,8 +4216,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlChooseString function selects an entry in a list box, combo box, or drop-down list, or a tab control page, by string.",
-                     "tested-by":  "ControlTests/control_choose_string.ahk"
+                     "notes":  "The ControlChooseString function selects an entry in a list box, combo box, or drop-down list, or a tab control page, by string. On macOS, supports both script-owned controls and foreign Accessibility list/combo controls.",
+                     "tested-by":  "ControlTests/control_choose_string.ahk; GuiTests.ControlListLookupHelpersMatchExactAndPrefix"
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -4248,8 +4248,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlFindItem function searches for an entry in a list box, combo box, or drop-down list by string, and returns its index.",
-                     "tested-by":  "ControlTests/control_add_delete_item.ahk"
+                     "notes":  "The ControlFindItem function searches for an entry in a list box, combo box, or drop-down list by string, and returns its index. On macOS, supports both script-owned controls and foreign Accessibility list/combo controls.",
+                     "tested-by":  "ControlTests/control_add_delete_item.ahk; GuiTests.ControlListLookupHelpersMatchExactAndPrefix"
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -4281,8 +4281,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlGetChoice function returns the text of the currently selected entry in a list box, combo box, or drop-down list.",
-                     "tested-by":  "ControlTests/control_get_choice.ahk"
+                     "notes":  "The ControlGetChoice function returns the text of the currently selected entry in a list box, combo box, or drop-down list. On macOS, supports both script-owned controls and foreign Accessibility list/combo controls.",
+                     "tested-by":  "ControlTests/control_get_choice.ahk; GuiTests.ControlListLookupHelpersMatchExactAndPrefix"
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -4347,8 +4347,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlGetIndex function returns the index of the currently selected entry in a list box, combo box, or drop-down list, or the index of the active page in a tab control.",
-                     "tested-by":  "ControlTests/control_get_index.ahk"
+                     "notes":  "The ControlGetIndex function returns the index of the currently selected entry in a list box, combo box, or drop-down list, or the index of the active page in a tab control. On macOS, supports both script-owned controls and foreign Accessibility list/combo/tab controls.",
+                     "tested-by":  "ControlTests/control_get_index.ahk; GuiTests.ControlListLookupHelpersMatchExactAndPrefix"
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -4358,8 +4358,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlGetItems function returns an array of entries from a list box, combo box, or drop-down list.",
-                     "tested-by":  "ControlTests/control_get_items.ahk"
+                     "notes":  "The ControlGetItems function returns an array of entries from a list box, combo box, or drop-down list. On macOS, supports both script-owned controls and foreign Accessibility list/combo controls.",
+                     "tested-by":  "ControlTests/control_get_items.ahk; GuiTests.ControlListLookupHelpersMatchExactAndPrefix"
                  },
                  {
                      "category":  "Windowing/GUI",

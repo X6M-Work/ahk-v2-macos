@@ -102,6 +102,11 @@ namespace Keysharp.Internals.Window.MacOS
 			private static readonly nint attrFullScreenButton = CreateCFString("AXFullScreenButton");
 			private static readonly nint attrCloseButton = CreateCFString("AXCloseButton");
 			private static readonly nint attrMenuBar = CreateCFString("AXMenuBar");
+			private static readonly nint attrTabs = CreateCFString("AXTabs");
+			private static readonly nint attrRows = CreateCFString("AXRows");
+			private static readonly nint attrSelectedRows = CreateCFString("AXSelectedRows");
+			private static readonly nint attrSelectedChildren = CreateCFString("AXSelectedChildren");
+			private static readonly nint attrSelected = CreateCFString("AXSelected");
 			private static readonly nint attrChildren = CreateCFString("AXChildren");
 			private static readonly nint attrRole = CreateCFString("AXRole");
 			private static readonly nint attrValue = CreateCFString("AXValue");
@@ -1041,15 +1046,18 @@ namespace Keysharp.Internals.Window.MacOS
 		}
 
 		private static bool TryCopyChildren(nint element, out List<nint> children)
+			=> TryCopyAttributeArrayElements(element, attrChildren, out children);
+
+		private static bool TryCopyAttributeArrayElements(nint element, nint attribute, out List<nint> elements)
 		{
-			children = [];
-			if (element == 0 || !TryCopyAttributeValue(element, attrChildren, out var arrayRef))
+			elements = [];
+			if (element == 0 || !TryCopyAttributeValue(element, attribute, out var arrayRef))
 				return false;
 
 			try
 			{
 				var count = CFArrayGetCount(arrayRef);
-				children.Capacity = (int)Math.Max(0, count);
+				elements.Capacity = (int)Math.Max(0, count);
 
 				for (nint i = 0; i < count; i++)
 				{
@@ -1057,7 +1065,7 @@ namespace Keysharp.Internals.Window.MacOS
 					if (child != 0)
 					{
 						_ = AXUIElementSetMessagingTimeout(child, QueryMessagingTimeout);
-						children.Add(CFRetain(child));
+						elements.Add(CFRetain(child));
 					}
 				}
 
@@ -1067,6 +1075,534 @@ namespace Keysharp.Internals.Window.MacOS
 			{
 				CFRelease(arrayRef);
 			}
+		}
+
+		internal static bool TryGetControlItems(MacNativeWindow info, string selector, out List<string> items, out bool foundControl, out bool unsupportedClass)
+		{
+			items = [];
+			foundControl = false;
+			unsupportedClass = false;
+			using var window = ResolveWindowElement(info, "query control items");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out var candidate))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (!IsListOrComboRole(candidate.Role))
+				{
+					unsupportedClass = true;
+					return false;
+				}
+
+				return TryReadListOrComboItems(ctrl, candidate.Role, items, out _);
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryGetControlChoice(MacNativeWindow info, string selector, out string choice, out bool foundControl, out bool unsupportedClass)
+		{
+			choice = string.Empty;
+			foundControl = false;
+			unsupportedClass = false;
+			using var window = ResolveWindowElement(info, "query control choice");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out var candidate))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (!IsListOrComboRole(candidate.Role))
+				{
+					unsupportedClass = true;
+					return false;
+				}
+
+				if (string.Equals(candidate.Role, "AXPopUpButton", StringComparison.OrdinalIgnoreCase)
+					|| string.Equals(candidate.Role, "AXComboBox", StringComparison.OrdinalIgnoreCase))
+				{
+					choice = ReadValueAttributeAsString(ctrl, attrValue);
+					if (string.IsNullOrEmpty(choice))
+						choice = candidate.Title;
+
+					return !string.IsNullOrEmpty(choice);
+				}
+
+				if (TryReadFirstSelectedText(ctrl, attrSelectedRows, out choice)
+					|| TryReadFirstSelectedText(ctrl, attrSelectedChildren, out choice))
+					return true;
+
+				return false;
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryGetControlIndex(MacNativeWindow info, string selector, out long oneBasedIndex, out bool foundControl, out bool unsupportedClass)
+		{
+			oneBasedIndex = 0L;
+			foundControl = false;
+			unsupportedClass = false;
+			using var window = ResolveWindowElement(info, "query control selection index");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out var candidate))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (IsTabOrRadioGroupRole(candidate.Role))
+				{
+					if (!TryReadTabOrRadioElements(ctrl, out var tabs))
+						return true;
+
+					try
+					{
+						for (var i = 0; i < tabs.Count; i++)
+						{
+							if (IsElementChecked(tabs[i]))
+							{
+								oneBasedIndex = i + 1L;
+								break;
+							}
+						}
+
+						return true;
+					}
+					finally
+					{
+						ReleaseElements(tabs);
+					}
+				}
+
+				if (!IsListOrComboRole(candidate.Role))
+				{
+					unsupportedClass = true;
+					return false;
+				}
+
+				var itemTexts = new List<string>();
+				if (!TryReadListOrComboItems(ctrl, candidate.Role, itemTexts, out var elements))
+					return true;
+
+				try
+				{
+					if (string.Equals(candidate.Role, "AXPopUpButton", StringComparison.OrdinalIgnoreCase)
+						|| string.Equals(candidate.Role, "AXComboBox", StringComparison.OrdinalIgnoreCase))
+					{
+						var currentText = ReadValueAttributeAsString(ctrl, attrValue);
+						if (!string.IsNullOrEmpty(currentText))
+						{
+							var idx = Keysharp.Internals.Os.ControlManagerBase.FindExactListItemIndex(itemTexts, currentText);
+							if (idx >= 0)
+								oneBasedIndex = idx + 1L;
+						}
+
+						return true;
+					}
+
+					for (var i = 0; i < elements.Count; i++)
+					{
+						if (TryReadBool(elements[i], attrSelected, out var selected) && selected)
+						{
+							oneBasedIndex = i + 1L;
+							return true;
+						}
+					}
+
+					if (TryReadFirstSelectedText(ctrl, attrSelectedRows, out var selectedText)
+						|| TryReadFirstSelectedText(ctrl, attrSelectedChildren, out selectedText))
+					{
+						var idx = Keysharp.Internals.Os.ControlManagerBase.FindExactListItemIndex(itemTexts, selectedText);
+						if (idx >= 0)
+							oneBasedIndex = idx + 1L;
+					}
+
+					return true;
+				}
+				finally
+				{
+					ReleaseElements(elements);
+				}
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryChooseControlIndex(
+			MacNativeWindow info,
+			string selector,
+			int oneBasedIndex,
+			out bool foundControl,
+			out bool unsupportedClass,
+			out bool invalidParameter,
+			out string failureReason)
+		{
+			foundControl = false;
+			unsupportedClass = false;
+			invalidParameter = false;
+			failureReason = null;
+			using var window = ResolveWindowElement(info, "select control item by index");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out var candidate))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (IsTabOrRadioGroupRole(candidate.Role))
+				{
+					if (!TryReadTabOrRadioElements(ctrl, out var tabs))
+					{
+						failureReason = "Failed";
+						return false;
+					}
+
+					try
+					{
+						if (oneBasedIndex < 1 || oneBasedIndex > tabs.Count)
+						{
+							invalidParameter = true;
+							return false;
+						}
+
+						return AXUIElementPerformAction(tabs[oneBasedIndex - 1], actionPress) == kAXErrorSuccess;
+					}
+					finally
+					{
+						ReleaseElements(tabs);
+					}
+				}
+
+				if (!IsListOrComboRole(candidate.Role))
+				{
+					unsupportedClass = true;
+					return false;
+				}
+
+				var itemTexts = new List<string>();
+				if (!TryReadListOrComboItems(ctrl, candidate.Role, itemTexts, out var elements))
+				{
+					failureReason = "Failed";
+					return false;
+				}
+
+				try
+				{
+					return TrySelectElementAtIndex(ctrl, candidate.Role, elements, itemTexts, oneBasedIndex, out failureReason);
+				}
+				finally
+				{
+					ReleaseElements(elements);
+				}
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TryChooseControlString(
+			MacNativeWindow info,
+			string selector,
+			string needle,
+			out long chosenOneBasedIndex,
+			out bool foundControl,
+			out bool unsupportedClass)
+		{
+			chosenOneBasedIndex = 0L;
+			foundControl = false;
+			unsupportedClass = false;
+			using var window = ResolveWindowElement(info, "select control item by string");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out var candidate))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (!IsListOrComboRole(candidate.Role))
+				{
+					unsupportedClass = true;
+					return false;
+				}
+
+				var itemTexts = new List<string>();
+				if (!TryReadListOrComboItems(ctrl, candidate.Role, itemTexts, out var elements))
+					return false;
+
+				try
+				{
+					var idx = Keysharp.Internals.Os.ControlManagerBase.FindPrefixListItemIndex(itemTexts, needle);
+					if (idx < 0)
+						return false;
+
+					if (!TrySelectElementAtIndex(ctrl, candidate.Role, elements, itemTexts, idx + 1, out _))
+						return false;
+
+					chosenOneBasedIndex = idx + 1L;
+					return true;
+				}
+				finally
+				{
+					ReleaseElements(elements);
+				}
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		private static bool IsListOrComboRole(string role) =>
+			string.Equals(role, "AXList", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXTable", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXOutline", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXPopUpButton", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXComboBox", StringComparison.OrdinalIgnoreCase);
+
+		private static bool IsTabOrRadioGroupRole(string role) =>
+			string.Equals(role, "AXTabGroup", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXRadioGroup", StringComparison.OrdinalIgnoreCase);
+
+		private static bool TryReadTabOrRadioElements(nint ctrl, out List<nint> tabs)
+		{
+			if (TryCopyAttributeArrayElements(ctrl, attrTabs, out tabs) && tabs.Count > 0)
+				return true;
+
+			ReleaseElements(tabs);
+			if (!TryCopyChildren(ctrl, out var children))
+				return false;
+
+			tabs = [];
+			for (var i = 0; i < children.Count; i++)
+			{
+				var role = ReadStringAttribute(children[i], attrRole);
+				if (string.Equals(role, "AXRadioButton", StringComparison.OrdinalIgnoreCase)
+					|| string.Equals(role, "AXTab", StringComparison.OrdinalIgnoreCase))
+					tabs.Add(CFRetain(children[i]));
+			}
+
+			ReleaseElements(children);
+			return tabs.Count > 0;
+		}
+
+		private static bool TryReadListOrComboItems(nint ctrl, string role, List<string> texts, out List<nint> retainedElements)
+		{
+			retainedElements = [];
+
+			if (string.Equals(role, "AXPopUpButton", StringComparison.OrdinalIgnoreCase)
+				|| string.Equals(role, "AXComboBox", StringComparison.OrdinalIgnoreCase))
+			{
+				if (TryFindSubmenuElement(ctrl, out var menu))
+				{
+					try
+					{
+						if (TryCopyChildren(menu, out var menuChildren))
+						{
+							for (var i = 0; i < menuChildren.Count; i++)
+							{
+								var childRole = ReadStringAttribute(menuChildren[i], attrRole);
+								if (string.Equals(childRole, "AXMenuItem", StringComparison.OrdinalIgnoreCase)
+									|| string.Equals(childRole, "AXStaticText", StringComparison.OrdinalIgnoreCase))
+								{
+									retainedElements.Add(CFRetain(menuChildren[i]));
+									texts.Add(ExtractControlItemText(menuChildren[i]));
+								}
+							}
+
+							ReleaseElements(menuChildren);
+							return true;
+						}
+					}
+					finally
+					{
+						CFRelease(menu);
+					}
+				}
+
+				if (TryCopyChildren(ctrl, out var children))
+				{
+					for (var i = 0; i < children.Count; i++)
+					{
+						var childRole = ReadStringAttribute(children[i], attrRole);
+						if (!string.Equals(childRole, "AXScrollBar", StringComparison.OrdinalIgnoreCase)
+							&& !string.Equals(childRole, "AXButton", StringComparison.OrdinalIgnoreCase))
+						{
+							retainedElements.Add(CFRetain(children[i]));
+							texts.Add(ExtractControlItemText(children[i]));
+						}
+					}
+
+					ReleaseElements(children);
+				}
+
+				return texts.Count > 0;
+			}
+
+			if (TryCopyAttributeArrayElements(ctrl, attrRows, out var rows) && rows.Count > 0)
+			{
+				retainedElements = rows;
+				for (var i = 0; i < rows.Count; i++)
+					texts.Add(ExtractControlItemText(rows[i]));
+				return true;
+			}
+
+			ReleaseElements(rows);
+			if (!TryCopyChildren(ctrl, out var direct))
+				return false;
+
+			for (var i = 0; i < direct.Count; i++)
+			{
+				var childRole = ReadStringAttribute(direct[i], attrRole);
+				if (!string.Equals(childRole, "AXScrollBar", StringComparison.OrdinalIgnoreCase)
+					&& !string.Equals(childRole, "AXColumn", StringComparison.OrdinalIgnoreCase))
+				{
+					retainedElements.Add(CFRetain(direct[i]));
+					texts.Add(ExtractControlItemText(direct[i]));
+				}
+			}
+
+			ReleaseElements(direct);
+			return retainedElements.Count > 0;
+		}
+
+		private static bool TrySelectElementAtIndex(
+			nint ctrl,
+			string role,
+			List<nint> elements,
+			List<string> texts,
+			int oneBasedIndex,
+			out string failureReason)
+		{
+			failureReason = null;
+
+			if (oneBasedIndex == 0)
+			{
+				if (string.Equals(role, "AXList", StringComparison.OrdinalIgnoreCase)
+					|| string.Equals(role, "AXTable", StringComparison.OrdinalIgnoreCase)
+					|| string.Equals(role, "AXOutline", StringComparison.OrdinalIgnoreCase))
+				{
+					for (var i = 0; i < elements.Count; i++)
+						_ = TryWriteBool(elements[i], attrSelected, false);
+
+					return true;
+				}
+
+				failureReason = "Failed";
+				return false;
+			}
+
+			if (oneBasedIndex < 1 || oneBasedIndex > elements.Count)
+			{
+				failureReason = "Failed";
+				return false;
+			}
+
+			var target = elements[oneBasedIndex - 1];
+
+			if (string.Equals(role, "AXComboBox", StringComparison.OrdinalIgnoreCase)
+				|| string.Equals(role, "AXPopUpButton", StringComparison.OrdinalIgnoreCase))
+			{
+				if (AXUIElementPerformAction(target, actionPress) == kAXErrorSuccess)
+					return true;
+
+				var text = texts[oneBasedIndex - 1] ?? string.Empty;
+				var strRef = CreateCFString(text);
+				if (strRef != 0)
+				{
+					try
+					{
+						if (IsAttributeSettable(ctrl, attrValue)
+							&& AXUIElementSetAttributeValue(ctrl, attrValue, strRef) == kAXErrorSuccess)
+							return true;
+					}
+					finally
+					{
+						CFRelease(strRef);
+					}
+				}
+
+				failureReason = "Failed";
+				return false;
+			}
+
+			if (TryWriteBool(target, attrSelected, true)
+				|| AXUIElementPerformAction(target, actionPress) == kAXErrorSuccess)
+				return true;
+
+			failureReason = "Failed";
+			return false;
+		}
+
+		private static string ExtractControlItemText(nint element)
+		{
+			var direct = MacControlSelector.ExtractControlText(ReadControlCandidate(element));
+			if (!string.IsNullOrEmpty(direct))
+				return direct;
+
+			if (!TryCopyChildren(element, out var children))
+				return string.Empty;
+
+			try
+			{
+				for (var i = 0; i < children.Count; i++)
+				{
+					var childText = MacControlSelector.ExtractControlText(ReadControlCandidate(children[i]));
+					if (!string.IsNullOrEmpty(childText))
+						return childText;
+				}
+
+				return string.Empty;
+			}
+			finally
+			{
+				ReleaseElements(children);
+			}
+		}
+
+		private static bool TryReadFirstSelectedText(nint ctrl, nint attr, out string text)
+		{
+			text = string.Empty;
+			if (!TryCopyAttributeArrayElements(ctrl, attr, out var selected))
+				return false;
+
+			try
+			{
+				if (selected.Count == 0)
+					return false;
+
+				text = ExtractControlItemText(selected[0]);
+				return true;
+			}
+			finally
+			{
+				ReleaseElements(selected);
+			}
+		}
+
+		private static bool IsElementChecked(nint element)
+		{
+			if (TryReadBool(element, attrValue, out var boolVal))
+				return boolVal;
+
+			var val = ReadValueAttributeAsString(element, attrValue);
+			return string.Equals(val, "1", StringComparison.Ordinal)
+				|| string.Equals(val, "true", StringComparison.OrdinalIgnoreCase);
 		}
 
 		private static bool TryFindSubmenuElement(nint menuItemElement, out nint submenuElement)

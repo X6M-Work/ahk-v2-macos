@@ -106,6 +106,34 @@ namespace Keysharp.Internals.Os.Unix
 				return;
 			}
 
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryChooseControlIndex(
+					nativeWin,
+					selector,
+					n,
+					out var foundControl,
+					out var unsupportedClass,
+					out var invalidParameter,
+					out var failureReason))
+				{
+					WindowInfoBase.DoControlDelay();
+					return;
+				}
+
+				if (!foundControl)
+					_ = Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+				else if (unsupportedClass)
+					_ = Errors.TargetErrorOccurred($"Control {selector} did not match Combo, List or Tab", title, text, excludeTitle, excludeText);
+				else if (invalidParameter)
+					_ = Errors.InvalidParameterErrorOccurred(1, "ControlChooseIndex", n);
+				else
+					_ = Errors.ErrorOccurred(failureReason ?? "Failed");
+				return;
+			}
+#endif
+
 			if (OwnControl(ctrl, title, text, excludeTitle, excludeText) is not Control control)
 				return;
 
@@ -136,6 +164,28 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override long ControlChooseString(string str, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryChooseControlString(
+					nativeWin,
+					selector,
+					str,
+					out var chosenIndex,
+					out var foundControl,
+					out var unsupportedClass))
+				{
+					WindowInfoBase.DoControlDelay();
+					return chosenIndex;
+				}
+
+				if (!foundControl)
+					return (long)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				if (unsupportedClass)
+					return (long)Errors.TargetErrorOccurred($"Control {selector} did not match Combo or List", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				return (long)Errors.TargetErrorOccurred($"No item starts with \"{str}\"", title, text, excludeTitle, excludeText, DefaultErrorLong);
+			}
+#endif
 			if (OwnControl(ctrl, title, text, excludeTitle, excludeText) is not Control control)
 				return 0L;
 
@@ -393,6 +443,24 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override long ControlFindItem(string str, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetControlItems(nativeWin, selector, out var foreignItems, out var foundControl, out var unsupportedClass))
+				{
+					var foreignIdx = FindExactListItemIndex(foreignItems, str);
+					return foreignIdx >= 0
+						? foreignIdx + 1L
+						: (long)Errors.TargetErrorOccurred($"Could not search for combo or list box item string {str}", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				}
+
+				if (!foundControl)
+					return (long)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				if (unsupportedClass)
+					return (long)Errors.TargetErrorOccurred($"Control {selector} did not match Combo or List", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				return (long)Errors.TargetErrorOccurred($"Could not search for combo or list box item string {str}", title, text, excludeTitle, excludeText, DefaultErrorLong);
+			}
+#endif
 			if (OwnControl(ctrl, title, text, excludeTitle, excludeText) is not Control control)
 				return 0L;
 
@@ -495,6 +563,19 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override string ControlGetChoice(object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetControlChoice(nativeWin, selector, out var choice, out var foundControl, out var unsupportedClass))
+					return choice;
+
+				if (!foundControl)
+					return (string)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorString);
+				if (unsupportedClass)
+					return (string)Errors.TargetErrorOccurred($"Control {selector} did not match Combo or List", title, text, excludeTitle, excludeText, DefaultErrorString);
+				return (string)Errors.ErrorOccurred($"Could not get selected item string for combo or list box in window with criteria: title: {title}, text: {text}, exclude title: {excludeTitle}, exclude text: {excludeText}", DefaultErrorString);
+			}
+#endif
 			if (OwnControl(ctrl, title, text, excludeTitle, excludeText) is not Control control)
 				return DefaultObject;
 
@@ -527,6 +608,19 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override long ControlGetIndex(object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetControlIndex(nativeWin, selector, out var index, out var foundControl, out var unsupportedClass))
+					return index;
+
+				if (!foundControl)
+					return (long)Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				if (unsupportedClass)
+					return (long)Errors.TargetErrorOccurred($"Control {selector} did not match Combo, List or Tab", title, text, excludeTitle, excludeText, DefaultErrorLong);
+				return 0L;
+			}
+#endif
 			return OwnControl(ctrl, title, text, excludeTitle, excludeText) switch
 			{
 				null => 0L,
@@ -538,6 +632,19 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override object ControlGetItems(object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryGetControlItems(nativeWin, selector, out var foreignItems, out var foundControl, out var unsupportedClass))
+					return new Keysharp.Builtins.Array(foreignItems.Cast<object>().ToList());
+
+				if (!foundControl)
+					return Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+				if (unsupportedClass)
+					return Errors.TargetErrorOccurred($"Control {selector} did not match Combo or List", title, text, excludeTitle, excludeText);
+				return new Keysharp.Builtins.Array();
+			}
+#endif
 			if (OwnControl(ctrl, title, text, excludeTitle, excludeText) is not Control control)
 				return new Keysharp.Builtins.Array();
 

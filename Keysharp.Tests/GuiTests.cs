@@ -1070,6 +1070,17 @@ public class GuiTests : TestRunner
 		Assert.That(oobReason, Does.Contain("Index 9"));
 	}
 
+	[Test, Category("Gui"), Category("Internal"), Category("Curated"), NonParallelizable]
+	public void ControlListLookupHelpersMatchExactAndPrefix()
+	{
+		var items = new[] { "Alpha", "Beta", "Beta Two", "Gamma" };
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.FindExactListItemIndex(items, "beta"), Is.EqualTo(1));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.FindExactListItemIndex(items, "Be"), Is.EqualTo(-1));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.FindPrefixListItemIndex(items, "be"), Is.EqualTo(1));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.FindPrefixListItemIndex(items, "Beta "), Is.EqualTo(2));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.FindPrefixListItemIndex(items, "Delta"), Is.EqualTo(-1));
+	}
+
 #if WINDOWS
 	// The whole zero-copy design rests on one property: GDI+ drawing through the Bitmap and GDI reading
 	// through the DC address the same memory. If that ever stopped holding, presents would silently show
