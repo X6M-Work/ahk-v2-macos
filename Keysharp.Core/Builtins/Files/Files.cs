@@ -400,10 +400,11 @@ namespace Keysharp.Builtins
 					creator.Add("Type", "Application");
 
 				creator.Save(l);
-				File.SetUnixFileMode(l,
-					UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
-					| UnixFileMode.GroupRead | UnixFileMode.GroupExecute
-					| UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+				if (!OperatingSystem.IsWindows())
+					File.SetUnixFileMode(l,
+						UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
+						| UnixFileMode.GroupRead | UnixFileMode.GroupExecute
+						| UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
 			}
 			else
 			{
