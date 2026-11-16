@@ -562,10 +562,10 @@ public class AppleEventsTests : TestRunner
 			{
 				_ = Ks.KeychainSet(service, account, first);
 			}
-			catch (Error ex) when (ex.Message.Contains("keychain could not be found", StringComparison.OrdinalIgnoreCase)
+			catch (KeysharpException ex) when (ex.Message.Contains("keychain could not be found", StringComparison.OrdinalIgnoreCase)
 				|| ex.Message.Contains("interaction is not allowed", StringComparison.OrdinalIgnoreCase)
-				|| (ex.Extra?.ToString() ?? "").Contains("keychain could not be found", StringComparison.OrdinalIgnoreCase)
-				|| (ex.Extra?.ToString() ?? "").Contains("interaction is not allowed", StringComparison.OrdinalIgnoreCase))
+				|| (ex.UserError?.Extra?.ToString() ?? "").Contains("keychain could not be found", StringComparison.OrdinalIgnoreCase)
+				|| (ex.UserError?.Extra?.ToString() ?? "").Contains("interaction is not allowed", StringComparison.OrdinalIgnoreCase))
 			{
 				Assert.Ignore("No unlocked default keychain in this environment.");
 			}
