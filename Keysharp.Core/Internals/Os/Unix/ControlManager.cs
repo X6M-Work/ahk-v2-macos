@@ -1239,7 +1239,7 @@ namespace Keysharp.Internals.Os.Unix
 				(uint)WindowsAPI.WM_VSCROLL => WrapVoidAction(CreateTextAreaScrollAction(control, wparam)),
 				(uint)WindowsAPI.EM_SCROLLCARET => WrapVoidAction(CreateTextAreaScrollCaretAction(control)),
 				(uint)WindowsAPI.EM_SETSEL => WrapVoidAction(CreateTextControlSetSelAction(control, wparam, lparam)),
-				(uint)WindowsAPI.EM_GETLINECOUNT => control is TextControl edit ? () => (edit.Text ?? "").AsSpan().Count('\n') + 1L : null,
+				(uint)WindowsAPI.EM_GETLINECOUNT => control is TextControl edit ? () => CountTextLines(edit.Text) : null,
 				(uint)WindowsAPI.EM_SETREADONLY => CreateSetReadOnlyHandler(control, wparam != 0),
 				(uint)WindowsAPI.BM_GETCHECK => () => control switch
 				{

@@ -547,7 +547,7 @@ namespace Keysharp.Builtins
 #if LINUX
 				return Xlib.geteuid() == 0;
 #elif OSX
-				return string.Equals(Environment.UserName, "root", StringComparison.Ordinal);
+				return geteuid() == 0;
 #elif WINDOWS
 				using var id = WindowsIdentity.GetCurrent();
 				return new WindowsPrincipal(id).IsInRole(WindowsBuiltInRole.Administrator);
@@ -1642,6 +1642,9 @@ namespace Keysharp.Builtins
 
 		[System.Runtime.InteropServices.DllImport("libc")]
 		private static extern void free(IntPtr ptr);
+
+		[System.Runtime.InteropServices.DllImport("libc")]
+		private static extern uint geteuid();
 
 		// Path.GetFullPath leaves symlinked components alone, so realpath is the only way to reach the
 		// spelling the kernel reports for the same directory. Falls back to the given path so a directory
