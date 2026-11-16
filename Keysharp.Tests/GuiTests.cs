@@ -3106,4 +3106,23 @@ public class GuiTests : TestRunner
 	}
 #endif
 #endif
+
+	[Test, Category("Internal"), Category("Curated")]
+	public void ControlManagerMergeControlMoveBoundsMergesOmittedAxes()
+	{
+		var current = new Rectangle(120, 240, 80, 30);
+		var origin = new Point(100, 200);
+
+		var posOnly = Keysharp.Internals.Os.ControlManagerBase.MergeControlMoveBounds(
+			current, origin, 45, int.MinValue, int.MinValue, 60, out var setPos, out var setSize);
+		Assert.IsTrue(setPos);
+		Assert.IsTrue(setSize);
+		Assert.That(posOnly, Is.EqualTo(new Rectangle(145, 240, 80, 60)));
+
+		var sizeOnly = Keysharp.Internals.Os.ControlManagerBase.MergeControlMoveBounds(
+			current, origin, int.MinValue, int.MinValue, 150, int.MinValue, out var setPos2, out var setSize2);
+		Assert.IsFalse(setPos2);
+		Assert.IsTrue(setSize2);
+		Assert.That(sizeOnly, Is.EqualTo(new Rectangle(120, 240, 150, 30)));
+	}
 }

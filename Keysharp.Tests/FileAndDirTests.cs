@@ -290,6 +290,66 @@ public class FileAndDirTests : TestRunner
 	}
 #endif
 
+	[Test, Category("FileAndDir"), Category("Internal"), Category("Curated")]
+	public void MacPerVolumeTrashResolutionAndEmptyCleansSafely()
+	{
+		const string homeTrash = "/Users/tester/.Trash";
+		const string usbVol = "/Volumes/USB";
+		const string usbTrash = "/Volumes/USB/.Trashes/501";
+		const string rootSymlinkVol = "/Volumes/Macintosh HD";
+		var existing = new HashSet<string>(StringComparer.Ordinal) { homeTrash, usbTrash, $"{usbVol}/.Trashes" };
+		string[] vols = [rootSymlinkVol, usbVol, "/Volumes/NoTrash"];
+
+		bool IsRootLink(string p) => string.Equals(p, rootSymlinkVol, StringComparison.Ordinal);
+
+		Assert.That(
+			Files.ResolveMacTrashDirectories("", homeTrash, 501, vols, IsRootLink, existing.Contains),
+			Is.EqualTo(new[] { homeTrash, usbTrash }).AsCollection);
+		Assert.That(
+			Files.ResolveMacTrashDirectories("/Volumes/USB/", homeTrash, 501, vols, IsRootLink, existing.Contains),
+			Is.EqualTo(new[] { usbTrash }).AsCollection);
+		Assert.That(
+			Files.ResolveMacTrashDirectories("/", homeTrash, 501, vols, IsRootLink, existing.Contains),
+			Is.EqualTo(new[] { homeTrash }).AsCollection);
+		Assert.That(
+			Files.ResolveMacTrashTargetDirectory("/Volumes/USB/subdir/file.txt", homeTrash, 501, IsRootLink, existing.Contains),
+			Is.EqualTo(usbTrash));
+
+		var root = Path.Combine(Path.GetTempPath(), $"ks-trash-empty-{Guid.NewGuid():N}");
+		var trashDir = Path.Combine(root, ".Trash");
+		var nestedDir = Path.Combine(trashDir, "folder");
+		var keepDir = Path.Combine(root, "keep-outside");
+		Directory.CreateDirectory(nestedDir);
+		Directory.CreateDirectory(keepDir);
+		File.WriteAllText(Path.Combine(trashDir, "a.txt"), "1");
+		File.WriteAllText(Path.Combine(nestedDir, "b.txt"), "2");
+		File.WriteAllText(Path.Combine(keepDir, "safe.txt"), "keep");
+
+		try
+		{
+			var symlinkPath = Path.Combine(trashDir, "outside-link");
+			try
+			{
+				_ = Directory.CreateSymbolicLink(symlinkPath, keepDir);
+			}
+			catch (IOException)
+			{
+			}
+			catch (UnauthorizedAccessException)
+			{
+			}
+
+			Files.EmptyMacTrashDirectory(trashDir);
+			Assert.That(Directory.EnumerateFileSystemEntries(trashDir), Is.Empty);
+			Assert.That(File.Exists(Path.Combine(keepDir, "safe.txt")), Is.True);
+		}
+		finally
+		{
+			if (Directory.Exists(root))
+				Directory.Delete(root, true);
+		}
+	}
+
 	[Test, Category("FileAndDir")]
 	public void FileInstall()
 	{

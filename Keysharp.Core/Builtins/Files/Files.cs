@@ -1453,18 +1453,11 @@ namespace Keysharp.Builtins
 				if (!result.Succeeded)
 					return Errors.OSErrorOccurred(new InvalidOperationException(result.ErrorMessage), "gio trash --empty failed.");
 #elif OSX
-				var trash = GetMacTrashPath();
+				var uid = Accessors.geteuid();
+				var volumes = Directory.Exists("/Volumes") ? Directory.EnumerateDirectories("/Volumes") : [];
 
-				if (Directory.Exists(trash))
-				{
-					foreach (var entry in Directory.EnumerateFileSystemEntries(trash))
-					{
-						if (Directory.Exists(entry))
-							Directory.Delete(entry, true);
-						else if (File.Exists(entry))
-							File.Delete(entry);
-					}
-				}
+				foreach (var trash in ResolveMacTrashDirectories(s, GetMacTrashPath(), uid, volumes, IsMacVolumeSymlinkToRoot, Directory.Exists))
+					EmptyMacTrashDirectory(trash);
 #elif WINDOWS
 				_ = WindowsAPI.SHEmptyRecycleBin(0, s != "" ? s : null, WindowsAPI.SHERB_NOCONFIRMATION | WindowsAPI.SHERB_NOPROGRESSUI | WindowsAPI.SHERB_NOSOUND);
 #endif
@@ -1487,6 +1480,19 @@ namespace Keysharp.Builtins
 		private static readonly nint selTrashItemAtUrl = sel_registerName("trashItemAtURL:resultingItemURL:error:");
 
 		private static string GetMacTrashPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".Trash");
+
+		private static bool IsMacVolumeSymlinkToRoot(string volumePath)
+		{
+			try
+			{
+				var info = new DirectoryInfo(volumePath);
+				return string.Equals(info.LinkTarget, "/", StringComparison.Ordinal);
+			}
+			catch
+			{
+				return false;
+			}
+		}
 
 		internal static bool TryTrashMacItemWithNSFileManager(string sourcePath, out string resultingPath)
 		{
@@ -1520,7 +1526,7 @@ namespace Keysharp.Builtins
 			if (TryTrashMacItemWithNSFileManager(sourcePath, out _))
 				return;
 
-			var trash = GetMacTrashPath();
+			var trash = ResolveMacTrashTargetDirectory(sourcePath, GetMacTrashPath(), Accessors.geteuid(), IsMacVolumeSymlinkToRoot, Directory.Exists);
 			Directory.CreateDirectory(trash);
 			var name = sourcePath.TrimEnd(dirSeparators);
 			name = Path.GetFileName(name);
@@ -1548,6 +1554,125 @@ namespace Keysharp.Builtins
 				Directory.Move(sourcePath, destination);
 		}
 #endif
+
+		private static string TryGetMacVolumeRoot(string path)
+		{
+			var normalized = (path ?? "").Replace('\\', '/').Trim().TrimEnd('/');
+
+			if (!normalized.StartsWith("/Volumes/", StringComparison.Ordinal))
+				return null;
+
+			var rest = normalized["/Volumes/".Length..];
+
+			if (rest.Length == 0)
+				return null;
+
+			var slash = rest.IndexOf('/');
+			return slash < 0 ? normalized : "/Volumes/" + rest[..slash];
+		}
+
+		internal static IReadOnlyList<string> ResolveMacTrashDirectories(
+			string driveLetter,
+			string homeTrashPath,
+			uint uid,
+			IEnumerable<string> volumeDirectories,
+			Func<string, bool> isSymlinkToRoot,
+			Func<string, bool> directoryExists)
+		{
+			var result = new List<string>();
+			var seen = new HashSet<string>(StringComparer.Ordinal);
+			var uidText = uid.ToString(CultureInfo.InvariantCulture);
+
+			void AddIfExists(string candidate)
+			{
+				if (!string.IsNullOrEmpty(candidate) && seen.Add(candidate) && directoryExists(candidate))
+					result.Add(candidate);
+			}
+
+			var trimmed = (driveLetter ?? "").Replace('\\', '/').Trim();
+
+			if (trimmed.Length == 0)
+			{
+				AddIfExists(homeTrashPath);
+
+				if (volumeDirectories != null)
+				{
+					foreach (var vol in volumeDirectories)
+					{
+						var cleanVol = (vol ?? "").Replace('\\', '/').TrimEnd('/');
+
+						if (cleanVol.Length == 0 || isSymlinkToRoot(cleanVol))
+							continue;
+
+						AddIfExists($"{cleanVol}/.Trashes/{uidText}");
+					}
+				}
+
+				return result;
+			}
+
+			var normalized = trimmed.TrimEnd('/');
+
+			if (normalized.Length == 0 || string.Equals(normalized, "/System/Volumes/Data", StringComparison.Ordinal))
+			{
+				AddIfExists(homeTrashPath);
+				return result;
+			}
+
+			if (TryGetMacVolumeRoot(normalized) is string volRoot)
+			{
+				if (isSymlinkToRoot(volRoot))
+					AddIfExists(homeTrashPath);
+				else
+					AddIfExists($"{volRoot}/.Trashes/{uidText}");
+
+				return result;
+			}
+
+			AddIfExists(homeTrashPath);
+			return result;
+		}
+
+		internal static string ResolveMacTrashTargetDirectory(
+			string sourcePath,
+			string homeTrashPath,
+			uint uid,
+			Func<string, bool> isSymlinkToRoot,
+			Func<string, bool> directoryExists)
+		{
+			if (TryGetMacVolumeRoot(sourcePath) is string volRoot && !isSymlinkToRoot(volRoot))
+			{
+				var volumeTrashes = $"{volRoot}/.Trashes";
+
+				if (directoryExists(volumeTrashes))
+					return $"{volumeTrashes}/{uid.ToString(CultureInfo.InvariantCulture)}";
+			}
+
+			return homeTrashPath;
+		}
+
+		internal static void EmptyMacTrashDirectory(string trashDir)
+		{
+			if (!Directory.Exists(trashDir))
+				return;
+
+			foreach (var entry in Directory.EnumerateFileSystemEntries(trashDir))
+			{
+				var attrs = File.GetAttributes(entry);
+
+				if ((attrs & FileAttributes.ReparsePoint) != 0)
+				{
+					if (Directory.Exists(entry))
+						Directory.Delete(entry, false);
+					else
+						File.Delete(entry);
+				}
+				else if ((attrs & FileAttributes.Directory) != 0)
+					Directory.Delete(entry, true);
+				else
+					File.Delete(entry);
+			}
+		}
 
 		/// <summary>
 		/// Changes the attributes of one or more files or folders. Wildcards are supported.

@@ -742,36 +742,91 @@ namespace Keysharp.Internals.Window.MacOS
 		}
 
 		internal static bool TryMoveResizeWindow(WindowElement window, Rectangle rect, bool setPosition, bool setSize)
+			=> window != null && TryMoveResizeElement(window.Element, rect, setPosition, setSize, allowReadOnlySize: true, out _);
+
+		internal static bool TryMoveControl(MacNativeWindow info, string selector, int x, int y, int width, int height, out bool foundControl, out bool unsupported)
 		{
-			if (window == null)
+			foundControl = false;
+			unsupported = false;
+			using var window = ResolveWindowElement(info, "move control");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out _))
 				return false;
 
-			var element = window.Element;
-			var ok = true;
-			if (setPosition && IsAttributeSettable(element, attrPosition))
+			foundControl = true;
+
+			try
 			{
-				var point = new CGPointD { X = rect.X, Y = rect.Y };
-				var value = AXValueCreatePoint(kAXValueCGPointType, in point);
-				if (value == 0)
+				if (!TryReadRect(ctrl, out var currentRect))
+				{
+					unsupported = true;
+					return false;
+				}
+
+				var targetRect = ControlManagerBase.MergeControlMoveBounds(
+					currentRect,
+					new Point(window.Info.Bounds.X, window.Info.Bounds.Y),
+					x,
+					y,
+					width,
+					height,
+					out var setPosition,
+					out var setSize);
+				return TryMoveResizeElement(ctrl, targetRect, setPosition, setSize, allowReadOnlySize: false, out unsupported);
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		private static bool TryMoveResizeElement(nint element, Rectangle rect, bool setPosition, bool setSize, bool allowReadOnlySize, out bool unsupported)
+		{
+			unsupported = false;
+			var ok = true;
+
+			if (setPosition)
+			{
+				if (!IsAttributeSettable(element, attrPosition))
+				{
+					unsupported = true;
 					ok = false;
+				}
 				else
 				{
-					try { ok &= AXUIElementSetAttributeValue(element, attrPosition, value) == kAXErrorSuccess; }
-					finally { CFRelease(value); }
+					var point = new CGPointD { X = rect.X, Y = rect.Y };
+					var value = AXValueCreatePoint(kAXValueCGPointType, in point);
+					if (value == 0)
+						ok = false;
+					else
+					{
+						try { ok &= AXUIElementSetAttributeValue(element, attrPosition, value) == kAXErrorSuccess; }
+						finally { CFRelease(value); }
+					}
 				}
 			}
 
-			// A fixed-size window can still be moved; an unsettable size is not an error.
-			if (setSize && rect.Width > 0 && rect.Height > 0 && IsAttributeSettable(element, attrSize))
+			if (setSize && rect.Width > 0 && rect.Height > 0)
 			{
-				var size = new CGSizeD { Width = rect.Width, Height = rect.Height };
-				var value = AXValueCreateSize(kAXValueCGSizeType, in size);
-				if (value == 0)
-					ok = false;
+				if (!IsAttributeSettable(element, attrSize))
+				{
+					if (!allowReadOnlySize)
+					{
+						unsupported = true;
+						ok = false;
+					}
+				}
 				else
 				{
-					try { ok &= AXUIElementSetAttributeValue(element, attrSize, value) == kAXErrorSuccess; }
-					finally { CFRelease(value); }
+					var size = new CGSizeD { Width = rect.Width, Height = rect.Height };
+					var value = AXValueCreateSize(kAXValueCGSizeType, in size);
+					if (value == 0)
+						ok = false;
+					else
+					{
+						try { ok &= AXUIElementSetAttributeValue(element, attrSize, value) == kAXErrorSuccess; }
+						finally { CFRelease(value); }
+					}
 				}
 			}
 

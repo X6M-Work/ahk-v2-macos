@@ -1644,7 +1644,7 @@ namespace Keysharp.Builtins
 		private static extern void free(IntPtr ptr);
 
 		[System.Runtime.InteropServices.DllImport("libc")]
-		private static extern uint geteuid();
+		internal static extern uint geteuid();
 
 		// Path.GetFullPath leaves symlinked components alone, so realpath is the only way to reach the
 		// spelling the kernel reports for the same directory. Falls back to the given path so a directory

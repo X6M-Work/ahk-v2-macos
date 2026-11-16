@@ -540,6 +540,17 @@ namespace Keysharp.Internals.Os
 			return syncHandled;
 		}
 
+		internal static Rectangle MergeControlMoveBounds(Rectangle currentScreenRect, Point windowOrigin, int x, int y, int width, int height, out bool setPosition, out bool setSize)
+		{
+			setPosition = x != int.MinValue || y != int.MinValue;
+			setSize = width != int.MinValue || height != int.MinValue;
+			return new Rectangle(
+				x == int.MinValue ? currentScreenRect.X : windowOrigin.X + x,
+				y == int.MinValue ? currentScreenRect.Y : windowOrigin.Y + y,
+				width == int.MinValue ? currentScreenRect.Width : width,
+				height == int.MinValue ? currentScreenRect.Height : height);
+		}
+
 		private static void ShowHideHelper(bool val, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
 			if (WindowSearch.SearchControl(ctrl, title, text, excludeTitle, excludeText) is WindowInfoBase item)

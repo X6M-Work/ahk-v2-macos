@@ -4435,8 +4435,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Moves and/or resizes a control using the same target-client coordinates as ControlGetPos, including controls in nested containers. A direct control handle or omitted ControlID uses the control\u0027s containing top-level window\u0027s client area. Omitted position and size axes stay unchanged. Off Windows, toolkit controls use this mapping; native window movement remains limited by the desktop backend.",
-                     "tested-by":  "ControlTests/control_move.ahk; window-functions.ahk; control-coordinates.ahk"
+                     "notes":  "Moves and/or resizes a control using the same target-client coordinates as ControlGetPos, including controls in nested containers. A direct control handle or omitted ControlID uses the control\u0027s containing top-level window\u0027s client area. Omitted position and size axes stay unchanged. On macOS, foreign controls also attempt AXPosition/AXSize updates via Accessibility when those attributes are writable; non-writable controls report UnsupportedError.",
+                     "tested-by":  "ControlTests/control_move.ahk; window-functions.ahk; control-coordinates.ahk; GuiTests.ControlManagerMergeControlMoveBoundsMergesOmittedAxes"
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -5612,8 +5612,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "partial",
-                     "notes":  "Windows empties the recycle bin and Linux empties the freedesktop Trash through GIO. macOS currently empties only the user ~/.Trash folder, not per-volume trash folders.",
-                     "tested-by":  "file-filerecycleempty.ahk"
+                     "notes":  "Windows empties the recycle bin and Linux empties the freedesktop Trash through GIO. macOS empties ~/.Trash and accessible per-volume /Volumes/*/.Trashes/\u003cuid\u003e folders (or a targeted drive/volume path) without traversing symlinks; volume mount permissions determine which removable/external volume trashes can be cleared.",
+                     "tested-by":  "file-filerecycleempty.ahk; FileAndDirTests.MacPerVolumeTrashResolutionAndEmptyCleansSafely"
                  },
                  {
                      "category":  "FileSystem",

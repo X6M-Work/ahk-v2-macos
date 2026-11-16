@@ -733,6 +733,24 @@ namespace Keysharp.Internals.Os.Unix
 
 		internal override void ControlMove(int x, int y, int width, int height, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TryMoveControl(nativeWin, selector, x, y, width, height, out var foundControl, out var unsupported))
+				{
+					WindowInfoBase.DoControlDelay();
+					return;
+				}
+
+				if (!foundControl)
+					_ = Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+				else if (unsupported)
+					_ = WindowHelper.WindowOperationUnsupported("ControlMove");
+				else
+					_ = Errors.OSErrorOccurred("", $"macOS Accessibility could not move or resize control '{selector}'.");
+				return;
+			}
+#endif
 			if (!WindowSearch.TrySearchControl(ctrl, title, text, excludeTitle, excludeText, out var item, out var target, true) || item == null)
 				return;
 
