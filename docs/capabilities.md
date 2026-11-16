@@ -923,9 +923,9 @@ Status legend:
 | PostMessage() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The PostMessage function places a message in the message queue of a window or control. |
 | ProcessClose() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Forces the first matching process to close. |
 | ProcessExist() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Checks if the specified process exists. |
-| ProcessGetName() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The ProcessGetName and ProcessGetPath functions return the name or path of the specified process. |
+| ProcessGetName() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The ProcessGetName and ProcessGetPath functions return the name or path of the specified process. On macOS, resolves executable paths via libproc proc_pidpath before Process.MainModule fallback. |
 | ProcessGetParent() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Returns the parent PID of the selected process, or of the script process if omitted. Throws TargetError if the process is missing and OSError if the parent cannot be queried. The macOS implementation is not yet runtime-verified. |
-| ProcessGetPath() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The ProcessGetName and ProcessGetPath functions return the name or path of the specified process. |
+| ProcessGetPath() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The ProcessGetName and ProcessGetPath functions return the name or path of the specified process. On macOS, resolves executable paths via libproc proc_pidpath before Process.MainModule fallback. |
 | ProcessSetPriority() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Changes the priority level of the first matching process. |
 | ProcessWait() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Waits for the specified process to exist. |
 | ProcessWaitClose() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Waits for all matching processes to close. |

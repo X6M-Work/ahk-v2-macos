@@ -58,4 +58,22 @@ public partial class ProcessTests : TestRunner
 
 	[Test, Category("Process"), Category("Curated")]
 	public void ProcessRunScript() => Assert.IsTrue(TestScript("process-runscript", false));
+
+	[Test, Category("Process"), Category("Curated")]
+	public void ProcessGetPathAndNameResolveCurrentProcess()
+	{
+		var resolvedPath = Processes.ProcessGetPath(Environment.ProcessId);
+		var resolvedName = Processes.ProcessGetName(Environment.ProcessId);
+		Assert.That(resolvedPath, Is.Not.Null.And.Not.Empty);
+		Assert.That(File.Exists(resolvedPath), Is.True);
+		Assert.That(resolvedName, Is.EqualTo(Path.GetFileName(resolvedPath)));
+		if (!string.IsNullOrEmpty(Environment.ProcessPath))
+			Assert.That(resolvedName, Is.EqualTo(Path.GetFileName(Environment.ProcessPath)).IgnoreCase);
+
+#if OSX
+		Assert.That(Keysharp.Internals.Platform.Process.TryGetExecutablePath(Environment.ProcessId, out var pidPath), Is.True);
+		Assert.That(pidPath, Is.Not.Empty);
+		Assert.That(Processes.ProcessGetPath(1), Is.TypeOf<string>());
+#endif
+	}
 }

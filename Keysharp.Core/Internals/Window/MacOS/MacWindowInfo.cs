@@ -111,6 +111,9 @@ namespace Keysharp.Internals.Window.MacOS
 				if (url?.Path is string path && !path.IsNullOrEmpty())
 					return processPath = path;
 
+				if (Platform.Process.TryGetExecutablePath((int)pid, out var procPath))
+					return processPath = procPath;
+
 				return base.Path;
 			}
 		}

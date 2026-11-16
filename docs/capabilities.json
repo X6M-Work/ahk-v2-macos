@@ -9410,7 +9410,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The ProcessGetName and ProcessGetPath functions return the name or path of the specified process."
+                     "notes":  "The ProcessGetName and ProcessGetPath functions return the name or path of the specified process. On macOS, resolves executable paths via libproc proc_pidpath before Process.MainModule fallback.",
+                     "tested-by":  "ProcessTests.ProcessGetPathAndNameResolveCurrentProcess"
                  },
                  {
                      "category":  "Core Language",
@@ -9431,7 +9432,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "The ProcessGetName and ProcessGetPath functions return the name or path of the specified process."
+                     "notes":  "The ProcessGetName and ProcessGetPath functions return the name or path of the specified process. On macOS, resolves executable paths via libproc proc_pidpath before Process.MainModule fallback.",
+                     "tested-by":  "ProcessTests.ProcessGetPathAndNameResolveCurrentProcess"
                  },
                  {
                      "category":  "Automation",

@@ -192,6 +192,31 @@ namespace Keysharp.Internals
 			[LibraryImport("libproc.dylib", EntryPoint = "proc_pidinfo", SetLastError = true)]
 			private static unsafe partial int ProcPidInfo(int pid, int flavor, ulong arg, byte* buffer, int bufferSize);
 
+			[LibraryImport("libproc.dylib", EntryPoint = "proc_pidpath", SetLastError = true)]
+			private static unsafe partial int ProcPidPath(int pid, byte* buffer, uint bufferSize);
+
+			internal static unsafe bool TryGetExecutablePath(int pid, out string path)
+			{
+				path = string.Empty;
+
+				if (pid <= 0)
+					return false;
+
+				const int maxPathSize = 4096;
+				Span<byte> buffer = stackalloc byte[maxPathSize];
+
+				fixed (byte* ptr = buffer)
+				{
+					var len = ProcPidPath(pid, ptr, (uint)buffer.Length);
+
+					if (len <= 0)
+						return false;
+
+					path = System.Text.Encoding.UTF8.GetString(buffer.Slice(0, Math.Min(len, buffer.Length))).TrimEnd('\0');
+					return path.Length > 0;
+				}
+			}
+
 			internal static unsafe long? GetParentProcessId(int pid)
 			{
 				const int shortBsdInfo = 13;

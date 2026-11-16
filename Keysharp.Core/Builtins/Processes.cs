@@ -412,6 +412,19 @@ namespace Keysharp.Builtins
 #if WINDOWS
 			var result = GetProcessImage((uint)proc.Id, nameOnly);
 			return result.Length != 0 ? result : (string)Errors.OSErrorOccurred(new Win32Exception(Marshal.GetLastWin32Error()), "", DefaultErrorString);
+#elif OSX
+			if (Platform.Process.TryGetExecutablePath(proc.Id, out var procPath))
+				return nameOnly ? Path.GetFileName(procPath) : procPath;
+
+			try
+			{
+				using var module = proc.MainModule;
+				return module != null ? (nameOnly ? module.ModuleName : module.FileName) : DefaultErrorString;
+			}
+			catch (Exception ex)
+			{
+				return (string)Errors.OSErrorOccurred(ex, $"Failed to get path for process {proc.Id}.", DefaultErrorString);
+			}
 #else
 			using var module = proc.MainModule;
 			return nameOnly ? module.ModuleName : module.FileName;
