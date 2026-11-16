@@ -1310,6 +1310,29 @@ namespace Keysharp.Internals.Os.Unix
 
 		private static void DropdownHelper(bool val, object ctrl, object title, object text, object excludeTitle, object excludeText)
 		{
+#if OSX
+			if (TryResolveForeignMacControlTarget(ctrl, title, text, excludeTitle, excludeText, out var nativeWin, out var selector))
+			{
+				if (Keysharp.Internals.Window.MacOS.MacAccessibility.TrySetControlDropDownState(
+					nativeWin,
+					selector,
+					val,
+					out var foundControl,
+					out var unsupportedClass))
+				{
+					WindowInfoBase.DoControlDelay();
+					return;
+				}
+
+				if (!foundControl)
+					_ = Errors.TargetErrorOccurred($"Could not get control {selector}", title, text, excludeTitle, excludeText);
+				else if (unsupportedClass)
+					_ = Errors.TargetErrorOccurred($"Control {selector} did not match Combo", title, text, excludeTitle, excludeText);
+				else
+					_ = WindowHelper.WindowOperationUnsupported(val ? "ControlShowDropDown" : "ControlHideDropDown");
+				return;
+			}
+#endif
 			if (OwnControl(ctrl, title, text, excludeTitle, excludeText) is not Control control)
 				return;
 

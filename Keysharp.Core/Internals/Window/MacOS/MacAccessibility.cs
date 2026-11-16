@@ -108,6 +108,7 @@ namespace Keysharp.Internals.Window.MacOS
 			private static readonly nint attrSelectedRows = CreateCFString("AXSelectedRows");
 			private static readonly nint attrSelectedChildren = CreateCFString("AXSelectedChildren");
 			private static readonly nint attrSelected = CreateCFString("AXSelected");
+			private static readonly nint attrExpanded = CreateCFString("AXExpanded");
 			private static readonly nint attrChildren = CreateCFString("AXChildren");
 			private static readonly nint attrRole = CreateCFString("AXRole");
 			private static readonly nint attrValue = CreateCFString("AXValue");
@@ -121,6 +122,8 @@ namespace Keysharp.Internals.Window.MacOS
 		private static readonly nint actionRaise = CreateCFString("AXRaise");
 		private static readonly nint actionClose = CreateCFString("AXClose");
 		private static readonly nint actionPress = CreateCFString("AXPress");
+		private static readonly nint actionShowMenu = CreateCFString("AXShowMenu");
+		private static readonly nint actionCancel = CreateCFString("AXCancel");
 		private static readonly nint cfBoolTrue = ResolvePointerConstant("kCFBooleanTrue");
 		private static readonly nint cfBoolFalse = ResolvePointerConstant("kCFBooleanFalse");
 		private static readonly nint axTrustedCheckOptionPrompt = ResolveAppServicesPointerSymbol("kAXTrustedCheckOptionPrompt");
@@ -1134,6 +1137,100 @@ namespace Keysharp.Internals.Window.MacOS
 				if (menuBar != 0)
 					CFRelease(menuBar);
 				CFRelease(appElement);
+			}
+		}
+
+		internal static bool TrySetControlDropDownState(
+			MacNativeWindow info,
+			string selector,
+			bool show,
+			out bool foundControl,
+			out bool unsupportedClass)
+		{
+			foundControl = false;
+			unsupportedClass = false;
+			using var window = ResolveWindowElement(info, show ? "show control dropdown" : "hide control dropdown");
+
+			if (window == null || !TryFindControlElement(window.Element, selector, out var ctrl, out var candidate))
+				return false;
+
+			foundControl = true;
+
+			try
+			{
+				if (!MacControlSelector.IsComboOrPopUpRole(candidate.Role))
+				{
+					unsupportedClass = true;
+					return false;
+				}
+
+				if (show)
+				{
+					if (IsAttributeSettable(ctrl, attrExpanded) && TryWriteBool(ctrl, attrExpanded, true))
+						return true;
+
+					if (AXUIElementPerformAction(ctrl, actionShowMenu) == kAXErrorSuccess)
+						return true;
+
+					if (string.Equals(candidate.Role, "AXComboBox", StringComparison.OrdinalIgnoreCase)
+						&& TryPressChildButton(ctrl))
+						return true;
+
+					return string.Equals(candidate.Role, "AXPopUpButton", StringComparison.OrdinalIgnoreCase)
+						&& AXUIElementPerformAction(ctrl, actionPress) == kAXErrorSuccess;
+				}
+
+				if (TryReadBool(ctrl, attrExpanded, out var expanded) && !expanded)
+					return true;
+
+				if (IsAttributeSettable(ctrl, attrExpanded) && TryWriteBool(ctrl, attrExpanded, false))
+					return true;
+
+				if (AXUIElementPerformAction(ctrl, actionCancel) == kAXErrorSuccess)
+					return true;
+
+				if (TryFindSubmenuElement(ctrl, out var menu))
+				{
+					try
+					{
+						if (AXUIElementPerformAction(menu, actionCancel) == kAXErrorSuccess)
+							return true;
+					}
+					finally
+					{
+						CFRelease(menu);
+					}
+				}
+
+				return expanded
+					&& string.Equals(candidate.Role, "AXComboBox", StringComparison.OrdinalIgnoreCase)
+					&& TryPressChildButton(ctrl);
+			}
+			finally
+			{
+				CFRelease(ctrl);
+			}
+		}
+
+		private static bool TryPressChildButton(nint ctrl)
+		{
+			if (!TryCopyChildren(ctrl, out var children))
+				return false;
+
+			try
+			{
+				for (var i = 0; i < children.Count; i++)
+				{
+					if (string.Equals(ReadStringAttribute(children[i], attrRole), "AXButton", StringComparison.OrdinalIgnoreCase)
+						&& AXUIElementPerformAction(children[i], actionPress) == kAXErrorSuccess)
+						return true;
+				}
+
+				return false;
+			}
+			finally
+			{
+				ReleaseElements(children);
 			}
 		}
 

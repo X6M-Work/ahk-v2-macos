@@ -1115,6 +1115,15 @@ public class GuiTests : TestRunner
 	}
 #endif
 
+	[Test, Category("Gui"), Category("Internal"), Category("Curated"), NonParallelizable]
+	public void MacControlSelectorIdentifiesComboAndPopUpRoles()
+	{
+		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsComboOrPopUpRole("AXComboBox"), Is.True);
+		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsComboOrPopUpRole("AXPopUpButton"), Is.True);
+		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsComboOrPopUpRole("AXList"), Is.False);
+		Assert.That(Keysharp.Internals.Window.MacOS.MacControlSelector.IsComboOrPopUpRole(null), Is.False);
+	}
+
 #if WINDOWS
 	// The whole zero-copy design rests on one property: GDI+ drawing through the Bitmap and GDI reading
 	// through the DC address the same memory. If that ever stopped holding, presents would silently show

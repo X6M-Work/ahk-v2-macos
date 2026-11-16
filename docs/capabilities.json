@@ -4424,8 +4424,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlHideDropDown function hides the popup list of a combo box or drop-down list.",
-                     "tested-by":  "ControlTests/control_show_dropdown.ahk"
+                     "notes":  "The ControlHideDropDown function hides the popup list of a combo box or drop-down list. On macOS, supports foreign Accessibility AXPopUpButton/AXComboBox controls; script-owned Eto ComboBox controls raise UnsupportedError.",
+                     "tested-by":  "ControlTests/control_show_dropdown.ahk; GuiTests.MacControlSelectorIdentifiesComboAndPopUpRoles"
                  },
                  {
                      "category":  "Windowing/GUI",
@@ -4534,8 +4534,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The ControlShowDropDown function shows the popup list of a combo box or drop-down list.",
-                     "tested-by":  "ControlTests/control_show_dropdown.ahk"
+                     "notes":  "The ControlShowDropDown function shows the popup list of a combo box or drop-down list. On macOS, supports foreign Accessibility AXPopUpButton/AXComboBox controls; script-owned Eto ComboBox controls raise UnsupportedError.",
+                     "tested-by":  "ControlTests/control_show_dropdown.ahk; GuiTests.MacControlSelectorIdentifiesComboAndPopUpRoles"
                  },
                  {
                      "category":  "Environment/System",

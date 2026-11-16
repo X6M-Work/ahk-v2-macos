@@ -303,6 +303,10 @@ namespace Keysharp.Internals.Window.MacOS
 			return bestIndex;
 		}
 
+		internal static bool IsComboOrPopUpRole(string role) =>
+			string.Equals(role, "AXPopUpButton", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(role, "AXComboBox", StringComparison.OrdinalIgnoreCase);
+
 		private static bool MatchesField(string fieldValue, string selector)
 			=> !string.IsNullOrEmpty(fieldValue)
 				&& fieldValue.Contains(selector, StringComparison.OrdinalIgnoreCase);
