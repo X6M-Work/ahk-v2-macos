@@ -8,6 +8,71 @@ namespace Keysharp.Internals.Os
 		/// an error was raised and the script continued it, and the caller then returns at once without raising
 		/// another.
 		/// </summary>
+		internal static bool TryCollectMenuPath(ReadOnlySpan<object> items, out List<string> path)
+		{
+			path = [];
+
+			if (items.IsEmpty || !items[0].CoerceString(out var topLevel))
+				return false;
+
+			path.Add(topLevel);
+
+			for (var i = 1; i < items.Length; i++)
+			{
+				if (!items[i].CoerceString(out var step))
+					return false;
+
+				if (step.Length > 0)
+					path.Add(step);
+			}
+
+			return true;
+		}
+
+		internal static bool TryParseMenuPosition(string spec, out int zeroBasedIndex)
+		{
+			if (!string.IsNullOrEmpty(spec)
+				&& spec.EndsWith('&')
+				&& int.TryParse(spec.AsSpan().Trim('&'), out var oneBased)
+				&& oneBased > 0)
+			{
+				zeroBasedIndex = oneBased - 1;
+				return true;
+			}
+
+			zeroBasedIndex = -1;
+			return false;
+		}
+
+		internal static bool TryFindMenuItemIndex(IReadOnlyList<string> titles, string selector, out int matchIndex, out string failureReason)
+		{
+			matchIndex = -1;
+			failureReason = null;
+
+			if (TryParseMenuPosition(selector, out var pos))
+			{
+				if (pos < titles.Count)
+				{
+					matchIndex = pos;
+					return true;
+				}
+
+				failureReason = $"Index {pos + 1} was outside the menu length of {titles.Count}.";
+				return false;
+			}
+
+			for (var i = 0; i < titles.Count; i++)
+			{
+				if (MenuMatchHelper(titles[i] ?? string.Empty, selector))
+				{
+					matchIndex = i;
+					return true;
+				}
+			}
+
+			return true;
+		}
+
 		internal static bool TryGetMenuItem(MenuStrip strip, out ToolStripMenuItem menuItem, params object[] items)
 		{
 			menuItem = null;
@@ -16,10 +81,8 @@ namespace Keysharp.Internals.Os
 				return false;
 
 			//First get the top level menu.
-			if (topLevel.EndsWith('&') && int.TryParse(topLevel.AsSpan().Trim('&'), out var n) && n > 0)
+			if (TryParseMenuPosition(topLevel, out var n))
 			{
-				n--;
-
 				if (n < strip.Items.Count)
 					menuItem = strip.Items[n] as ToolStripMenuItem;
 				else
@@ -51,10 +114,8 @@ namespace Keysharp.Internals.Os
 				if (item.Length == 0)
 					continue;
 
-				if (item.EndsWith('&') && int.TryParse(item.AsSpan().Trim('&'), out n) && n > 0)
+				if (TryParseMenuPosition(item, out n))
 				{
-					n--;
-
 					if (n < menuItem.DropDownItems.Count)
 					{
 						menuItem = menuItem.DropDownItems[n] as ToolStripMenuItem;

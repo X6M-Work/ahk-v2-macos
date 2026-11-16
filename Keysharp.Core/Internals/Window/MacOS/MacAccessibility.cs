@@ -101,6 +101,7 @@ namespace Keysharp.Internals.Window.MacOS
 			private static readonly nint attrFullScreen = CreateCFString("AXFullScreen");
 			private static readonly nint attrFullScreenButton = CreateCFString("AXFullScreenButton");
 			private static readonly nint attrCloseButton = CreateCFString("AXCloseButton");
+			private static readonly nint attrMenuBar = CreateCFString("AXMenuBar");
 			private static readonly nint attrChildren = CreateCFString("AXChildren");
 			private static readonly nint attrRole = CreateCFString("AXRole");
 			private static readonly nint attrValue = CreateCFString("AXValue");
@@ -928,6 +929,177 @@ namespace Keysharp.Internals.Window.MacOS
 			finally
 			{
 				CFRelease(ctrl);
+			}
+		}
+
+		internal static bool TrySelectMenuItem(MacNativeWindow info, IReadOnlyList<string> path, out string failureReason)
+		{
+			failureReason = null;
+
+			if (path == null || path.Count == 0 || info.OwnerPid <= 0)
+				return false;
+
+			if (!EnsureAccessibilityAccess("select menu item", prompt: true))
+			{
+				failureReason = "macOS Accessibility permission is required to select a menu item.";
+				return false;
+			}
+
+			var appElement = AXUIElementCreateApplication(info.OwnerPid);
+			if (appElement == 0)
+				return false;
+
+			_ = AXUIElementSetMessagingTimeout(appElement, WindowMessagingTimeout);
+			nint menuBar = 0;
+			nint current = 0;
+
+			try
+			{
+				if (!TryCopyAttributeValue(appElement, attrMenuBar, out menuBar) || menuBar == 0)
+					return false;
+
+				_ = AXUIElementSetMessagingTimeout(menuBar, QueryMessagingTimeout);
+
+				for (var level = 0; level < path.Count; level++)
+				{
+					var container = menuBar;
+					nint submenu = 0;
+
+					try
+					{
+						if (level > 0)
+						{
+							if (!TryFindSubmenuElement(current, out submenu))
+							{
+								failureReason = "Menu item has no submenu.";
+								return false;
+							}
+
+							container = submenu;
+						}
+
+						if (!TryCopyChildren(container, out var children))
+							return false;
+
+						try
+						{
+							if (children.Count == 0)
+								return false;
+
+							var titles = new string[children.Count];
+							for (var i = 0; i < children.Count; i++)
+								titles[i] = ReadStringAttribute(children[i], attrTitle);
+
+							if (!Keysharp.Internals.Os.ControlManagerBase.TryFindMenuItemIndex(titles, path[level], out var matchIndex, out failureReason)
+								|| matchIndex < 0)
+								return false;
+
+							var next = CFRetain(children[matchIndex]);
+							if (next == 0)
+								return false;
+
+							_ = AXUIElementSetMessagingTimeout(next, WindowMessagingTimeout);
+							if (current != 0)
+								CFRelease(current);
+							current = next;
+						}
+						finally
+						{
+							ReleaseElements(children);
+						}
+					}
+					finally
+					{
+						if (submenu != 0)
+							CFRelease(submenu);
+					}
+				}
+
+				if (current == 0)
+					return false;
+
+				if (TryReadBool(current, attrEnabled, out var enabled) && !enabled)
+				{
+					failureReason = "Menu item is disabled.";
+					return false;
+				}
+
+				if (AXUIElementPerformAction(current, actionPress) == kAXErrorSuccess)
+					return true;
+
+				failureReason = "macOS Accessibility could not activate the menu item.";
+				return false;
+			}
+			finally
+			{
+				if (current != 0)
+					CFRelease(current);
+				if (menuBar != 0)
+					CFRelease(menuBar);
+				CFRelease(appElement);
+			}
+		}
+
+		private static bool TryCopyChildren(nint element, out List<nint> children)
+		{
+			children = [];
+			if (element == 0 || !TryCopyAttributeValue(element, attrChildren, out var arrayRef))
+				return false;
+
+			try
+			{
+				var count = CFArrayGetCount(arrayRef);
+				children.Capacity = (int)Math.Max(0, count);
+
+				for (nint i = 0; i < count; i++)
+				{
+					var child = CFArrayGetValueAtIndex(arrayRef, i);
+					if (child != 0)
+					{
+						_ = AXUIElementSetMessagingTimeout(child, QueryMessagingTimeout);
+						children.Add(CFRetain(child));
+					}
+				}
+
+				return true;
+			}
+			finally
+			{
+				CFRelease(arrayRef);
+			}
+		}
+
+		private static bool TryFindSubmenuElement(nint menuItemElement, out nint submenuElement)
+		{
+			submenuElement = 0;
+			if (!TryCopyChildren(menuItemElement, out var children))
+				return false;
+
+			try
+			{
+				for (var i = 0; i < children.Count; i++)
+				{
+					if (string.Equals(ReadStringAttribute(children[i], attrRole), "AXMenu", StringComparison.Ordinal))
+					{
+						submenuElement = CFRetain(children[i]);
+						return submenuElement != 0;
+					}
+				}
+
+				return false;
+			}
+			finally
+			{
+				ReleaseElements(children);
+			}
+		}
+
+		private static void ReleaseElements(List<nint> elements)
+		{
+			for (var i = 0; i < elements.Count; i++)
+			{
+				if (elements[i] != 0)
+					CFRelease(elements[i]);
 			}
 		}
 

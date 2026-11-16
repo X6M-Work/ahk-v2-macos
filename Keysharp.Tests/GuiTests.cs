@@ -1047,6 +1047,29 @@ public class GuiTests : TestRunner
 		Assert.IsTrue(TestScript("window-functions", false));
 	}
 
+	[Test, Category("Gui"), Category("Internal"), Category("Curated"), NonParallelizable]
+	public void MenuSelectPathHelpersResolvePositionsAndNames()
+	{
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryParseMenuPosition("1&", out var pos0), Is.True);
+		Assert.That(pos0, Is.EqualTo(0));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryParseMenuPosition("0&", out _), Is.False);
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryParseMenuPosition("File", out _), Is.False);
+
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryCollectMenuPath(["File", "&Open", "", "Leaf", null], out var steps), Is.True);
+		Assert.That(steps, Is.EqualTo(["File", "&Open", "Leaf"]));
+
+		var titles = new[] { "Apple", "Edit", "&File", "" };
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryFindMenuItemIndex(titles, "fi", out var fileIdx, out _), Is.True);
+		Assert.That(fileIdx, Is.EqualTo(2));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryFindMenuItemIndex(titles, "2&", out var secondIdx, out _), Is.True);
+		Assert.That(secondIdx, Is.EqualTo(1));
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryFindMenuItemIndex(titles, "Bogus", out var missingIdx, out var missingReason), Is.True);
+		Assert.That(missingIdx, Is.EqualTo(-1));
+		Assert.That(missingReason, Is.Null);
+		Assert.That(Keysharp.Internals.Os.ControlManagerBase.TryFindMenuItemIndex(titles, "9&", out _, out var oobReason), Is.False);
+		Assert.That(oobReason, Does.Contain("Index 9"));
+	}
+
 #if WINDOWS
 	// The whole zero-copy design rests on one property: GDI+ drawing through the Bitmap and GDI reading
 	// through the DC address the same memory. If that ever stopped holding, presents would silently show

@@ -8360,8 +8360,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "The MenuSelect function invokes a menu item from the menu bar of the specified window. Like the Control functions, on Linux and macOS it can only reach menus of windows created by this script, not those of other applications.",
-                     "tested-by":  "Gui/guitest.ks"
+                     "notes":  "The MenuSelect function invokes a menu item from the menu bar of the specified window. On macOS, supports both script-owned GUI menus and other applications via Accessibility (AXMenuBar).",
+                     "tested-by":  "window-functions.ahk; GuiTests.MenuSelectPathHelpersResolvePositionsAndNames"
                  },
                  {
                      "category":  "Errors",
