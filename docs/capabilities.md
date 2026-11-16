@@ -1041,7 +1041,7 @@ Status legend:
 | super | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Keyword that accesses base-class methods and properties. |
 | Suspend() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The Suspend function disables or enables all or selected hotkeys and hotstrings. |
 | Switch | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Selects one case branch based on a value/expression. |
-| SysGet() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Gets system information. Non-Windows builds implement monitor dimensions/count, mouse presence/buttons, network state and selected session metrics; Win32-only system metrics have no portable equivalent and are not implemented. |
+| SysGet() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Gets system information. Non-Windows builds implement monitor dimensions/count, virtual screen bounds (SM_X/Y/CX/CYVIRTUALSCREEN), mouse presence/buttons/wheels, network state, clean-boot check (macOS kern.bootargs -x / Linux last reboot), and standard capability flags; Win32-only layout metrics have no portable equivalent and raise NotImplementedException. |
 | SysGetIPAddresses() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | The SysGetIPAddresses function returns an array of the system's IPv4 addresses. |
 | Tan() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Computes the tangent of a number. |
 | Tanh() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Computes the hyperbolic tangent of a number. |

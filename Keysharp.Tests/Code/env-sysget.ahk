@@ -25,4 +25,11 @@ val := SysGet(19)
 
 Assert(val > 0, A_LineNumber)
 
+AssertEq(Type(SysGet(76)), "Integer", A_LineNumber)
+AssertEq(Type(SysGet(77)), "Integer", A_LineNumber)
+Assert(SysGet(78) >= SysGet(0), A_LineNumber)
+Assert(SysGet(79) >= SysGet(1), A_LineNumber)
+AssertEq(SysGet(81), 1, A_LineNumber)
+AssertEq(SysGet(67), 0, A_LineNumber)
+
 FileAppend "pass", "*"

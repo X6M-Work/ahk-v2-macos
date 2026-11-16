@@ -100,6 +100,18 @@ namespace Keysharp.Builtins
 			return (display.Bounds.Width, display.Bounds.Height);
 		}
 
+		/// <summary>Returns the bounding rectangle across all active displays in native screen coordinates.</summary>
+		internal static ScreenRect GetVirtualScreenBounds()
+		{
+			var bounds = Platform.Screen.GetVirtualScreenBounds();
+
+			if (bounds.HasArea)
+				return bounds;
+
+			var (width, height) = GetPrimaryScreenSize();
+			return new ScreenRect(0, 0, (int)Math.Clamp(width, 0, int.MaxValue), (int)Math.Clamp(height, 0, int.MaxValue));
+		}
+
 		/// <summary>Returns one display's bounds in native screen coordinates.</summary>
 		internal static (long Left, long Top, long Width, long Height) GetMonitorBounds(object n)
 		{

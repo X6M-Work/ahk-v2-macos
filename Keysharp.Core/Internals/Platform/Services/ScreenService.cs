@@ -509,7 +509,20 @@ namespace Keysharp.Internals
 			return display.WorkArea;
 		}
 
-		public ScreenRect GetVirtualScreenBounds() => DisplayTopology.ToolkitUnion();
+		public ScreenRect GetVirtualScreenBounds()
+		{
+			try
+			{
+				var toolkitUnion = DisplayTopology.ToolkitUnion();
+				if (toolkitUnion.HasArea)
+					return toolkitUnion;
+			}
+			catch
+			{
+			}
+
+			return DisplayTopology.Union(GetDisplays().Select(d => d.Bounds));
+		}
 
 		public bool TryCaptureRegion(ScreenRect bounds, out Bitmap bmp)
 			=> EtoScreenCapture.TryCapture(bounds.X, bounds.Y, bounds.Width, bounds.Height, out bmp);

@@ -114,6 +114,47 @@ public class EnvTests : TestRunner
 	[Test, Category("Env"), Category("Curated"), NonParallelizable]
 	public void EnvUpdate() => Assert.IsTrue(TestScript("env-envupdate", true));
 
+	[Test, Category("Env"), Category("Curated"), NonParallelizable]
+	public void SysGetSafeBootFlagDetection()
+	{
+		Assert.That(Env.HasBootFlag(null, "-x"), Is.False);
+		Assert.That(Env.HasBootFlag("", "-x"), Is.False);
+		Assert.That(Env.HasBootFlag("-v debug=0x1", "-x"), Is.False);
+		Assert.That(Env.HasBootFlag("-xy", "-x"), Is.False);
+		Assert.That(Env.HasBootFlag("-x", "-x"), Is.True);
+		Assert.That(Env.HasBootFlag("-v  -x\tdebug=0x1", "-x"), Is.True);
+	}
+
+#if OSX
+	[Test, Category("Env"), Category("Curated"), NonParallelizable]
+	public void MacSysGetVirtualScreenAndDeviceMetrics()
+	{
+		var monitors = Convert.ToInt64(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_CMONITORS));
+		var primaryW = Convert.ToInt64(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_CXSCREEN));
+		var primaryH = Convert.ToInt64(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_CYSCREEN));
+		var virtX = Convert.ToInt64(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_XVIRTUALSCREEN));
+		var virtY = Convert.ToInt64(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_YVIRTUALSCREEN));
+		var virtW = Convert.ToInt64(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_CXVIRTUALSCREEN));
+		var virtH = Convert.ToInt64(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_CYVIRTUALSCREEN));
+
+		Assert.That(monitors, Is.GreaterThanOrEqualTo(1L));
+		Assert.That(primaryW, Is.GreaterThan(0L));
+		Assert.That(primaryH, Is.GreaterThan(0L));
+		Assert.That(virtW, Is.GreaterThanOrEqualTo(primaryW));
+		Assert.That(virtH, Is.GreaterThanOrEqualTo(primaryH));
+		Assert.That(virtX, Is.LessThanOrEqualTo(0L));
+		Assert.That(virtY, Is.LessThanOrEqualTo(0L));
+
+		Assert.That(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_MOUSEPRESENT), Is.EqualTo(1L));
+		Assert.That(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_MOUSEWHEELPRESENT), Is.EqualTo(1L));
+		Assert.That(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_MOUSEHORIZONTALWHEELPRESENT), Is.EqualTo(1L));
+		Assert.That(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_SAMEDISPLAYFORMAT), Is.EqualTo(1L));
+		Assert.That(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_CLEANBOOT), Is.EqualTo(0L));
+		Assert.That(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_SHUTTINGDOWN), Is.EqualTo(0L));
+		Assert.That(Env.SysGet((long)Keysharp.Internals.Os.SystemMetric.SM_TABLETPC), Is.EqualTo(0L));
+	}
+#endif
+
 	[Test, Category("Env"), Category("UI"), NonParallelizable]
 #if WINDOWS
 	[Category("Curated")]

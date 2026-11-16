@@ -40,7 +40,7 @@ namespace Keysharp.Builtins
 	/// <summary>
 	/// Public interface for environment-related functions.
 	/// </summary>
-	public static class Env
+	public static partial class Env
 	{
 
 		/// <summary>
@@ -323,31 +323,36 @@ namespace Keysharp.Builtins
 				sm = (SystemMetric)propertyInt;
 			}
 
-			var (screenWidth, screenHeight) = Monitor.GetPrimaryScreenSize();
-			var (workWidth, workHeight) = Monitor.GetPrimaryWorkAreaSize();
-
 			switch (sm)
 			{
 				case SystemMetric.SM_CMONITORS:
 					return Monitor.MonitorGetCount();
 
 				case SystemMetric.SM_CXSCREEN:
-					return screenWidth;
+					return Monitor.GetPrimaryScreenSize().Width;
 
 				case SystemMetric.SM_CYSCREEN:
-					return screenHeight;
+					return Monitor.GetPrimaryScreenSize().Height;
 
 				case SystemMetric.SM_CXFULLSCREEN:
-					return workWidth;
+				case SystemMetric.SM_CXMAXIMIZED:
+					return Monitor.GetPrimaryWorkAreaSize().Width;
 
 				case SystemMetric.SM_CYFULLSCREEN:
-					return workHeight;
-
-				case SystemMetric.SM_CXMAXIMIZED:
-					return workWidth;
-
 				case SystemMetric.SM_CYMAXIMIZED:
-					return workHeight;
+					return Monitor.GetPrimaryWorkAreaSize().Height;
+
+				case SystemMetric.SM_XVIRTUALSCREEN:
+					return (long)Monitor.GetVirtualScreenBounds().X;
+
+				case SystemMetric.SM_YVIRTUALSCREEN:
+					return (long)Monitor.GetVirtualScreenBounds().Y;
+
+				case SystemMetric.SM_CXVIRTUALSCREEN:
+					return (long)Monitor.GetVirtualScreenBounds().Width;
+
+				case SystemMetric.SM_CYVIRTUALSCREEN:
+					return (long)Monitor.GetVirtualScreenBounds().Height;
 
 				case SystemMetric.SM_MOUSEPRESENT:
 					return 1L;
@@ -361,8 +366,29 @@ namespace Keysharp.Builtins
 				case SystemMetric.SM_NETWORK:
 					return NetworkUp() ? 1L : 0L;
 
+				case SystemMetric.SM_SAMEDISPLAYFORMAT:
+					return 1L;
+
+				case SystemMetric.SM_DEBUG:
+				case SystemMetric.SM_PENWINDOWS:
+				case SystemMetric.SM_DBCSENABLED:
+				case SystemMetric.SM_SECURE:
+				case SystemMetric.SM_SHOWSOUNDS:
+				case SystemMetric.SM_SLOWMACHINE:
+				case SystemMetric.SM_MIDEASTENABLED:
+				case SystemMetric.SM_TABLETPC:
+				case SystemMetric.SM_MEDIACENTER:
+				case SystemMetric.SM_STARTER:
+				case SystemMetric.SM_SERVERR2:
+				case SystemMetric.SM_DIGITIZER:
+				case SystemMetric.SM_MAXIMUMTOUCHES:
+					return 0L;
+
 				case SystemMetric.SM_CLEANBOOT:
 				{
+#if OSX
+					return IsMacSafeBoot() ? 1L : 0L;
+#else
 					_ = "last reboot".Bash(out var bootsOutput);
 					var boots = bootsOutput.SplitLines().ToList();
 
@@ -373,24 +399,42 @@ namespace Keysharp.Builtins
 					}
 
 					return 0L;
+#endif
 				}
 
 				case SystemMetric.SM_MOUSEWHEELPRESENT:
+#if OSX
+					return 1L;
+#else
 					return "xinput --list --long".Bash(out var wheelOut) == 0
 						&& wheelOut.Contains("button wheel", StringComparison.OrdinalIgnoreCase) ? 1L : 0L;
+#endif
+
+				case SystemMetric.SM_MOUSEHORIZONTALWHEELPRESENT:
+#if OSX
+					return 1L;
+#else
+					return 0L;
+#endif
 
 				case SystemMetric.SM_REMOTESESSION:
-					return "echo $SSH_TTY".Bash(out var sshOut1) == 0 && sshOut1 != "" ? 1L : 0L;
+				case SystemMetric.SM_REMOTECONTROL:
+					return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SSH_TTY")) ? 1L : 0L;
 
 				case SystemMetric.SM_SHUTTINGDOWN:
+#if OSX
+					return 0L;
+#else
 					return "systemctl is-system-running".Bash(out var systemStateOut) == 0
 						&& systemStateOut.Contains("stopping", StringComparison.OrdinalIgnoreCase) ? 1L : 0L;
-
-				case SystemMetric.SM_REMOTECONTROL:
-					return "echo $SSH_TTY".Bash(out var sshOut2) == 0 && sshOut2 != "" ? 1L : 0L;
+#endif
 
 				default:
+#if OSX
+					throw new NotImplementedException($"SysGet({sm}) has no macOS/Eto equivalent.");
+#else
 					throw new NotImplementedException($"SysGet({sm}) has no Linux/Eto equivalent.");
+#endif
 			}
 #elif WINDOWS
 
@@ -583,7 +627,50 @@ namespace Keysharp.Builtins
 #endif
 		}
 
+#if OSX
+		[LibraryImport("/usr/lib/libSystem.B.dylib", StringMarshalling = StringMarshalling.Utf8)]
+		private static partial int sysctlbyname(string name, Span<byte> oldp, ref nuint oldlenp, nint newp, nuint newlen);
+
+		private static bool IsMacSafeBoot()
+		{
+			try
+			{
+				nuint length = 0;
+
+				if (sysctlbyname("kern.bootargs", Span<byte>.Empty, ref length, 0, 0) != 0 || length == 0 || length > 4096)
+					return false;
+
+				var buffer = length <= 256 ? stackalloc byte[(int)length] : new byte[(int)length];
+
+				if (sysctlbyname("kern.bootargs", buffer, ref length, 0, 0) != 0 || length == 0)
+					return false;
+
+				var count = (int)Math.Min(length, (nuint)buffer.Length);
+				var bootArgs = System.Text.Encoding.UTF8.GetString(buffer[..count]).TrimEnd('\0');
+				return HasBootFlag(bootArgs, "-x");
+			}
+			catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+			{
+				return false;
+			}
+		}
 #endif
+
+#endif
+
+		internal static bool HasBootFlag(string bootArgs, string flag)
+		{
+			if (string.IsNullOrWhiteSpace(bootArgs) || string.IsNullOrWhiteSpace(flag))
+				return false;
+
+			foreach (var token in bootArgs.Split((char[])null, StringSplitOptions.RemoveEmptyEntries))
+			{
+				if (string.Equals(token, flag, StringComparison.Ordinal))
+					return true;
+			}
+
+			return false;
+		}
 
 	}
 	/// <summary>
