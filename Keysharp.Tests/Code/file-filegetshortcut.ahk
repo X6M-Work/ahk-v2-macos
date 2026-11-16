@@ -16,7 +16,7 @@ dir := path . "DirCopy"
 DirCopy(dir, "./FileGetShortcut/")
 SplitPath(FileFullPath("./FileGetShortcut/file1.txt"), , &fullpath)
 
-#if LINUX
+#if LINUX || OSX
 	FileCreateShortcut("./FileGetShortcut/file1.txt", "./testshortcut.lnk")
 	FileGetShortcut("./testshortcut.lnk",
 												&outTarget,
@@ -90,6 +90,16 @@ AssertEq(expectedIcon, outIcon, A_LineNumber)
 	AssertEq("Link", outIconNum, A_LineNumber)
 
 	AssertEq("", outRunState, A_LineNumber)
+
+	FileCreateShortcut("./FileGetShortcut/file1.txt", "./testshortcut_multi.lnk", fullpath, '--flag=1 --name "a b"', "MultiArgDesc", "", 2)
+	FileGetShortcut("./testshortcut_multi.lnk", &multiTarget, &multiDir, &multiArgs, &multiDesc, &multiIcon, &multiType)
+	AssertEq(StrLower(FileFullPath("./FileGetShortcut/file1.txt")), StrLower(multiTarget), A_LineNumber)
+	AssertEq(fullpath, multiDir, A_LineNumber)
+	AssertEq('--flag=1 --name "a b"', multiArgs, A_LineNumber)
+	AssertEq("MultiArgDesc", multiDesc, A_LineNumber)
+	AssertEq("", multiIcon, A_LineNumber)
+	AssertEq("Link", multiType, A_LineNumber)
+	FileDelete("./testshortcut_multi.lnk")
 #endif
 
 if (DirExist("./FileGetShortcut"))

@@ -171,6 +171,18 @@ public class FileAndDirTests : TestRunner
 	[Test, Category("FileAndDir")]
 	public void FileGetShortcut() => Assert.IsTrue(TestScript("file-filegetshortcut", false));
 
+	[Test, Category("FileAndDir"), Category("Internal"), Category("Curated")]
+	public void UnixShortcutExecRoundTripsTargetsAndArguments()
+	{
+		var plainExec = Files.FormatUnixShortcutExec("/tmp/app", "");
+		Assert.That(plainExec, Is.EqualTo("/tmp/app"));
+		Assert.That(Files.ParseUnixShortcutExec(plainExec), Is.EqualTo(("/tmp/app", "")));
+
+		var spacedTargetExec = Files.FormatUnixShortcutExec("/tmp/My App/runner", "--mode=fast --label \"two words\"");
+		Assert.That(spacedTargetExec, Is.EqualTo("\"/tmp/My App/runner\" --mode=fast --label \"two words\""));
+		Assert.That(Files.ParseUnixShortcutExec(spacedTargetExec), Is.EqualTo(("/tmp/My App/runner", "--mode=fast --label \"two words\"")));
+	}
+
 	[Test, Category("FileAndDir")]
 	public void FileGetSize() => Assert.IsTrue(TestScript("file-filegetsize", true));
 

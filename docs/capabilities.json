@@ -5302,8 +5302,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Windows reads .lnk metadata and reports a blank icon number when the shortcut has no icon location. Linux and macOS read symbolic links or freedesktop .desktop launchers; Windows-only icon-number and run-state metadata is unavailable, and argument extraction from .desktop Exec fields is approximate.",
-                     "tested-by":  "file-filegetshortcut.ahk"
+                     "notes":  "Windows reads .lnk metadata and reports a blank icon number when the shortcut has no icon location. Linux and macOS read symbolic links or freedesktop .desktop launchers, separating quoted/unquoted Exec targets from full multi-argument strings (including = values); Windows-only icon-number and run-state metadata is unavailable.",
+                     "tested-by":  "file-filegetshortcut.ahk; FileAndDirTests.UnixShortcutExecRoundTripsTargetsAndArguments"
                  },
                  {
                      "category":  "FileSystem",

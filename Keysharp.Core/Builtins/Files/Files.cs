@@ -340,6 +340,43 @@ namespace Keysharp.Builtins
 		/// </param>
 #endif
 		/// <exception cref="ValueError">A <see cref="ValueError"/> exception is thrown if any errors occur.</exception>
+		internal static string FormatUnixShortcutExec(string target, string args)
+		{
+			if (string.IsNullOrEmpty(target))
+				return "";
+
+			var quoted = target.IndexOfAny(SpaceTab) >= 0 && !(target.StartsWith('"') && target.EndsWith('"'))
+				? $"\"{target}\""
+				: target;
+			return string.IsNullOrEmpty(args) ? quoted : $"{quoted} {args}";
+		}
+
+		internal static (string Target, string Args) ParseUnixShortcutExec(string exec)
+		{
+			if (string.IsNullOrWhiteSpace(exec))
+				return ("", "");
+
+			var span = exec.AsSpan().Trim();
+			var first = span[0];
+
+			if (first == '"' || first == '\'')
+			{
+				var close = span[1..].IndexOf(first);
+
+				if (close >= 0)
+				{
+					var target = span.Slice(1, close).ToString();
+					var rest = span.Slice(close + 2).Trim();
+					return (target, rest.ToString());
+				}
+			}
+
+			var split = span.IndexOfAny(SpaceTab);
+			return split < 0
+				? (span.ToString(), "")
+				: (span[..split].ToString(), span[(split + 1)..].TrimStart().ToString());
+		}
+
 		public static object FileCreateShortcut(object target, object linkFile, object workingDir = null, object args = null, object description = null,
 												object iconFile = null,
 #if WINDOWS
@@ -368,15 +405,12 @@ namespace Keysharp.Builtins
 			if (w != "" || a != "" || d != "" || icon != "")
 			{
 				var creator = new ShortcutCreator();
-				icon = Path.GetFullPath(icon);
+				if (icon != "")
+					icon = Path.GetFullPath(icon);
 				creator.Add("Icon", icon);
 				creator.Add("Path", w);
 				creator.Add("Comment", d);
-
-				if (a != "")
-					creator.Add("Exec", t + " " + a);
-				else
-					creator.Add("Exec", t);
+				creator.Add("Exec", FormatUnixShortcutExec(t, a));
 
 				if (type != "")
 				{
@@ -711,32 +745,13 @@ namespace Keysharp.Builtins
 				if (string.IsNullOrEmpty(dest) || link == dest)//Was not just a simple symlink.
 				{
 					var sc = new ShortcutCreator(link);
-					if (outTarget != null) Refs.SetValue(outTarget, sc.Get("Exec"));
+					var (parsedTarget, parsedArgs) = ParseUnixShortcutExec(sc.Get("Exec"));
+					if (outTarget != null) Refs.SetValue(outTarget, parsedTarget);
 					if (outDir != null) Refs.SetValue(outDir, sc.Get("Path"));
+					if (outArgs != null) Refs.SetValue(outArgs, parsedArgs);
 					if (outDescription != null) Refs.SetValue(outDescription, sc.Get("Comment"));
 					if (outIcon != null) Refs.SetValue(outIcon, sc.Get("Icon"));
 					if (outType != null) Refs.SetValue(outType, sc.Get("Type"));
-
-					if (outTarget != null && Refs.GetValue(outTarget) is string s && s.Length > 0)
-					{
-						if (s[0] != '"' && s[0] != '\'')
-						{
-							var splits = s.Split(SpaceTab, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-							if (splits.Length > 1)
-								Refs.SetValue(outArgs, splits[1]);
-							else
-								Refs.SetValue(outArgs, "");
-						}
-						else//It was quoted.
-						{
-							var firstArgIndex = s.FindFirstNotInQuotes(" ");
-							var tempArgs = firstArgIndex != -1 && firstArgIndex < s.Length - 1 ? s.AsSpan(firstArgIndex + 1) : ReadOnlySpan<char>.Empty;
-							Refs.SetValue(outArgs, tempArgs.Trim().ToString());
-						}
-					}
-					else if (outArgs != null)
-						Refs.SetValue(outArgs, "");//No way to determine args.
 				}
 				else
 				{
@@ -2059,11 +2074,12 @@ namespace Keysharp.Builtins
 				{
 					for (var i = 1; i < lines.Length; i++)
 					{
-						var splits = lines[i].Split('=', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+						var line = lines[i];
+						var eq = line.IndexOf('=');
 
-						if (splits.Length > 1)
+						if (eq > 0)
 						{
-							Add(splits[0], splits[1]);
+							Add(line.AsSpan(0, eq).Trim().ToString(), line.AsSpan(eq + 1).Trim().ToString());
 						}
 					}
 				}

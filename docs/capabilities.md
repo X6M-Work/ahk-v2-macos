@@ -539,7 +539,7 @@ Status legend:
 | FileExist() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Checks for the existence of a file or folder and returns its attributes. Bare filenames and wildcard patterns resolve against A_WorkingDir. |
 | FileFullPath() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Returns absolute normalized full path. |
 | FileGetAttrib() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Reports whether a file or folder is read-only, hidden, etc. |
-| FileGetShortcut() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Windows reads .lnk metadata and reports a blank icon number when the shortcut has no icon location. Linux and macOS read symbolic links or freedesktop .desktop launchers; Windows-only icon-number and run-state metadata is unavailable, and argument extraction from .desktop Exec fields is approximate. |
+| FileGetShortcut() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Windows reads .lnk metadata and reports a blank icon number when the shortcut has no icon location. Linux and macOS read symbolic links or freedesktop .desktop launchers, separating quoted/unquoted Exec targets from full multi-argument strings (including = values); Windows-only icon-number and run-state metadata is unavailable. |
 | FileGetSize() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Retrieves the size of a file. Also allows for passing "t" to return the size in terms of terrabytes. |
 | FileGetTime() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Retrieves the datetime stamp of a file or folder. |
 | FileGetVersion() | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | Retrieves the version of a file. Version metadata availability differs by platform file formats; on macOS also reads CFBundleShortVersionString/CFBundleVersion from Info.plist on .app/.framework/.bundle paths and bundle executables. |
