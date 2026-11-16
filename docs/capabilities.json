@@ -5204,7 +5204,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "partial",
-                     "notes":  "macOS recycle/trash and privacy-scoped file access still evolving."
+                     "notes":  "macOS supports FileRecycle (NSFileManager), per-volume FileRecycleEmpty, folder timestamps, Info.plist FileGetVersion, and symlink/.desktop shortcuts; TCC privacy-scoped folders require user permission and macOS aliases are not created."
                  },
                  {
                      "category":  "FileSystem",
@@ -5700,7 +5700,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "On Linux, Control* functions are not supported for foreign apps; use the included AtSpi library for cross-process control interaction. COSMIC supplies native listing, active state, geometry, polling-based events, focus, close, minimize, maximize and restore. wlroots compositors can supply listing, active/state facts and the same actions except geometry. Hyprland adds geometry, PID, move/resize, WinMoveTop/WinMoveBottom, hit-testing, window capture, transparency, WinKill and pushed window events through its IPC; a floating window stays above tiled ones, so WinMoveBottom cannot place it beneath them. On other wlroots compositors coordinate hit-testing remains limited without stacking order, and general move/resize is unavailable. macOS currently relies on Accessibility APIs with permission requirements.",
+                     "notes":  "On Linux, Control* functions are not supported for foreign apps; use the included AtSpi library for cross-process control interaction. COSMIC supplies native listing, active state, geometry, polling-based events, focus, close, minimize, maximize and restore. wlroots compositors can supply listing, active/state facts and the same actions except geometry. Hyprland adds geometry, PID, move/resize, WinMoveTop/WinMoveBottom, hit-testing, window capture, transparency, WinKill and pushed window events through its IPC; a floating window stays above tiled ones, so WinMoveBottom cannot place it beneath them. On other wlroots compositors coordinate hit-testing remains limited without stacking order, and general move/resize is unavailable. macOS relies on Accessibility APIs (with permission requirements) for foreign windows, menus, and AX-exposed controls (ControlSend/Click/Move/Focus/GetPos/GetVisible/GetEnabled/SetEnabled/GetChecked/SetChecked/GetText/SetText/Items/DropDown, EditGet*/EditPaste, ListViewGetContent, MenuSelect, WinGetText).",
                      "tested-by":  "WaylandTests.cs"
                  },
                  {

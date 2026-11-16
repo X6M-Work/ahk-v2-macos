@@ -2,15 +2,15 @@
 
 ## Verdict
 
-**Le modèle de comptage déterministe des références valide les 5 fixtures stricts d'architecture sur Windows, avec validation native macOS sous CI en attente.** Les cinq contre-exemples exécutables de `compat/phase15-architecture` passent avec AutoHotkey officiel 2.0.31 et passent désormais sous Keysharp sur Windows. La CI `40774644855` valide `file-scope-close` sur Windows, Intel et Apple Silicon. La CI `40803366218` valide alias, portée et fichier sur Windows et les deux Mac (889 tests NUnit Windows, 945 par Mac). Les étapes 4 à 11 (propriétaires temporaires, résurrection, tableaux, maps, propriétés propres, résolution tardive et héritage) complètent le modèle sur le périmètre instrumenté, tandis que la validation native sous CI Mac et les frontières CLR/closures non instrumentées restent le périmètre d'extension ouvert.
+**Le modèle de comptage déterministe des références valide les 5 fixtures stricts d'architecture sur Windows et sur les deux architectures macOS (`osx-arm64` et `osx-x64`) en CI étendue.** Les cinq contre-exemples exécutables de `compat/phase15-architecture` passent avec AutoHotkey officiel 2.0.31 et passent sous Keysharp sur Windows ainsi que sur Apple Silicon et Intel (par exemple dans les runs CI étendus `43789482623` et `43819471571`, aux côtés des 7 sondes C ABI macOS et des corpus différentiels portables). Les frontières CLR/closures non instrumentées restent le périmètre d'extension ouvert.
 
 | Contrat observable | AutoHotkey 2.0.31 | Keysharp observé |
 |---|---|---|
 | Dernier alias libéré | `__Delete` avant l'instruction suivante | Passe sur Windows et les deux Mac pour les affectations suivies |
 | Variable locale en fin de fonction | `__Delete` avant le retour à l'appelant | Passe sur Windows et les deux Mac pour les variables locales et paramètres suivis |
-| Argument temporaire libéré | `__Delete` avant l'instruction suivante | Passe localement sur Windows ; validation native en attente |
-| Objet ressuscité puis libéré à nouveau | Deux appels à `__Delete` | Deux appels observés localement sur Windows ; validation native en attente |
-| Fichier local en fin de fonction | Données lisibles, handle libéré | Passe sur Windows et les deux architectures Mac pour le cas prouvé local |
+| Argument temporaire libéré | `__Delete` avant l'instruction suivante | Passe sur Windows, Apple Silicon et Intel en CI étendue |
+| Objet ressuscité puis libéré à nouveau | Deux appels à `__Delete` | Deux appels vérifiés sur Windows, Apple Silicon et Intel en CI étendue |
+| Fichier local en fin de fonction | Données lisibles, handle libéré | Passe sur Windows et les deux architectures Mac |
 
 Les anciens rapports ahk-v2-macos-validation/current-official/phase15-architecture.json et current-windows/phase15-architecture.json, livrés à côté du checkout, décrivent les cinq échecs avant le correctif de portée. La CI `40761878577` les confirme sur Windows et les deux architectures Mac avant ce correctif. Le rapport local `compat/reports/file-lifetime/architecture.json` conserve quatre échecs et un succès, avec les sources et goldens inchangés. Les rapports incluent les empreintes des assemblages, les sorties et les délais.
 
@@ -46,7 +46,7 @@ Critère de passage : les cinq fixtures stricts passent inchangés, puis des tes
 
 ## Appels natifs macOS
 
-`compat/phase15-architecture/macos` contient quatre prototypes : `getpid`, `strlen` ASCII, `qsort` avec callback script et retour Float32 de `sqrtf`. Ils utilisent explicitement `/usr/lib/libSystem.B.dylib`. Les quatre passent sur Apple Silicon (run `40726271080`) et Intel (run `40729614239`). Les résultats attendus décrivent les contrats C. Ils ne chargent aucune DLL Windows et n'assimilent pas les conventions Windows aux conventions ARM64 Darwin.
+`compat/phase15-architecture/macos` contient sept prototypes C ABI natifs : `getpid`, `strlen` ASCII, `qsort` avec callback script, retour Float32 de `sqrtf`, écriture `"Float*"` (`parse-float.c`), callback mixte 9 arguments (`mixed-abi.c`) et empilement Darwin ARM64 >8 arguments avec entiers étroits et `Float32` (`stack-abi.c`). Tous passent sur Apple Silicon et Intel en CI étendue (ex. `43819471571`). Les résultats attendus décrivent les contrats C ; ils ne chargent aucune DLL Windows et n'assimilent pas les conventions Windows aux conventions ARM64 Darwin.
 
 Les vérifications à réaliser sur Intel et Apple Silicon comprennent les callbacks, tailles `size_t`/pointeurs, flottants, agrégats, erreurs de chargement, durée de validité des chaînes et pointeurs, et appels réentrants. Les prototypes limités ne prouvent pas une ABI complète. Les tests Windows de `StrPtr`, encodages et `NumGet`/`NumPut` appartiennent à un autre corpus ; ils ne remplacent pas ces essais natifs.
 

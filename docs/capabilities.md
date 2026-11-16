@@ -8,7 +8,7 @@ Status legend:
 - 🟠 Planned: Not implemented yet, but intended
 - 🔴 Unsupported: Not supported
 - ⚪ Unknown: Not yet verified
-- `Partial*` on non-Windows `Control*()` functions means script-owned Keysharp controls are supported, but controls in foreign applications are not.
+- `Partial*` on non-Windows `Control*()` functions means script-owned Keysharp controls are supported; Linux does not support controls in foreign applications, while macOS supports foreign controls selectively via Accessibility (`AXUIElement`) where noted.
 
 | Capability | Windows | Linux (X11) | Linux (Wayland) | macOS | Notes |
 |---|---|---|---|---|---|
@@ -509,7 +509,7 @@ Status legend:
 | extends | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Keyword used to derive a class from a base class. |
 | False | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Boolean false constant. |
 | File | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | File object type. |
-| File and directory operations | 🟢 Full | 🟢 Full | 🟢 Full | 🟡 Partial | macOS recycle/trash and privacy-scoped file access still evolving. |
+| File and directory operations | 🟢 Full | 🟢 Full | 🟢 Full | 🟡 Partial | macOS supports FileRecycle (NSFileManager), per-volume FileRecycleEmpty, folder timestamps, Info.plist FileGetVersion, and symlink/.desktop shortcuts; TCC privacy-scoped folders require user permission and macOS aliases are not created. |
 | File.AtEOF | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Whether the read position is at end of input. |
 | File.Close() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Closes the file or stream. |
 | File.Encoding | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Gets or sets the encoding used by text read and write members. |
@@ -559,7 +559,7 @@ Status legend:
 | Floor() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Computes a number rounded down to the nearest integer. Rounds toward zero for positive numbers and away from zero for negative numbers. |
 | Font | 🟡 Partial | 🟡 Partial | 🟡 Partial | ⚪ Unknown | Optional font attributes and system font selections. Linux resolves unavailable GTK theme fonts through Pango substitution. GUI/image weights map to normal or bold; Windows RichEdit preserves numeric weights. Windows applies quality to GUI fonts and image text; other platforms reject non-default quality, as does per-range RichEdit formatting. Unspecified attributes follow reference.md's compatibility-mode rule; Options remains a valid empty string. |
 | For | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Iterates over enumerable values or key/value pairs. |
-| Foreign window management (non-Keysharp apps) | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | On Linux, Control* functions are not supported for foreign apps; use the included AtSpi library for cross-process control interaction. COSMIC supplies native listing, active state, geometry, polling-based events, focus, close, minimize, maximize and restore. wlroots compositors can supply listing, active/state facts and the same actions except geometry. Hyprland adds geometry, PID, move/resize, WinMoveTop/WinMoveBottom, hit-testing, window capture, transparency, WinKill and pushed window events through its IPC; a floating window stays above tiled ones, so WinMoveBottom cannot place it beneath them. On other wlroots compositors coordinate hit-testing remains limited without stacking order, and general move/resize is unavailable. macOS currently relies on Accessibility APIs with permission requirements. |
+| Foreign window management (non-Keysharp apps) | 🟢 Full | 🟡 Partial | 🟡 Partial | 🟡 Partial | On Linux, Control* functions are not supported for foreign apps; use the included AtSpi library for cross-process control interaction. COSMIC supplies native listing, active state, geometry, polling-based events, focus, close, minimize, maximize and restore. wlroots compositors can supply listing, active/state facts and the same actions except geometry. Hyprland adds geometry, PID, move/resize, WinMoveTop/WinMoveBottom, hit-testing, window capture, transparency, WinKill and pushed window events through its IPC; a floating window stays above tiled ones, so WinMoveBottom cannot place it beneath them. On other wlroots compositors coordinate hit-testing remains limited without stacking order, and general move/resize is unavailable. macOS relies on Accessibility APIs (with permission requirements) for foreign windows, menus, and AX-exposed controls (ControlSend/Click/Move/Focus/GetPos/GetVisible/GetEnabled/SetEnabled/GetChecked/SetChecked/GetText/SetText/Items/DropDown, EditGet*/EditPaste, ListViewGetContent, MenuSelect, WinGetText). |
 | Format() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Formats text by substituting placeholders with argument values. |
 | FormatCs() | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Formats text using C#-style format placeholders (1-based indexing adaptation). |
 | FormatTime | 🟢 Full | 🟢 Full | 🟢 Full | 🟢 Full | Formats a datetime string according to the parameters. Supports all V2 functionality except for the Dn and Tn options. If you want to specify a specific format, do it in the format parameter. |

@@ -67,7 +67,7 @@ $legendLines = @(
 	("- " + (StatusIcon "planned") + ": " + $root.legend.planned),
 	("- " + (StatusIcon "unsupported") + ": " + $root.legend.unsupported),
 	("- " + (StatusIcon "unknown") + ": " + $root.legend.unknown),
-	'- `Partial*` on non-Windows `Control*()` functions means script-owned Keysharp controls are supported, but controls in foreign applications are not.'
+	'- `Partial*` on non-Windows `Control*()` functions means script-owned Keysharp controls are supported; Linux does not support controls in foreign applications, while macOS supports foreign controls selectively via Accessibility (`AXUIElement`) where noted.'
 )
 
 $docsLines = New-Object System.Collections.Generic.List[string]
