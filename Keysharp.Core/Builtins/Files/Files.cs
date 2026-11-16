@@ -951,7 +951,19 @@ namespace Keysharp.Builtins
 				if (file?.Length == 0)
 					file = A_LoopFileFullPath;
 
+#if OSX
+				if (Directory.Exists(file) && TryGetMacBundleVersion(file, out var dirBundleVersion))
+					return dirBundleVersion;
+#endif
+
 				var info = FileVersionInfo.GetVersionInfo(file);
+#if OSX
+				if (!string.IsNullOrEmpty(info.FileVersion))
+					return info.FileVersion;
+
+				if (TryGetMacBundleVersion(file, out var fileBundleVersion))
+					return fileBundleVersion;
+#endif
 				return info.FileVersion;
 			}
 			catch (Exception ex)
@@ -960,6 +972,87 @@ namespace Keysharp.Builtins
 				return (string)Errors.OSErrorOccurred(ex, $"Error getting file version for file {file}");
 			}
 		}
+
+		internal static string TryResolveMacBundleInfoPlistPath(
+			string path,
+			Func<string, bool> fileExists,
+			Func<string, bool> dirExists)
+		{
+			if (string.IsNullOrWhiteSpace(path))
+				return null;
+
+			var normalized = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			if (normalized.Length == 0)
+				return null;
+
+			if (dirExists(normalized))
+			{
+				foreach (var candidate in (string[])
+				[
+					Path.Combine(normalized, "Contents", "Info.plist"),
+					Path.Combine(normalized, "Versions", "Current", "Resources", "Info.plist"),
+					Path.Combine(normalized, "Resources", "Info.plist"),
+					Path.Combine(normalized, "Info.plist")
+				])
+				{
+					if (fileExists(candidate))
+						return candidate;
+				}
+
+				return null;
+			}
+
+			if (!fileExists(normalized))
+				return null;
+
+			if (string.Equals(Path.GetFileName(normalized), "Info.plist", StringComparison.OrdinalIgnoreCase))
+				return normalized;
+
+			var currentDir = Path.GetDirectoryName(normalized);
+			for (var depth = 0; depth < 3 && !string.IsNullOrEmpty(currentDir); depth++)
+			{
+				var directPlist = Path.Combine(currentDir, "Info.plist");
+				if (fileExists(directPlist))
+					return directPlist;
+
+				var resourcesPlist = Path.Combine(currentDir, "Resources", "Info.plist");
+				if (fileExists(resourcesPlist))
+					return resourcesPlist;
+
+				currentDir = Path.GetDirectoryName(currentDir);
+			}
+
+			return null;
+		}
+
+#if OSX
+		private static bool TryGetMacBundleVersion(string path, out string version)
+		{
+			version = null;
+
+			try
+			{
+				using var pool = new MonoMac.Foundation.NSAutoreleasePool();
+				var plistPath = TryResolveMacBundleInfoPlistPath(path, File.Exists, Directory.Exists);
+				if (plistPath == null)
+					return false;
+
+				using var dict = MonoMac.Foundation.NSDictionary.FromFile(plistPath);
+				if (dict == null)
+					return false;
+
+				version = dict["CFBundleShortVersionString"]?.ToString();
+				if (string.IsNullOrEmpty(version))
+					version = dict["CFBundleVersion"]?.ToString();
+
+				return !string.IsNullOrEmpty(version);
+			}
+			catch
+			{
+				return false;
+			}
+		}
+#endif
 
 		/// <summary>
 		/// Extracts a file embedded into the script's assembly via `#App { Files: [...] }` to dest. Source must

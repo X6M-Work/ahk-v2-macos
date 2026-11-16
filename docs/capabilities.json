@@ -5346,8 +5346,8 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Retrieves the version of a file. Version metadata availability differs by platform file formats.",
-                     "tested-by":  "file-filegetversion.ahk"
+                     "notes":  "Retrieves the version of a file. Version metadata availability differs by platform file formats; on macOS also reads CFBundleShortVersionString/CFBundleVersion from Info.plist on .app/.framework/.bundle paths and bundle executables.",
+                     "tested-by":  "file-filegetversion.ahk; FileAndDirTests.FileGetVersionReadsMacBundleInfoPlist"
                  },
                  {
                      "category":  "FileSystem",

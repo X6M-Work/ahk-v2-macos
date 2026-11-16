@@ -180,6 +180,78 @@ public class FileAndDirTests : TestRunner
 	[Test, Category("FileAndDir")]
 	public void FileGetVersion() => Assert.IsTrue(TestScript("file-filegetversion", true));
 
+	[Test, Category("FileAndDir"), Category("Internal"), Category("Curated")]
+	public void FileGetVersionBundleInfoPlistPathResolution()
+	{
+		var appBundle = Path.Combine("Fake", "Demo.app");
+		var appPlist = Path.Combine(appBundle, "Contents", "Info.plist");
+		var appExec = Path.Combine(appBundle, "Contents", "MacOS", "Demo");
+		var fwBundle = Path.Combine("Fake", "Demo.framework");
+		var fwPlist = Path.Combine(fwBundle, "Versions", "Current", "Resources", "Info.plist");
+
+		var dirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { appBundle, fwBundle };
+		var files = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { appPlist, appExec, fwPlist };
+
+		Assert.That(Files.TryResolveMacBundleInfoPlistPath(appBundle, files.Contains, dirs.Contains), Is.EqualTo(appPlist));
+		Assert.That(Files.TryResolveMacBundleInfoPlistPath(appExec, files.Contains, dirs.Contains), Is.EqualTo(appPlist));
+		Assert.That(Files.TryResolveMacBundleInfoPlistPath(appPlist, files.Contains, dirs.Contains), Is.EqualTo(appPlist));
+		Assert.That(Files.TryResolveMacBundleInfoPlistPath(fwBundle, files.Contains, dirs.Contains), Is.EqualTo(fwPlist));
+		Assert.That(Files.TryResolveMacBundleInfoPlistPath(Path.Combine("Fake", "Missing.app"), files.Contains, dirs.Contains), Is.Null);
+	}
+
+#if OSX
+	[Test, Category("FileAndDir"), Category("Curated")]
+	public void FileGetVersionReadsMacBundleInfoPlist()
+	{
+		var root = Path.Combine(Path.GetTempPath(), $"ks-bundle-ver-{Guid.NewGuid():N}");
+		var appDir = Path.Combine(root, "Sample.app");
+		var contentsDir = Path.Combine(appDir, "Contents");
+		var macOsDir = Path.Combine(contentsDir, "MacOS");
+		Directory.CreateDirectory(macOsDir);
+		var plistPath = Path.Combine(contentsDir, "Info.plist");
+		var exePath = Path.Combine(macOsDir, "Sample");
+		File.WriteAllText(exePath, string.Empty);
+		File.WriteAllText(plistPath, """
+			<?xml version="1.0" encoding="UTF-8"?>
+			<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+			<plist version="1.0">
+			<dict>
+				<key>CFBundleShortVersionString</key>
+				<string>2.4.1</string>
+				<key>CFBundleVersion</key>
+				<string>241</string>
+			</dict>
+			</plist>
+			""");
+
+		try
+		{
+			Assert.That(Files.FileGetVersion(appDir), Is.EqualTo("2.4.1"));
+			Assert.That(Files.FileGetVersion(exePath), Is.EqualTo("2.4.1"));
+
+			File.WriteAllText(plistPath, """
+				<?xml version="1.0" encoding="UTF-8"?>
+				<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+				<plist version="1.0">
+				<dict>
+					<key>CFBundleVersion</key>
+					<string>99.0</string>
+				</dict>
+				</plist>
+				""");
+			Assert.That(Files.FileGetVersion(appDir), Is.EqualTo("99.0"));
+
+			if (Directory.Exists("/System/Applications/TextEdit.app"))
+				Assert.That(Files.FileGetVersion("/System/Applications/TextEdit.app"), Is.Not.Null.And.Not.Empty);
+		}
+		finally
+		{
+			if (Directory.Exists(root))
+				Directory.Delete(root, true);
+		}
+	}
+#endif
+
 	[Test, Category("FileAndDir")]
 	public void FileInstall()
 	{
