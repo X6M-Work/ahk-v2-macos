@@ -644,4 +644,18 @@ public class AppleEventsTests : TestRunner
 		Assert.That(order, Is.EqualTo(new[] { 1, 2, 3 }));
 	}
 #endif
+
+	[Test]
+	public void ComObjTypeProbesComValueAndNonWrapperValues()
+	{
+		var cv = new Keysharp.Builtins.COM.ComValue(3L, 42L);
+		using (Assert.EnterMultipleScope())
+		{
+			Assert.That(Keysharp.Builtins.COM.Com.ComObjType(cv), Is.EqualTo(3L));
+			Assert.That(Keysharp.Builtins.COM.Com.ComObjType(cv, "Name"), Is.EqualTo(string.Empty));
+			Assert.That(Keysharp.Builtins.COM.Com.ComObjType(123L), Is.EqualTo(string.Empty));
+			Assert.That(Keysharp.Builtins.COM.Com.ComObjType("text"), Is.EqualTo(string.Empty));
+			Assert.That(Keysharp.Builtins.COM.Com.ComObjType(new Keysharp.Builtins.Array()), Is.EqualTo(string.Empty));
+		}
+	}
 }

@@ -158,17 +158,19 @@ namespace Keysharp.Internals.Input.Hooks.MacOS
 			bool keyUp;
 			if (type == MacNativeInput.kCGEventFlagsChanged)
 			{
-				bool? queriedDown = null;
+				bool? modifierDown = origin == MacKeyboardState.Origin.PhysicalHid
+					? MacKeyboardState.PhysicalModifierDown(vk, flags) : null;
 				var querySource = origin switch
 				{
 					MacKeyboardState.Origin.PhysicalHid => MacNativeInput.kCGEventSourceStateHIDSystemState,
 					MacKeyboardState.Origin.ForeignSynthetic => MacNativeInput.kCGEventSourceStateCombinedSessionState,
 					_ => uint.MaxValue
 				};
-				if (querySource != uint.MaxValue && MacKeyboardState.TryQuery(vk, querySource, out var nativeDown))
-					queriedDown = nativeDown;
+				if (modifierDown == null && querySource != uint.MaxValue
+					&& MacKeyboardState.TryQuery(vk, querySource, out var nativeDown))
+					modifierDown = nativeDown;
 
-				keyUp = keyboardState.ApplyFlagsChanged(vk, flags, origin, queriedDown, injectedKind,
+				keyUp = keyboardState.ApplyFlagsChanged(vk, flags, origin, modifierDown, injectedKind,
 					senderRevisions.Modifiers, senderRevisions.CapsLock);
 
 				// A mouse-only tap subscribes to flagsChanged solely to keep exact LR state.
@@ -433,6 +435,7 @@ namespace Keysharp.Internals.Input.Hooks.MacOS
 
 		internal void OnNativeTapReenabled()
 		{
+			KeyCodes.ResetDeadKeyState();
 			keyboardState.Resync();
 			mouseStream.ResyncButtons();
 			mouseStream.ForgetHardwareMoves();
@@ -514,6 +517,7 @@ namespace Keysharp.Internals.Input.Hooks.MacOS
 			// This is the only synchronous UI/layout preparation point. Once the native tap starts,
 			// key mapping is snapshot-only and can never wait on the UI thread.
 			KeyCodes.PrepareForInputHook(script);
+			KeyCodes.ResetDeadKeyState();
 			keyboardState.Resync();
 			mouseStream.ResyncButtons();
 			mouseStream.ForgetHardwareMoves();

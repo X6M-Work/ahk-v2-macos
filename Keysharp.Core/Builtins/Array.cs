@@ -683,7 +683,9 @@ public partial class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnum
 
 			if (o.Length > 1 && o[1] != null)
 			{
-				_ = o[1].TryCoerceInt(out var len, 1);
+				// A nonnumeric Length is a TypeError in both modes, as in AutoHotkey.
+				if (!o[1].TryCoerceInt(out var len, 1))
+					return Errors.ExpectedTypeErrorOccurred("Number", o[1]);
 
 				if (len >= 0 && len <= array.Count - i)
 					RemoveItems(i, len);

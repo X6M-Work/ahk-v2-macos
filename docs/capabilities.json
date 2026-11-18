@@ -4107,8 +4107,8 @@
                      "windows":  "full",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
-                     "notes":  "The ComObjType function retrieves type information from a COM object. Off Windows the requests differ: Linux answers Name, IID and Path, and macOS answers the class name, Name, CLSID or IID, and Path."
+                     "macos":  "partial",
+                     "notes":  "The ComObjType function retrieves type information from a COM object, returns VarType for a ComValue without infoType, and returns an empty string for non-COM values on every platform. Off Windows the object metadata requests differ: Linux answers Name, IID and Path, and macOS answers the class name, Name, CLSID or IID, and Path."
                  },
                  {
                      "category":  "COM",
@@ -6274,10 +6274,10 @@
                      "feature":  "Gui.Flash()",
                      "syntax":  "",
                      "windows":  "full",
-                     "linux_x11":  "unsupported",
+                     "linux_x11":  "full",
                      "linux_wayland":  "unsupported",
-                     "macos":  "unsupported",
-                     "notes":  "Flashes the GUI window to attract attention. Backed by the Win32 FlashWindow API; the call is accepted and does nothing on Linux and macOS."
+                     "macos":  "partial",
+                     "notes":  "Flashes the GUI window to attract attention. Windows uses FlashWindow, X11 sets the window urgency hint, Wayland has no GTK urgency hint and does nothing, and macOS requests or cancels an application Dock attention bounce."
                  },
                  {
                      "category":  "Windowing/GUI",

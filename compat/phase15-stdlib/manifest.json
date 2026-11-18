@@ -60,6 +60,12 @@
       "category": "stdlib",
       "script": "string-datetime-contracts.ahk",
       "expected_stdout": "golden/string-datetime-contracts.txt"
+    },
+    {
+      "id": "collection-com-contracts",
+      "category": "stdlib",
+      "script": "collection-com-contracts.ahk",
+      "expected_stdout": "golden/collection-com-contracts.txt"
     }
   ]
 }
