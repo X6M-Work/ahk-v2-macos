@@ -467,7 +467,11 @@ namespace Keysharp.Builtins
 					_ = Reflections.TryGetSizeProperty(data, out sourceLength);//0/false when no Size; the > 0 guard below handles it.
 
 				if (sourceLength > 0)
-					return CopyClipboardBytes((nint)ptr, sourceLength, size);
+				{
+					var bytes = CopyClipboardBytes((nint)ptr, sourceLength, size);
+					GC.KeepAlive(data);
+					return bytes;
+				}
 			}
 
 			return System.Array.Empty<byte>();
@@ -628,6 +632,9 @@ namespace Keysharp.Builtins
 		}
 
 #if OSX
+		[LibraryImport("/usr/lib/libSystem.B.dylib", EntryPoint = "sysctlbyname", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+		private static partial int SysctlInt(string name, out int value, ref nuint size, nint newValue, nuint newSize);
+
 		[LibraryImport("/usr/lib/libSystem.B.dylib", StringMarshalling = StringMarshalling.Utf8)]
 		private static partial int sysctlbyname(string name, Span<byte> oldp, ref nuint oldlenp, nint newp, nuint newlen);
 
@@ -635,6 +642,11 @@ namespace Keysharp.Builtins
 		{
 			try
 			{
+				nuint size = sizeof(int);
+
+				if (SysctlInt("kern.safeboot", out var safeBoot, ref size, 0, 0) == 0)
+					return safeBoot != 0;
+
 				nuint length = 0;
 
 				if (sysctlbyname("kern.bootargs", Span<byte>.Empty, ref length, 0, 0) != 0 || length == 0 || length > 4096)

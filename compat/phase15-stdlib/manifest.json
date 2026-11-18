@@ -72,6 +72,12 @@
       "category": "stdlib",
       "script": "joystick-keystate-contracts.ahk",
       "expected_stdout": "golden/joystick-keystate-contracts.txt"
+    },
+    {
+      "id": "drive-contracts",
+      "category": "stdlib",
+      "script": "drive-contracts.ahk",
+      "expected_stdout": "golden/drive-contracts.txt"
     }
   ]
 }

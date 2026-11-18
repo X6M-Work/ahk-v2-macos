@@ -5,12 +5,18 @@
 
 #if WINDOWS
 root := EnvGet("SystemDrive") "\"
+val := DriveGetCapacity(root)
+
+; Any path on the drive answers for it, and a path that does not exist is an error rather than its drive letter.
+AssertEq(DriveGetCapacity(A_WinDir), DriveGetCapacity(SubStr(A_WinDir, 1, 3)), A_LineNumber)
+Throws(() => DriveGetCapacity(A_Temp "\keysharp-missing-volume-" A_TickCount), A_LineNumber, OSError)
 #else
 root := "/"
+val := DriveGetCapacity(root)
 #endif
 
-capacity := DriveGetCapacity(root)
-Assert(capacity > 0, A_LineNumber)
-Assert(DriveGetSpaceFree(root) <= capacity, A_LineNumber)
+Assert(val > 1000, A_LineNumber)
+Assert(DriveGetSpaceFree(root) <= val, A_LineNumber)
+Throws(() => DriveGetCapacity(""), A_LineNumber, ValueError)
 
 FileAppend "pass", "*"

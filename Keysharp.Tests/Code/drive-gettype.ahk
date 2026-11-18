@@ -4,12 +4,21 @@
 #Include <assert>
 
 #if WINDOWS
-root := EnvGet("SystemDrive") "\"
+	root := EnvGet("SystemDrive") "\"
+	val := DriveGetType(root)
+	missing := A_Temp "\keysharp-missing-volume-" A_TickCount
+
+	AssertEq(DriveGetType(RTrim(root, "\")), val, A_LineNumber)
+	AssertEq(DriveGetType(A_WinDir), DriveGetType(SubStr(A_WinDir, 1, 3)), A_LineNumber)
+#elif OSX
+	val := DriveGetType("/")
+	missing := "/keysharp-missing-volume-" A_TickCount
 #else
-root := "/"
+	val := DriveGetType("/dev") ; the filesystem holding /dev, which every Linux machine has
+	missing := "/keysharp-missing-volume-" A_TickCount
 #endif
 
-kind := DriveGetType(root)
-Assert(kind == "Fixed" || kind == "RAMDisk", A_LineNumber)
+Assert(val == "Fixed" || val == "RAMDisk", A_LineNumber)
+AssertEq(DriveGetType(missing), "", A_LineNumber)
 
 FileAppend "pass", "*"

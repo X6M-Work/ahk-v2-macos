@@ -30,18 +30,18 @@ try {
     catch OSError
         eMissing := 1
     try FileGetTime(filePath, "X")
-    catch ValueError
+    catch Error
         eWhich := 1
     try FileGetTime("")
-    catch ValueError
+    catch Error
         eEmpty := 1
     try FileSetTime("20220304050607", filePath, "M", "FX")
-    catch ValueError
+    catch Error
         eMode := 1
     try {
         Loop Files "*", "FX"
             break
-    } catch ValueError
+    } catch Error
         eLoopMode := 1
     Emit("errors|" eMissing "|" eWhich "|" eEmpty "|" eMode "|" eLoopMode)
 } finally {

@@ -4853,8 +4853,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "partial",
-                     "notes":  "Ejects or retracts the tray of the specified CD/DVD drive.",
-                     "tested-by":  "drive-driveeject.ahk"
+                     "notes":  "Ejects a drive; failures raise OSError. An omitted drive uses the Linux eject default or first macOS optical drive.",
+                     "tested-by":  "drive-driveeject.ahk; drive-getstatus.ahk (error handling); compat/phase15-stdlib/drive-contracts.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -4865,7 +4865,7 @@
                      "linux_wayland":  "full",
                      "macos":  "full",
                      "notes":  "Returns the total capacity of the drive which contains the specified path, in megabytes.",
-                     "tested-by":  "drive-getcapacity.ahk"
+                     "tested-by":  "drive-getcapacity.ahk; compat/phase15-stdlib/drive-contracts.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -4876,7 +4876,7 @@
                      "linux_wayland":  "full",
                      "macos":  "full",
                      "notes":  "Returns the type of the specified drive\u0027s file system.",
-                     "tested-by":  "drive-getfilesystem.ahk"
+                     "tested-by":  "drive-getfilesystem.ahk; compat/phase15-stdlib/drive-contracts.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -4887,7 +4887,7 @@
                      "linux_wayland":  "full",
                      "macos":  "full",
                      "notes":  "Returns the volume label of the specified drive.",
-                     "tested-by":  "drive-getsetlabel.ahk"
+                     "tested-by":  "drive-getfilesystem.ahk; drive-getsetlabel.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -4898,7 +4898,7 @@
                      "linux_wayland":  "full",
                      "macos":  "full",
                      "notes":  "Windows returns drive letters; Linux and macOS return semicolon-separated mount paths. An optional drive-type filter includes every matching drive, including the first enumerated drive. Local Windows regression validated; native macOS/Linux revalidation pending.",
-                     "tested-by":  "drive-getlist.ahk"
+                     "tested-by":  "drive-getlist.ahk; compat/phase15-stdlib/drive-contracts.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -4908,8 +4908,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "full",
-                     "notes":  "Returns the volume serial number of the specified drive.",
-                     "tested-by":  "drive-getserial.ahk"
+                     "notes":  "Returns the volume serial. Linux and macOS use the file system UUID; a missing UUID raises OSError.",
+                     "tested-by":  "drive-getserial.ahk; compat/phase15-stdlib/drive-contracts.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -4920,7 +4920,7 @@
                      "linux_wayland":  "full",
                      "macos":  "full",
                      "notes":  "The DriveGetSpaceFree function returns the free disk space of the drive which contains the specified path, in megabytes.",
-                     "tested-by":  "drive-getspacefree.ahk"
+                     "tested-by":  "drive-getspacefree.ahk; compat/phase15-stdlib/drive-contracts.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -4931,7 +4931,7 @@
                      "linux_wayland":  "full",
                      "macos":  "full",
                      "notes":  "Returns the status of the drive which contains the specified path.",
-                     "tested-by":  "drive-getsetlabel.ahk"
+                     "tested-by":  "drive-getstatus.ahk; compat/phase15-stdlib/drive-contracts.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -4953,7 +4953,7 @@
                      "linux_wayland":  "full",
                      "macos":  "full",
                      "notes":  "Returns the type of the drive which contains the specified path.",
-                     "tested-by":  "drive-gettype.ahk"
+                     "tested-by":  "drive-gettype.ahk; compat/phase15-stdlib/drive-contracts.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -4963,7 +4963,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "unsupported",
-                     "notes":  "Prevents media ejection. Linux uses the eject utility; eject locking is permanently unsupported on macOS.",
+                     "notes":  "Prevents ejection using eject on Linux; macOS raises UnsupportedError.",
                      "tested-by":  "drive-lock-unlock.ahk"
                  },
                  {
@@ -4974,7 +4974,8 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "partial",
-                     "notes":  "The DriveEject and DriveRetract functions eject or retract the tray of the specified CD/DVD drive. DriveEject can also eject a removable drive."
+                     "notes":  "Closes an optical tray, using the same default as DriveEject. Failures raise OSError; macOS hardware operation is unverified.",
+                     "tested-by":  "drive-getstatus.ahk (error handling); compat/phase15-stdlib/drive-contracts.ahk"
                  },
                  {
                      "category":  "Core Language",
@@ -4984,7 +4985,7 @@
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
                      "macos":  "partial",
-                     "notes":  "Changes a volume label. Windows uses DriveInfo, Linux dispatches to the installed filesystem-specific label utility, and macOS uses diskutil renameVolume. Unix operations can require elevated privileges; filesystem/backend coverage needs manual verification.",
+                     "notes":  "Changes a volume label. Windows uses SetVolumeLabel, Linux dispatches to the installed filesystem-specific label utility, and macOS uses diskutil renameVolume. Unix operations can require elevated privileges; filesystem/backend coverage needs manual verification.",
                      "tested-by":  "drive-getsetlabel.ahk"
                  },
                  {
@@ -4995,7 +4996,7 @@
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
                      "macos":  "unsupported",
-                     "notes":  "Restores media ejection. Linux uses the eject utility; eject locking is permanently unsupported on macOS.",
+                     "notes":  "Restores ejection using eject on Linux; macOS raises UnsupportedError.",
                      "tested-by":  "drive-lock-unlock.ahk"
                  },
                  {
