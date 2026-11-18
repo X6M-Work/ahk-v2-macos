@@ -575,6 +575,9 @@ namespace Keysharp.Compilation
 		{
 			WriteIndent();
 
+			if (node.UsingKeyword.IsKind(SyntaxKind.UsingKeyword))
+				_sb.Append("using ");
+
 			// --- 1) print the "local" keyword if you have it as a modifier ---
 			//    (C# doesn't normally have "local", so we assume you stuck it
 			//     in node.Modifiers or in the node.Type as a QualifiedName)

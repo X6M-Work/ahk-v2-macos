@@ -14,6 +14,10 @@ namespace Keysharp.Builtins
 	{
 		private static readonly SearchValues<char> wildcardsSv = SearchValues.Create("*?");
 		private static readonly SearchValues<char> fileOptionSeparators = SearchValues.Create(" \t\n");
+		private static readonly System.IO.EnumerationOptions timestampMatches = new()
+		{
+			AttributesToSkip = 0, IgnoreInaccessible = false, MatchType = MatchType.Win32, MatchCasing = MatchCasing.CaseInsensitive,
+		};
 		private static TextWriter standardOutput, standardError;
 		private static StandardStreamWriter outputStream, errorStream;
 
@@ -928,45 +932,65 @@ namespace Keysharp.Builtins
 		/// <exception cref="OSError">An <see cref="OSError"/> exception is thrown on failure.</exception>
 		public static string FileGetTime(object filename = null, object whichTime = null)
 		{
-			if (!filename.CoerceString(out var file))
-				return "";
-
 			ThreadAccessors.A_LastError = 0;
 
-			if (!whichTime.CoerceString(out var time, "M"))
+			if (!CoerceFilePattern(filename, out var file) || !whichTime.CoerceString(out var time))
 				return "";
 
-			var kind = string.IsNullOrEmpty(time) ? 'M' : time[0];
+			if (file.Length == 0)
+				return (string)Errors.InvalidParameterErrorOccurred(1, "FileGetTime", file);
+
+			var which = TimestampKind(time);
+
+			if (which is not ('M' or 'C' or 'A'))
+				return (string)Errors.ValueErrorOccurred($"Invalid WhichTime \"{time}\". Expected M, C or A.", time);
 
 			try
 			{
-				if (file?.Length == 0)
-					file = A_LoopFileFullPath;
-
-				FileSystemInfo info = File.Exists(file)
-					? new FileInfo(file)
-					: Directory.Exists(file)
-						? new DirectoryInfo(file)
-						: null;
-
-				if (info == null)
-					return DefaultObject;
-
-				var date = kind switch
+				FileSystemInfo info;
+				if (file.AsSpan().IndexOfAny(wildcardsSv) < 0)
 				{
-					'c' or 'C' => info.CreationTime,
-					'a' or 'A' => info.LastAccessTime,
-					_ => info.LastWriteTime,
-				};
+					info = new FileInfo(file);
+					// FileInfo caches the timestamps with Attributes, but returns -1 for a missing file or parent.
+					if ((int)info.Attributes == -1)
+						_ = File.GetAttributes(file);
+				}
+				else
+				{
+					var dir = new DirectoryInfo(Path.GetDirectoryName(Path.GetFullPath(file)));
+					info = dir.EnumerateFileSystemInfos(Path.GetFileName(file), timestampMatches).FirstOrDefault()
+						?? throw new FileNotFoundException("No matching file.", file);
+				}
 
-				return Conversions.ToYYYYMMDDHH24MISS(date);
+				return Conversions.ToYYYYMMDDHH24MISS(which switch
+				{
+					'C' => info.CreationTime,
+					'A' => info.LastAccessTime,
+					_ => info.LastWriteTime,
+				});
 			}
 			catch (Exception ex)
 			{
-				ThreadAccessors.A_LastError = Marshal.GetLastSystemError();
-				return (string)Errors.OSErrorOccurred(ex, $"Error getting file time for file {file}");
+				var code = FileErrorCode(ex);
+				ThreadAccessors.A_LastError = code;
+				return (string)Errors.OSErrorOccurred(OperatingSystem.IsWindows() && code != 0 ? code : (object)ex, $"Error getting file time for {file}");
 			}
 		}
+
+		// Looking up a loop's path walks the thread's loop stack and can resolve the directory's on-disk casing.
+		private static bool CoerceFilePattern(object value, out string file) =>
+			value.CoerceString(out file, value is string ? null : A_LoopFileFullPath);
+
+		// Managed file operations can leave the P/Invoke error unchanged.
+		private static int FileErrorCode(Exception error) => error switch
+		{
+			Win32Exception native => native.NativeErrorCode,
+			IOException { HResult: > 0 } io => io.HResult,
+			{ InnerException: { } inner } => FileErrorCode(inner),
+			_ => (uint)error.HResult >> 16 == 0x8007 ? error.HResult & 0xffff : 0,
+		};
+
+		private static char TimestampKind(string whichTime) => whichTime.Length == 0 ? 'M' : char.ToUpperInvariant(whichTime[0]);
 
 		/// <summary>
 		/// Retrieves the version of a file.
@@ -974,40 +998,68 @@ namespace Keysharp.Builtins
 		/// <param name="filename">If omitted, the current file of the innermost enclosing file loop will be used.<br/>
 		/// Otherwise, specify the name of the target file.
 		/// </param>
-		/// <returns>This function returns the version number of the specified file.</returns>
-		/// <exception cref="OSError">An <see cref="OSError"/> exception is thrown on failure.</exception>
-		public static string FileGetVersion(object filename)
+		/// <returns>The file version as four numbers, such as 1.2.3.4.</returns>
+		/// <exception cref="OSError">An <see cref="OSError"/> exception is thrown on failure, such as if the file lacks version information.</exception>
+		public static string FileGetVersion(object filename = null)
 		{
-			if (!filename.CoerceString(out var file))
+			ThreadAccessors.A_LastError = 0;
+
+			if (!CoerceFilePattern(filename, out var file))
 				return "";
 
-			ThreadAccessors.A_LastError = 0;
+			if (file.Length == 0)
+				return (string)Errors.InvalidParameterErrorOccurred(1, "FileGetVersion", file);
+
+#if WINDOWS
+			// As AutoHotkey does, the fixed numeric version, not the FileVersion text, which may carry more than numbers.
+			var size = WindowsAPI.GetFileVersionInfoSize(file, out _);
+			var block = size > 0 ? Marshal.AllocHGlobal(size) : 0;
 
 			try
 			{
-				if (file?.Length == 0)
-					file = A_LoopFileFullPath;
+				if (block != 0 && WindowsAPI.GetFileVersionInfo(file, 0, size, block)
+						&& WindowsAPI.VerQueryValue(block, "\\", out var fixedInfo, out var length) && length >= 16)
+				{
+					// dwFileVersionMS and dwFileVersionLS of VS_FIXEDFILEINFO.
+					var ms = (uint)Marshal.ReadInt32(fixedInfo, 8);
+					var ls = (uint)Marshal.ReadInt32(fixedInfo, 12);
+					return $"{ms >> 16}.{ms & 0xFFFF}.{ls >> 16}.{ls & 0xFFFF}";
+				}
 
+				var error = Marshal.GetLastPInvokeError();
+				ThreadAccessors.A_LastError = error == 0 ? 1812 : error; // ERROR_RESOURCE_DATA_NOT_FOUND
+				return (string)Errors.OSErrorOccurred(null, $"Error getting file version for file {file}");
+			}
+			finally
+			{
+				if (block != 0)
+					Marshal.FreeHGlobal(block);
+			}
+#else
+			try
+			{
 #if OSX
-				if (Directory.Exists(file) && TryGetMacBundleVersion(file, out var dirBundleVersion))
-					return dirBundleVersion;
+				if (Directory.Exists(file))
+					return TryGetMacBundleVersion(file, out var dirBundleVersion)
+						? dirBundleVersion
+						: throw new InvalidDataException($"{file} is a folder without bundle version information.");
 #endif
-
 				var info = FileVersionInfo.GetVersionInfo(file);
-#if OSX
-				if (!string.IsNullOrEmpty(info.FileVersion))
-					return info.FileVersion;
 
+				if (!string.IsNullOrEmpty(info.FileVersion))
+					return $"{info.FileMajorPart}.{info.FileMinorPart}.{info.FileBuildPart}.{info.FilePrivatePart}";
+#if OSX
 				if (TryGetMacBundleVersion(file, out var fileBundleVersion))
 					return fileBundleVersion;
 #endif
-				return info.FileVersion;
+				throw new InvalidDataException($"{file} has no version information.");
 			}
 			catch (Exception ex)
 			{
-				ThreadAccessors.A_LastError = Marshal.GetLastSystemError();
+				ThreadAccessors.A_LastError = FileErrorCode(ex);
 				return (string)Errors.OSErrorOccurred(ex, $"Error getting file version for file {file}");
 			}
+#endif
 		}
 
 		internal static string TryResolveMacBundleInfoPlistPath(
@@ -1714,19 +1766,20 @@ namespace Keysharp.Builtins
 		{
 			ThreadAccessors.A_LastError = 0;
 
-			if (!attributes.CoerceString(out var attr) || !filePattern.CoerceString(out var file, A_LoopFileFullPath) || !mode.CoerceString(out var m))
+			if (!attributes.CoerceString(out var attr) || !CoerceFilePattern(filePattern, out var file) || !mode.CoerceString(out var m))
 				return DefaultObject;
 
-			var dodirs = m.Contains('d', StringComparison.OrdinalIgnoreCase);
-			var dofiles = m.Contains('f', StringComparison.OrdinalIgnoreCase);
-			var recurse = m.Contains('r', StringComparison.OrdinalIgnoreCase);
-			var failures = 0;
+			if (file.Length == 0)
+				return Errors.InvalidParameterErrorOccurred(2, "FileSetAttrib", file);
 
-			if (!dodirs && !dofiles)
-				dofiles = true;
+			if (!Conversions.TryParseLoopMode(m, out var dofiles, out var dodirs, out var recurse))
+				return DefaultObject;
 
 			// An invalid attribute letter is an error for the call, as in AHK, not a failure for each file.
-			_ = Conversions.ToFileAttribs(attr, FileAttributes.None);
+			if (!Conversions.TryParseFileAttribs(attr, out var masks))
+				return DefaultObject;
+
+			var failures = 0;
 
 			foreach (var item in MatchFiles(file, dofiles, dodirs, recurse))
 			{
@@ -1734,13 +1787,13 @@ namespace Keysharp.Builtins
 
 				try
 				{
-					var set = Conversions.ToFileAttribs(attr, item.Attributes);
+					var set = (item.Attributes & masks.Keep) ^ masks.Toggle;
 					File.SetAttributes(path, set);
 
 					if (set == FileAttributes.None)
 						set = FileAttributes.Normal;
 					else if (set.HasFlag(FileAttributes.Normal) && set != FileAttributes.Normal)//It was Normal and something else.
-							set &= ~FileAttributes.Normal;//Remove normal because it can only be used alone. Just use the other bits.
+						set &= ~FileAttributes.Normal;//Remove normal because it can only be used alone. Just use the other bits.
 
 					if (File.GetAttributes(path) != set)
 						failures++;
@@ -1792,22 +1845,22 @@ namespace Keysharp.Builtins
 		{
 			ThreadAccessors.A_LastError = 0;
 
-			if (!yyyymmddhh24miss.CoerceString(out var timestamp) || !filePattern.CoerceString(out var file)
-					|| !whichTime.CoerceString(out var whichtime, "M") || !mode.CoerceString(out var m))
+			if (!yyyymmddhh24miss.CoerceString(out var timestamp) || !CoerceFilePattern(filePattern, out var file)
+					|| !whichTime.CoerceString(out var whichtime) || !mode.CoerceString(out var m))
 				return DefaultObject;
 
-			var whichChar = string.IsNullOrEmpty(whichtime) ? 'M' : whichtime[0];
+			if (file.Length == 0)
+				return Errors.InvalidParameterErrorOccurred(2, "FileSetTime", file);
 
-			var dodirs = m.Contains('d', StringComparison.OrdinalIgnoreCase);
-			var dofiles = m.Contains('f', StringComparison.OrdinalIgnoreCase);
-			var recurse = m.Contains('r', StringComparison.OrdinalIgnoreCase);
+			if (!Conversions.TryParseLoopMode(m, out var dofiles, out var dodirs, out var recurse))
+				return DefaultObject;
+
+			var which = TimestampKind(whichtime);
+
+			if (which is not ('M' or 'C' or 'A'))
+				return Errors.ValueErrorOccurred($"Invalid WhichTime \"{whichtime}\". Expected M, C or A.", whichtime);
+
 			var failures = 0;
-
-			if (!dodirs && !dofiles)
-				dofiles = true;
-
-			if (file?.Length == 0)
-				file = A_LoopFileFullPath;
 
 			var time = timestamp.Length == 0 ? DateTime.Now : Conversions.ToDateTime(timestamp);
 
@@ -1816,74 +1869,33 @@ namespace Keysharp.Builtins
 
 			foreach (var item in MatchFiles(file, dofiles, dodirs, recurse))
 			{
-				var path = item.FullName;
-				var isDir = item is DirectoryInfo || (item.Attributes & FileAttributes.Directory) != 0;
-
+#if LINUX
+				// Linux keeps no settable creation time, and .NET would change the modification time in its place.
+				if (which == 'C')
+				{
+					failures++;
+					ThreadAccessors.A_LastError = 95; // EOPNOTSUPP
+					continue;
+				}
+#endif
 				try
 				{
-					var set = new DateTime();
-
-					switch (whichChar)
+					switch (which)
 					{
-						case 'm':
-						case 'M':
-							if (isDir)
-							{
-								Directory.SetLastWriteTime(path, time);
-								set = Directory.GetLastWriteTime(path);
-							}
-							else
-							{
-								File.SetLastWriteTime(path, time);
-								set = File.GetLastWriteTime(path);
-							}
-
-							break;
-
-						case 'c':
-						case 'C':
-							if (isDir)
-							{
-								Directory.SetCreationTime(path, time);
-								set = Directory.GetCreationTime(path);
-							}
-							else
-							{
-								File.SetCreationTime(path, time);
-								set = File.GetCreationTime(path);
-							}
-
-							break;
-
-						case 'a':
-						case 'A':
-							if (isDir)
-							{
-								Directory.SetLastAccessTime(path, time);
-								set = Directory.GetLastAccessTime(path);
-							}
-							else
-							{
-								File.SetLastAccessTime(path, time);
-								set = File.GetLastAccessTime(path);
-							}
-
-							break;
-
-						default:
-							ThreadAccessors.A_LastError = Marshal.GetLastSystemError();
-							return Errors.ErrorOccurred($"WhichTime value of {whichTime} was not m, c or a.");
+						case 'C': item.CreationTime = time; break;
+						case 'A': item.LastAccessTime = time; break;
+						default: item.LastWriteTime = time; break;
 					}
-
-					if (set != time)
-						failures++;
 				}
-				catch { failures++; }
+				catch (Exception ex)
+				{
+					ThreadAccessors.A_LastError = FileErrorCode(ex);
+					failures++;
+				}
 			}
 
 			if (failures != 0)
 			{
-				ThreadAccessors.A_LastError = Marshal.GetLastSystemError();
 				return Errors.ErrorOccurred($"Failed {failures} times setting file time.", null, failures);
 			}
 
@@ -2175,9 +2187,12 @@ namespace Keysharp.Builtins
 				{
 					if (!recurse)
 					{
-						// One attribute query, which also serves a bare name, a folder and a drive root, and reports a missing item as -1.
 						var item = new FileInfo(Path.GetFullPath(pattern));
-						return (int)item.Attributes == -1 ? [] : [item];
+						var attributes = item.Attributes;
+						if ((int)attributes == -1)
+							return [];
+						// DirectoryInfo opens a Windows directory with the backup semantics its time setters require.
+						return [(attributes & FileAttributes.Directory) != 0 ? new DirectoryInfo(item.FullName) : item];
 					}
 
 					files = dirs = true;

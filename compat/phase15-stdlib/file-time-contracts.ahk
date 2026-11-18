@@ -24,6 +24,26 @@ try {
 
     FileSetTime("20220304050607", dirPath, "M", "D")
     Emit("dir_m|" FileGetTime(dirPath, "M"))
+
+    eMissing := 0, eWhich := 0, eEmpty := 0, eMode := 0, eLoopMode := 0
+    try FileGetTime("no-such-file.txt")
+    catch OSError
+        eMissing := 1
+    try FileGetTime(filePath, "X")
+    catch ValueError
+        eWhich := 1
+    try FileGetTime("")
+    catch ValueError
+        eEmpty := 1
+    try FileSetTime("20220304050607", filePath, "M", "FX")
+    catch ValueError
+        eMode := 1
+    try {
+        Loop Files "*", "FX"
+            break
+    } catch ValueError
+        eLoopMode := 1
+    Emit("errors|" eMissing "|" eWhich "|" eEmpty "|" eMode "|" eLoopMode)
 } finally {
     try FileDelete(filePath)
     try DirDelete(dirPath, true)

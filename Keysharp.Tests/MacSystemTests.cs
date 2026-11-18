@@ -44,7 +44,7 @@ public class MacSystemTests
 		internal override void MouseEvent(uint eventFlags, uint data, int x = CoordUnspecified, int y = CoordUnspecified)
 			=> Events.Add(eventFlags);
 
-		internal override bool MouseMove(ref int x, ref int y, ref uint eventFlags, long speed, bool moveOffset) => true;
+		internal override void MouseMove(ref int x, ref int y, ref uint eventFlags, long speed, bool moveOffset) { }
 		internal override void DoMouseDelay() { }
 	}
 }

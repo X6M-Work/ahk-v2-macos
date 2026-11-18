@@ -187,6 +187,13 @@ Loop Reg "HKCU", "K"
 Assert(n > 0, A_LineNumber)
 AssertEq(RegRead("HKCU", "ks-no-such-value", "none"), "none", A_LineNumber)
 
+; As in AutoHotkey, Mode takes only K, V and R (or D and F).
+BadRegMode() {
+	Loop Reg "HKCU", "KQ"
+		break
+}
+Throws(BadRegMode, A_LineNumber, ValueError)
+
 RegDelete("HKEY_CURRENT_USER\SOFTWARE\KeysharpTest", "testval")
 RegDelete("HKEY_CURRENT_USER\SOFTWARE\KeysharpTest\ks_sub1", "")
 RegDelete("HKEY_CURRENT_USER\SOFTWARE\KeysharpTest\ks_sub1\ks_sub1_sub1", "dword1")
