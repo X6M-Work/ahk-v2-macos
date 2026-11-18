@@ -60,11 +60,12 @@ namespace Keysharp.Internals.Os.Windows
 		internal nint lParam;
 	}
 
-	[StructLayout(LayoutKind.Sequential)]
+	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 	internal struct JOYCAPS
 	{
 		internal ushort wMid;
 		internal ushort wPid;
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
 		internal string szPname;
 		internal uint wXmin;
 		internal uint wXmax;
@@ -86,7 +87,9 @@ namespace Keysharp.Internals.Os.Windows
 		internal uint wMaxAxes;            /* maximum number of axes supported */
 		internal uint wNumAxes;            /* number of axes in use */
 		internal uint wMaxButtons;         /* maximum number of buttons supported */
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
 		private readonly string szRegKey;/* registry key */
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
 		private readonly string szOEMVxD; /* OEM VxD in use */
 	}
 
@@ -113,7 +116,7 @@ namespace Keysharp.Internals.Os.Windows
 		internal uint dwVpos;                /* 6th axis position */
 		internal uint dwButtons;             /* button states */
 		internal uint dwButtonNumber;        /* current button number pressed */
-		internal int dwPOV;                 /* point of view state */
+		internal uint dwPOV;                /* point of view state */
 		internal uint dwReserved1;           /* reserved for communication between winmm & driver */
 		internal uint dwReserved2;           /* reserved for future expansion */
 	}

@@ -1,11 +1,68 @@
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using Keysharp.Internals.Input.Joystick;
 
 namespace Keysharp.Tests;
 
 [Category("Curated")]
 public class RunnerTests : TestRunner
 {
+	[Test, Category("Internal"), Category("Curated")]
+	public void RestartUsesEffectiveArguments()
+	{
+		var previousArgs = s.LaunchArgs;
+		var args = new[] { "--define:RESTART_TEST", Path.Combine(Path.GetTempPath(), "Finder script.ks"), "argument with spaces", "é" };
+
+		try
+		{
+			s.LaunchArgs = args;
+			var start = Runner.CreateRestartStartInfo();
+			Assert.That(start.ArgumentList.TakeLast(args.Length), Is.EqualTo(args));
+			var explicitStart = Runner.CreateRestartStartInfo(["--version"]);
+			Assert.That(explicitStart.ArgumentList.Last(), Is.EqualTo("--version"));
+			Assert.That(explicitStart.ArgumentList.Count, Is.EqualTo(start.ArgumentList.Count - args.Length + 1));
+		}
+		finally { s.LaunchArgs = previousArgs; }
+	}
+
+	[Test, Category("Internal"), Category("Curated")]
+	public void JoystickLayoutAndConvertJoyContracts()
+	{
+		uint? joyId = 0;
+		Assert.That(Joystick.ConvertJoy("Joy1", ref joyId), Is.EqualTo(JoyControls.Button1));
+		Assert.That(joyId, Is.EqualTo(0u));
+		Assert.That(Joystick.ConvertJoy("16Joy32", ref joyId), Is.EqualTo(JoyControls.Button32));
+		Assert.That(joyId, Is.EqualTo(15u));
+		Assert.That(Joystick.ConvertJoy("0Joy1", ref joyId), Is.EqualTo(JoyControls.Invalid));
+		Assert.That(Joystick.ConvertJoy("00JoyX", ref joyId), Is.EqualTo(JoyControls.Invalid));
+		Assert.That(Joystick.ConvertJoy("17JoyName", ref joyId), Is.EqualTo(JoyControls.Invalid));
+		Assert.That(Joystick.ConvertJoy("999999999999Joy1", ref joyId), Is.EqualTo(JoyControls.Invalid));
+		Assert.That(Joystick.ConvertJoy("Joy33", ref joyId), Is.EqualTo(JoyControls.Invalid));
+
+		var layout = new JoystickLayout(
+		[
+			new(JoystickLayout.AbsX, 0, 1000),
+			new(JoystickLayout.AbsY, 0, 1000),
+			new(JoystickLayout.AbsZ, 0, 255),
+			new(JoystickLayout.AbsRx, -100, 100),
+			new(JoystickLayout.AbsRy, -100, 100),
+			new(JoystickLayout.AbsRz, 0, 255)
+		], gamepad: true);
+		var caps = new JoyCaps("Pad", 12, layout.Axes, HasPov: true);
+		Assert.That(caps.Info, Is.EqualTo("ZRUPD"));
+		Assert.That(caps.AxisCount, Is.EqualTo(5));
+
+		var reading = new JoyReading { Pov = JoystickLayout.PovFromHat(1, -1) };
+		layout.Read([500, 250, 255, 100, -100, 0], ref reading);
+		Assert.That(reading.X, Is.EqualTo(50.0).Within(0.01));
+		Assert.That(reading.Y, Is.EqualTo(25.0).Within(0.01));
+		Assert.That(reading.Z, Is.EqualTo(100.0).Within(0.01));
+		Assert.That(reading.U, Is.EqualTo(100.0).Within(0.01));
+		Assert.That(reading.R, Is.EqualTo(0.0).Within(0.01));
+		Assert.That(reading.Pov, Is.EqualTo(4500L));
+		Assert.That(JoystickLayout.PovFromHat(0, 0), Is.EqualTo(-1L));
+	}
+
 	[TestCase("Debug", "net10.0-windows", "")]
 	[TestCase("Release", "net10.0-windows", "win-x64")]
 	[TestCase("Release", "net10.0", "osx-arm64")]

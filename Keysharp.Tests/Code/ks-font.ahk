@@ -164,10 +164,12 @@ Check("Monospace has a name", Font.Monospace.Name != "", true)
 
 ; Exists answers for a real family and a made-up one.
 Check("Exists(UiDefault)", Font.Exists(Font.UiDefault.Name), true)
+Check("Exists(UiDefault) ignores case", Font.Exists(StrLower(Font.UiDefault.Name)), true)
 Check("Exists(nonsense)", Font.Exists("No Such Family At All"), false)
 Check("Exists('')", Font.Exists(""), false)
 Check("Families is an Array", Font.Families is Array, true)
 Check("Families is populated", Font.Families.Length > 0, true)
+Check("Families includes UiDefault", Font.Families.FindIndex((family, *) => family = Font.UiDefault.Name) > 0, true)
 
 #if LINUX
 ; A desktop theme can retain a family that was removed from the machine.

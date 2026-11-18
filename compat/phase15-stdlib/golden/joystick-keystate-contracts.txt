@@ -1,0 +1,2 @@
+unattached|<>|<>|<>|<>|<>|0|0
+invalid|6|1

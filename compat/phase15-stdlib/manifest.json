@@ -66,6 +66,12 @@
       "category": "stdlib",
       "script": "collection-com-contracts.ahk",
       "expected_stdout": "golden/collection-com-contracts.txt"
+    },
+    {
+      "id": "joystick-keystate-contracts",
+      "category": "stdlib",
+      "script": "joystick-keystate-contracts.ahk",
+      "expected_stdout": "golden/joystick-keystate-contracts.txt"
     }
   ]
 }

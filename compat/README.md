@@ -48,7 +48,7 @@ Golden files must first pass the official AHK v2 reference run. They are reviewa
 | `corpus` | 14 | Original shared language/file checks |
 | `phase15-symbols` | 7 | ASCII-only identifier folding and dynamic lookups |
 | `phase15-map-conversions` | 6 | Map keys/mutations/enumerators, conversions and predicates |
-| `phase15-stdlib` | 11 | Native memory, encodings, file loops, string pointers, simple regex escapes, IsTime, Ini, Process, FileGetTime/SetTime, String/DateTime, and Array.RemoveAt/ComObjType contracts |
+| `phase15-stdlib` | 12 | Native memory, encodings, file loops, string pointers, simple regex escapes, IsTime, Ini, Process, FileGetTime/SetTime, String/DateTime, Array.RemoveAt/ComObjType, and Joystick/GetKeyState contracts |
 | `phase15-regex-edge` | 1 | 28 escape/context observations; broader PCRE equivalence remains unproven |
 | `phase15-enumerators` | 9 | Native metadata, arity, real VarRefs, binding and OwnProps getters |
 | `phase15-native-windows` | 1 | Native Float return/output widening; Windows-only DLL requirement |
@@ -71,7 +71,7 @@ bash scripts/macos/verify-local.sh --baseline-dir /path/to/official
 
 Run separately on Intel and Apple Silicon. `--skip-build` reuses a built executable. `--output-dir` selects the report directory. The script refuses non-macOS hosts and Rosetta. It preserves failures as failures, collects host/build evidence, and runs the seven Mac-only native ABI checks (`getpid`, `strlen`, `qsort`/callback, `sqrtf` Float return, `float-return-output` with `parse-float.c` for `"Float*"` writeback, `mixed-abi-callback` with `mixed-abi.c`, and `stack-abi-spilled` with `stack-abi.c` for Darwin ARM64 stack-spilled narrow/`Float32` packing). Their C ABI expectations are not an official Mac AHK baseline.
 
-The `macOS compatibility` workflow has an optional `extended` input for manual runs. It runs the full 67-case reference/comparison suite (66 cross-platform cases plus the Windows-only native DLL fixture, which is reported as `unsupported` with `skipped_platform: true` in `suite.json` on macOS) and the seven native Mac C ABI checks, preserving reports as artifacts. Normal push runs use the original 14-case corpus and curated NUnit tests.
+The `macOS compatibility` workflow has an optional `extended` input for manual runs. It runs the full 68-case reference/comparison suite (67 cross-platform cases plus the Windows-only native DLL fixture, which is reported as `unsupported` with `skipped_platform: true` in `suite.json` on macOS) and the seven native Mac C ABI checks, preserving reports as artifacts. Normal push runs use the original 14-case corpus and curated NUnit tests.
 The `arm_runner` input selects `macos-15` (default) or `macos-26` for Apple Silicon. Reports record the actual OS; a run on 26 does not replace minimum-version checks on 15.
 
 The lifecycle runner validates its expected stdout/stderr/exit code and baseline identity; the ordinary corpus continues to require exit code zero. Managed engine reports include hashes of `Keysharp*.dll`, including scripting components, because the apphost hash alone cannot identify runtime changes. Windows evidence does not validate native macOS behavior.

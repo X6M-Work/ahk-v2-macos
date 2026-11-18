@@ -49,7 +49,7 @@ The launcher also supports `validate your-script.ahk`, `daemon your-script.ahk` 
 - GitHub Actions for native Apple Silicon/Intel builds, selected upstream tests, and compatibility reports.
 - A manual packaging workflow producing unsigned `.app` bundles inside `.pkg` and `.dmg` artifacts, with SHA-256 checksums.
 
-Native CI builds and executes on both Apple Silicon (`osx-arm64`) and Intel (`osx-x64`): in the verified extended CI audit (`43819471571`, commit `e258fa0c`), each Mac executes and passes 1,027 NUnit tests (21 skipped, 1,048 total), matches all 65 cross-platform differential, runtime, process, self-Reload, stdlib, and Phase 15 deterministic reference-counting cases against official AutoHotkey v2.0.31 (`phase15-native-windows` is Windows-only), and passes all 7 native macOS C ABI probes. Desktop permission prompts still require manual validation.
+Native CI builds and executes on both Apple Silicon (`osx-arm64`) and Intel (`osx-x64`): in the verified extended CI audit (`44396220374`, commit `1a4f9acc`), each Mac executes and passes 1,033 NUnit tests (21 skipped, 1,054 total), matches all 66 cross-platform differential, runtime, process, self-Reload, stdlib, and Phase 15 deterministic reference-counting cases against official AutoHotkey v2.0.31 (`phase15-native-windows` is Windows-only), and passes all 7 native macOS C ABI probes. Desktop permission prompts still require manual validation.
 
 The [validation record](docs/validation.md) documents Windows comparisons, native CI execution, and test conventions.
 
