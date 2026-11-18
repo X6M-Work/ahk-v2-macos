@@ -171,14 +171,14 @@ namespace Keysharp.Builtins
 			if (!level.CoerceString(out var lvl) || !pidOrName.CoerceString(out var name))
 				return 0L;
 
-			ProcessPriorityClass? priority = lvl.ToLowerInvariant() switch
+			ProcessPriorityClass? priority = (lvl.Length == 0 ? '\0' : char.ToUpperInvariant(lvl[0])) switch
 			{
-				"l" or Keyword_Low => ProcessPriorityClass.Idle,
-				"b" or Keyword_BelowNormal => ProcessPriorityClass.BelowNormal,
-				"n" or Keyword_Normal => ProcessPriorityClass.Normal,
-				"a" or Keyword_AboveNormal => ProcessPriorityClass.AboveNormal,
-				"h" or Keyword_High => ProcessPriorityClass.High,
-				"r" or Keyword_Realtime => ProcessPriorityClass.RealTime,
+				'L' => ProcessPriorityClass.Idle,
+				'B' => ProcessPriorityClass.BelowNormal,
+				'N' => ProcessPriorityClass.Normal,
+				'A' => ProcessPriorityClass.AboveNormal,
+				'H' => ProcessPriorityClass.High,
+				'R' => ProcessPriorityClass.RealTime,
 				_ => null
 			};
 
@@ -358,13 +358,16 @@ namespace Keysharp.Builtins
 		{
 			if (int.TryParse(name, out var id))
 			{
-				try
+				if (Platform.Process.Exists(id))
 				{
-					return Process.GetProcessById(id);
-				}
-				catch
-				{
-					//Keep searching, the process might have a name that is all digits with no extension.
+					try
+					{
+						return Process.GetProcessById(id);
+					}
+					catch
+					{
+						//Keep searching, the process might have a name that is all digits with no extension.
+					}
 				}
 			}
 
@@ -418,26 +421,8 @@ namespace Keysharp.Builtins
 			if (proc == null)
 				return (string)Errors.TargetErrorOccurred($"The specified process {pidOrName} was not found");
 
-#if WINDOWS
 			var result = GetProcessImage((uint)proc.Id, nameOnly);
-			return result.Length != 0 ? result : (string)Errors.OSErrorOccurred(new Win32Exception(Marshal.GetLastWin32Error()), "", DefaultErrorString);
-#elif OSX
-			if (Platform.Process.TryGetExecutablePath(proc.Id, out var procPath))
-				return nameOnly ? Path.GetFileName(procPath) : procPath;
-
-			try
-			{
-				using var module = proc.MainModule;
-				return module != null ? (nameOnly ? module.ModuleName : module.FileName) : DefaultErrorString;
-			}
-			catch (Exception ex)
-			{
-				return (string)Errors.OSErrorOccurred(ex, $"Failed to get path for process {proc.Id}.", DefaultErrorString);
-			}
-#else
-			using var module = proc.MainModule;
-			return nameOnly ? module.ModuleName : module.FileName;
-#endif
+			return result.Length != 0 ? result : (string)Errors.OSErrorOccurred((long)Marshal.GetLastPInvokeError(), "", DefaultErrorString);
 		}
 
 		/// <summary>
@@ -457,13 +442,13 @@ namespace Keysharp.Builtins
 			while (true)
 			{
 				using var process = FindProcess(name);
-				var pid = process?.Id ?? 0L;
+				var pid = process?.Id ?? FindProcessId(name);
 				var remaining = timeoutMs < 0 ? -1 : (int)Math.Max(0, timeoutMs - (Environment.TickCount64 - start));
 
 				if ((waitClose ? pid == 0 : pid != 0) || remaining == 0)
 					return pid;
 
-				if (waitClose)
+				if (waitClose && process != null)
 				{
 					try
 					{
@@ -475,7 +460,7 @@ namespace Keysharp.Builtins
 						exited.GetAwaiter().GetResult();
 						continue;
 					}
-					catch (Win32Exception)
+					catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
 					{
 						// Process discovery may succeed even when synchronization fails.
 					}
@@ -484,40 +469,6 @@ namespace Keysharp.Builtins
 				Keysharp.Internals.Flow.Sleep(remaining < 0 ? ProcessPollInterval : Math.Min(remaining, ProcessPollInterval));
 			}
 		}
-
-#if WINDOWS
-		/// <summary>
-		/// The process's executable path or, with <paramref name="nameOnly"/>, its file name. Empty when the process
-		/// cannot be queried, with the reason in the last Win32 error.
-		/// </summary>
-		internal static unsafe string GetProcessImage(uint pid, bool nameOnly)
-		{
-			var hProc = WindowsAPI.OpenProcess(ProcessAccessTypes.PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
-
-			if (hProc == 0)
-				return "";
-
-			try
-			{
-				const int capacity = 1024;
-				var buf = stackalloc char[capacity];
-
-				// GetProcessImageFileName is the faster call, but it gives a device path, so only the name can use it.
-				if (nameOnly)
-				{
-					var path = new ReadOnlySpan<char>(buf, (int)WindowsAPI.GetProcessImageFileName(hProc, buf, capacity));
-					return path[(path.LastIndexOf('\\') + 1)..].ToString();
-				}
-
-				var size = (uint)capacity;
-				return WindowsAPI.QueryFullProcessImageName(hProc, 0, buf, ref size) ? new string(buf, 0, (int)size) : "";
-			}
-			finally
-			{
-				_ = WindowsAPI.CloseHandle(hProc);
-			}
-		}
-#endif
 
 #if !WINDOWS
 		private static bool IsUrlTarget(string target)

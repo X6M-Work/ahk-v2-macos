@@ -426,6 +426,46 @@ Assert(ControlGetStyle(styleButton) & WS_DISABLED, A_LineNumber)
 ControlSetStyle("-" WS_DISABLED, styleButton)
 Assert(!(ControlGetStyle(styleButton) & WS_DISABLED), A_LineNumber)
 styleGui.Destroy()
+
+; Each nonempty descendant contributes one CRLF-terminated line.
+textGui := Gui(, "Window functions text " A_TickCount)
+alpha := textGui.AddText(, "Alpha")
+textGui.AddEdit("w100")
+textGui.AddButton(, "Beta")
+textGui.AddButton(, "Beta")
+textGui.AddButton("Hidden", "Secret")
+textTab := textGui.AddTab3("w200 h80", ["One", "Two"])
+textTab.UseTab(1)
+textGui.AddButton(, "InTab1")
+textTab.UseTab(2)
+textGui.AddButton(, "InTab2")
+textTab.UseTab()
+textGui.AddText(, "Omega")
+textGui.Show("NoActivate")
+AssertEq(WinGetText(alpha.Hwnd), "", A_LineNumber)
+AssertEq(ControlGetText(alpha), "Alpha", A_LineNumber)
+DetectHiddenText false
+shownText := WinGetText(textGui)
+DetectHiddenText true
+allText := WinGetText(textGui)
+Assert(!InStr(allText, textGui.Title), A_LineNumber)
+AssertEq(SubStr(allText, -2), "`r`n", A_LineNumber)
+Assert(!InStr(allText, "`r`n`r`n") && SubStr(allText, 1, 2) != "`r`n", A_LineNumber)
+StrReplace(allText, "Beta`r`n", , , &betaLines)
+AssertEq(betaLines, 2, A_LineNumber)
+Assert(InStr(allText, "Secret`r`n") && InStr(allText, "InTab2`r`n"), A_LineNumber)
+Assert(InStr(shownText, "InTab1`r`n") && !InStr(shownText, "Secret") && !InStr(shownText, "InTab2"), A_LineNumber)
+#if !WINDOWS
+AssertEq(allText, "Alpha`r`nBeta`r`nBeta`r`nSecret`r`nInTab1`r`nInTab2`r`nOmega`r`n", A_LineNumber)
+textTab.Choose(2)
+DetectHiddenText false
+AssertEq(WinGetText(textGui), "Alpha`r`nBeta`r`nBeta`r`nInTab2`r`nOmega`r`n", A_LineNumber)
+#endif
+textGui.Hide()
+DetectHiddenText false
+AssertEq(WinGetText(textGui), "", A_LineNumber)
+DetectHiddenText true
+textGui.Destroy()
 #endif
 
 FileAppend "pass", "*"

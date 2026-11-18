@@ -154,7 +154,11 @@ CheckV21SoundConversion(component, invalid, iid) {
 CheckV21SoundConversion(soundComponent, soundInvalid, soundIid)
 #endif
 
-for bad in ["Nromal", "Nonsense", "Normal,High", "", 1]
+; As in AutoHotkey, only the first letter of the level is checked, so these reach the process lookup.
+for good in ["Normal,High", "below"]
+    AssertEq(ProcessSetPriority(good, "keysharp-enum-test-no-such-process.exe"), 0, A_LineNumber)
+
+for bad in ["Xyz", " Normal", "", 1]
     Throws(() => ProcessSetPriority(bad, "keysharp-enum-test-no-such-process.exe"), A_LineNumber, ValueError)
 
 #if WINDOWS

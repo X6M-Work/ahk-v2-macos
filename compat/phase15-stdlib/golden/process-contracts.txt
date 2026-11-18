@@ -7,5 +7,7 @@ exist_by_name|1
 exist_missing|0
 wait_missing_zero|0
 set_prio_normal|1
+set_prio_prefix|1
+set_prio_bad_count|3
 name_missing|TargetError
 path_missing|TargetError

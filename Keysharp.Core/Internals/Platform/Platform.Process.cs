@@ -185,6 +185,50 @@ namespace Keysharp.Internals
 				}
 			}
 
+			/// <summary>
+			/// The process's executable path or, with <paramref name="nameOnly"/>, its file name. Empty when the process
+			/// cannot be queried, with the reason in the last Win32 error.
+			/// </summary>
+			internal static unsafe string GetProcessImage(uint pid, bool nameOnly)
+			{
+				var hProc = Os.Windows.WindowsAPI.OpenProcess(Os.Windows.ProcessAccessTypes.PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+
+				if (hProc == 0)
+					return "";
+
+				try
+				{
+					Span<char> path = stackalloc char[1024];
+					while (true)
+					{
+						var length = (uint)path.Length;
+						fixed (char* buffer = path)
+						{
+							// The faster device-path query suffices when only the file name is needed.
+							if (nameOnly)
+								length = Os.Windows.WindowsAPI.GetProcessImageFileName(hProc, buffer, length);
+							else if (!Os.Windows.WindowsAPI.QueryFullProcessImageName(hProc, 0, buffer, ref length))
+								length = 0;
+						}
+
+						if (length != 0)
+						{
+							var image = path[..(int)length];
+							return (nameOnly ? Path.GetFileName(image) : image).ToString();
+						}
+
+						if (Marshal.GetLastPInvokeError() != 122 || path.Length == 32768) // ERROR_INSUFFICIENT_BUFFER
+							return "";
+
+						path = new char[32768];
+					}
+				}
+				finally
+				{
+					_ = Os.Windows.WindowsAPI.CloseHandle(hProc);
+				}
+			}
+
 			public static uint CurrentThreadId() => Os.Windows.WindowsAPI.GetCurrentThreadId();
 
 			public static bool DestroyIcon(nint icon) => Os.Windows.WindowsAPI.DestroyIcon(icon);
@@ -197,24 +241,8 @@ namespace Keysharp.Internals
 
 			internal static unsafe bool TryGetExecutablePath(int pid, out string path)
 			{
-				path = string.Empty;
-
-				if (pid <= 0)
-					return false;
-
-				const int maxPathSize = 4096;
-				Span<byte> buffer = stackalloc byte[maxPathSize];
-
-				fixed (byte* ptr = buffer)
-				{
-					var len = ProcPidPath(pid, ptr, (uint)buffer.Length);
-
-					if (len <= 0)
-						return false;
-
-					path = System.Text.Encoding.UTF8.GetString(buffer.Slice(0, Math.Min(len, buffer.Length))).TrimEnd('\0');
-					return path.Length > 0;
-				}
+				path = pid > 0 ? GetProcessImage((uint)pid, false) : string.Empty;
+				return path.Length > 0;
 			}
 
 			internal static unsafe long? GetParentProcessId(int pid)
@@ -275,12 +303,44 @@ namespace Keysharp.Internals
 				throw new InvalidDataException("The process status has no parent process ID.");
 			}
 
+			[LibraryImport("libc", EntryPoint = "readlink", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+			private static unsafe partial nint ReadLink(string path, byte* buffer, nint bufferSize);
+
 			public static uint CurrentThreadId() => (uint)Keysharp.Internals.Window.Linux.X11.Xlib.gettid();
 
 			public static bool DestroyIcon(nint icon) => Keysharp.Internals.Window.Linux.X11.Xlib.GdipDisposeImage(icon) == 0;
 #endif
 
 #if !WINDOWS
+			private const int ProcessPathCapacity = 4096; // PATH_MAX on Linux and PROC_PIDPATHINFO_MAXSIZE on macOS.
+
+			internal static unsafe string GetProcessImage(uint pid, bool nameOnly)
+			{
+				var path = stackalloc byte[ProcessPathCapacity];
+				var image = ReadProcessImage(pid, nameOnly, path);
+				return image.IsEmpty ? "" : Encoding.UTF8.GetString(image);
+			}
+
+			private static unsafe ReadOnlySpan<byte> ReadProcessImage(uint pid, bool nameOnly, byte* path)
+			{
+#if OSX
+				var length = ProcPidPath((int)pid, path, ProcessPathCapacity);
+#else
+				// The comm name is truncated and a process can change it without changing its executable.
+				var length = (int)ReadLink($"/proc/{pid}/exe", path, ProcessPathCapacity);
+				if (length == ProcessPathCapacity)
+				{
+					Marshal.SetLastPInvokeError(36); // ENAMETOOLONG
+					return [];
+				}
+#endif
+				if (length <= 0)
+					return [];
+
+				var image = new ReadOnlySpan<byte>(path, length);
+				return nameOnly ? image[(image.LastIndexOf((byte)'/') + 1)..] : image;
+			}
+
 			[LibraryImport("libc", EntryPoint = "kill", SetLastError = true)]
 			private static partial int PosixKill(int pid, int signal);
 
@@ -292,6 +352,12 @@ namespace Keysharp.Internals
 				// Signal zero checks existence; EPERM means the process exists but belongs to another user.
 				return PosixKill(pid, 0) == 0 || Marshal.GetLastPInvokeError() == 1;
 			}
+
+			[LibraryImport("libc", EntryPoint = "getuid")]
+			internal static partial uint UserId();
+
+			[LibraryImport("libc", EntryPoint = "geteuid")]
+			internal static partial uint EffectiveUserId();
 #endif
 		}
 	}

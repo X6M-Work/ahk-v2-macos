@@ -20,6 +20,15 @@ Emit("exist_by_name|" (ProcessExist(pname) > 0 ? 1 : 0))
 Emit("exist_missing|" ProcessExist("keysharp-nonexistent-process-probe.exe"))
 Emit("wait_missing_zero|" ProcessWait("keysharp-nonexistent-process-probe.exe", 0))
 Emit("set_prio_normal|" (ProcessSetPriority("N", pid) == pid ? 1 : 0))
+Emit("set_prio_prefix|" (ProcessSetPriority("Normal,High", pid) == pid ? 1 : 0))
+
+badPrio := 0
+for bad in ["Xyz", " Normal", ""] {
+    try ProcessSetPriority(bad, pid)
+    catch Error
+        badPrio += 1
+}
+Emit("set_prio_bad_count|" badPrio)
 
 for label, fn in Map(
     "name_missing", () => ProcessGetName("keysharp-nonexistent-process-probe.exe"),

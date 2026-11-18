@@ -205,7 +205,7 @@ public class DesktopBrokerTests
 		var backend = new DesktopBackend("generic", "generic Wayland");
 		Assert.That(backend.TryParseWindowList(Encoding.UTF8.GetBytes(json), out var windows), Is.True);
 		Assert.That(windows, Has.Count.EqualTo(1));
-		Assert.That(Keysharp.Builtins.WindowX.ProcessImageOrError(windows[0], nameOnly), Is.Empty);
+		Assert.That(windows[0].ProcessImageOrError(nameOnly), Is.Empty);
 	}
 
 	[TestCase("generic", "focused")]

@@ -127,8 +127,10 @@ public partial class ProcessTests : TestRunner
 
 		try
 		{
-			var lowered = Processes.ProcessSetPriority("B", (long)live.Id);
+			var lowered = Processes.ProcessSetPriority("Below", (long)live.Id);
 			Assert.That(lowered, Is.EqualTo(live.Id));
+			var restored = Processes.ProcessSetPriority("Normal,High", (long)live.Id);
+			Assert.That(restored, Is.EqualTo(live.Id));
 			var raised = Processes.ProcessSetPriority("H", (long)live.Id);
 			Assert.That(raised == 0L || raised == live.Id, Is.True);
 		}
