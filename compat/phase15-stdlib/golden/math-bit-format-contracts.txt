@@ -1,0 +1,14 @@
+fmt_int|00042|FF|ff
+fmt_flt|3.14|+2.5
+fmt_case|ABC|xyz|Hello World
+fmt_pos|B-A-B|{{ok}}
+math_basic|7|2|-3|3|-2
+math_round|3.14|130|3|-3
+math_mod|1|-1|1.50
+math_minmax|-1|5
+math_trig|3.0000|2.0000|1.0000
+bit_ops|48|255|240|-1|1024|-4
+bit_ushr|15
+types|Integer|Float|String|1|1|1|0
+chars|1|1|1|1|1|1|1
+unicode|65|A|128512|2

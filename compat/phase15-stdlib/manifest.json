@@ -78,6 +78,12 @@
       "category": "stdlib",
       "script": "drive-contracts.ahk",
       "expected_stdout": "golden/drive-contracts.txt"
+    },
+    {
+      "id": "math-bit-format-contracts",
+      "category": "stdlib",
+      "script": "math-bit-format-contracts.ahk",
+      "expected_stdout": "golden/math-bit-format-contracts.txt"
     }
   ]
 }
