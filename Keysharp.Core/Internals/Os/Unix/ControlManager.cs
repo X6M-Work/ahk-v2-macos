@@ -1213,9 +1213,16 @@ namespace Keysharp.Internals.Os.Unix
 					}
 				}
 #if OSX
-				else if (Keysharp.Internals.Window.MacOS.MacNativeWindows.TryGetWindowInfo(win.Handle, out var nativeWin)
-					&& nativeWin.OwnerPid != Environment.ProcessId)
+				else
 				{
+					if (!Keysharp.Internals.Window.MacOS.MacNativeWindows.TryGetWindowInfo(win.Handle, out var nativeWin))
+					{
+						_ = Errors.TargetErrorOccurred(title, text, excludeTitle, excludeText);
+						return;
+					}
+					if (nativeWin.OwnerPid == Environment.ProcessId)
+						return;
+
 					if (!TryCollectMenuPath([menu, sub1, sub2, sub3, sub4, sub5, sub6], out var steps))
 						return;
 
@@ -1225,8 +1232,13 @@ namespace Keysharp.Internals.Os.Unix
 						return;
 					}
 
-					if (!Keysharp.Internals.Window.MacOS.MacAccessibility.TrySelectMenuItem(nativeWin, steps, out var failure))
-						_ = Errors.ValueErrorOccurred(failure ?? "Could not find menu.", $"{title}, {text}, {menu}, {sub1}, {sub2}, {sub3}, {sub4}, {sub5}, {sub6}, {excludeTitle}, {excludeText}");
+					if (!Keysharp.Internals.Window.MacOS.MacAccessibility.TrySelectMenuItem(nativeWin, steps, out var invalidPath, out var failure))
+					{
+						if (invalidPath)
+							_ = Errors.ValueErrorOccurred(failure ?? "Could not find menu.", string.Join(" > ", steps));
+						else
+							_ = Errors.OSErrorOccurredWithMessage($"MenuSelect failed: {failure}");
+					}
 				}
 #endif
 			}

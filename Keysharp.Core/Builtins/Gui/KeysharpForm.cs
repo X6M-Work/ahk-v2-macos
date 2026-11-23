@@ -17,7 +17,8 @@ namespace Keysharp.Builtins
 		internal object eventObj;
 		internal bool showWithoutActivation;
 		internal CallbackRegistry sizeHandlers;
-		private readonly int addStyle, addExStyle, removeStyle, removeExStyle;
+		private readonly int addStyle, removeStyle;
+		private int addExStyle, removeExStyle;
 		internal bool beenShown = false;
 		internal bool beenConstructed = false;
 		internal bool clickThrough;
@@ -378,6 +379,20 @@ namespace Keysharp.Builtins
 			roundedCorners = enable;
 #if WINDOWS
 			ApplyRoundedCorners(enable);
+#endif
+		}
+
+		internal void SetAlwaysOnTop(bool enable)
+		{
+#if WINDOWS
+			//Form.TopMost can activate the window; keep its style and z-order changes from affecting focus.
+			addExStyle = enable ? addExStyle | WindowsAPI.WS_EX_TOPMOST : addExStyle & ~WindowsAPI.WS_EX_TOPMOST;
+			removeExStyle = enable ? removeExStyle & ~WindowsAPI.WS_EX_TOPMOST : removeExStyle | WindowsAPI.WS_EX_TOPMOST;
+
+			if (IsHandleCreated)
+				_ = Platform.Window.TrySetAlwaysOnTop(Handle, enable);
+#else
+			TopMost = enable;
 #endif
 		}
 
