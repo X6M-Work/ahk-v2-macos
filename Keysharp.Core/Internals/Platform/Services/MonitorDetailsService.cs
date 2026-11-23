@@ -783,8 +783,8 @@ namespace Keysharp.Internals
 		}
 
 		/// <summary>
-		/// Finds the CGDirectDisplayID whose bounds match this display. Matching on geometry rather than asking
-		/// AppKit for NSScreenNumber keeps the lookup on the thread-safe CoreGraphics path.
+		/// Uses the captured native CGDirectDisplayID; missing or out-of-range IDs remain unresolved.
+		/// Resolution needs no native calls and is safe off the main thread.
 		/// </summary>
 		internal static bool TryResolveDisplayId(DisplayInfo display, out uint id)
 		{
@@ -794,7 +794,8 @@ namespace Keysharp.Internals
 				return true;
 			}
 
-			return TryResolveDisplayId(display.Bounds, out id);
+			id = 0;
+			return false;
 		}
 
 		internal static bool TryResolveDisplayId(ScreenRect displayBounds, out uint id)
