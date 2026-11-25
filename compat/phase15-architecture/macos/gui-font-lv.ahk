@@ -6,7 +6,7 @@
 OnError((err, mode) => (FileAppend("ERROR:" err.Message "`n", "**", "UTF-8-RAW"), ExitApp(1)))
 
 g := Gui()
-g.SetFont("s11 Bold")
+g.SetFont("s12 Bold")
 fh := g.FontHandle
 fSnap := g.Font
 
@@ -23,6 +23,6 @@ lv.ClearColors()
 rowCount := lv.GetCount()
 g.Destroy()
 
-ok := (fh != 0) && (fSnap.Size == 11) && (tw >= 200) && (th >= 100) && (rowCount == 2)
-FileAppend("gui-font-lv:" (ok ? "ok" : fh "|" fSnap.Size "|" tw "|" th "|" rowCount) "`n", "*", "UTF-8-RAW")
+ok := (fh != 0) && (fSnap.Size == 12) && (fSnap.Weight == 700) && (tw >= 200) && (th >= 100) && (rowCount == 2)
+FileAppend("gui-font-lv:" (ok ? "ok" : fh "|" fSnap.Size "|" fSnap.Weight "|" tw "|" th "|" rowCount) "`n", "*", "UTF-8-RAW")
 ExitApp()
