@@ -70,7 +70,7 @@ public class MacInputArrayTests : TestRunner
 			var finalDelay = -1L;
 			sender.SendEventArray(ref finalDelay, 0);
 			var expected = drag ? new[] { (99, 50), (99, 50), (89, 50), (89, 50) } : new[] { (99, 50), (89, 50) };
-			CollectionAssert.AreEqual(expected, sender.DispatchedMousePositions);
+			Assert.That(sender.DispatchedMousePositions, Is.EqualTo(expected).AsCollection);
 		}
 		finally { sender.AbortEventArray(); }
 	}

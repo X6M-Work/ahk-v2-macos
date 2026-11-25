@@ -1,0 +1,9 @@
+tcf_ok=TEF
+tcf_err=TC:bad arg:xF
+ret_fin=77|in-fin
+err_hier=11111111
+sw=ab|def|G|def
+until=123
+loop_else0=else
+loop_else_brk=no
+labeled=11,12,13,21,31,

@@ -560,19 +560,19 @@ public class MacInputTests
 		Assert.IsTrue(stream.SetMovementSuppressed(true));
 		Assert.IsTrue(stream.MovementSuppressed);
 		// Stepping off the whole-point cursor position and back starts the hold and realigns WindowServer's pointer.
-		CollectionAssert.AreEqual(new[] { (heldX + 1, heldY, hold), (heldX, heldY, hold) }, sink.Warps);
+		Assert.That(sink.Warps, Is.EqualTo(new[] { (heldX + 1, heldY, hold), (heldX, heldY, hold) }).AsCollection);
 		Assert.IsTrue(stream.TryGetPosition(out var position));
 		Assert.AreEqual((heldX, heldY), (position.X, position.Y));
 
 		sink.Warps.Clear();
 		stream.RefreshHold();
-		CollectionAssert.AreEqual(new[] { (heldX, heldY, hold) }, sink.Warps);
+		Assert.That(sink.Warps, Is.EqualTo(new[] { (heldX, heldY, hold) }).AsCollection);
 
 		sink.Warps.Clear();
 		Assert.IsTrue(stream.SetMovementSuppressed(false));
 		Assert.IsFalse(stream.MovementSuppressed);
 		// A zero interval ends the hold at once; the interval in effect before suppression returns.
-		CollectionAssert.AreEqual(new[] { (heldX + 1, heldY, 0.0), (heldX, heldY, 0.0) }, sink.Warps);
+		Assert.That(sink.Warps, Is.EqualTo(new[] { (heldX + 1, heldY, 0.0), (heldX, heldY, 0.0) }).AsCollection);
 		Assert.AreEqual(0.25, sink.HoldInterval);
 
 		sink.Warps.Clear();
@@ -648,7 +648,7 @@ public class MacInputTests
 		Assert.IsTrue(stream.MoveRelative(-2, 4, KeyIgnore));
 		Assert.IsTrue(stream.TryGetPosition(out var position));
 		Assert.AreEqual((103, 201), (position.X, position.Y));
-		CollectionAssert.AreEqual(new[] { (105, 197), (103, 201) }, sink.Moves);
+		Assert.That(sink.Moves, Is.EqualTo(new[] { (105, 197), (103, 201) }).AsCollection);
 	}
 
 	[Test, Category("Input")]
@@ -685,12 +685,12 @@ public class MacInputTests
 
 		// Without suppression the warp must not hold physical movement afterwards.
 		stream.Realign();
-		CollectionAssert.AreEqual(new[] { (51, 60, 0.0), (50, 60, 0.0) }, sink.Warps);
+		Assert.That(sink.Warps, Is.EqualTo(new[] { (51, 60, 0.0), (50, 60, 0.0) }).AsCollection);
 		Assert.AreEqual(0.25, sink.HoldInterval);
 
 		sink.Warps.Clear();
 		stream.Warp(99, 20);
-		CollectionAssert.AreEqual(new[] { (98, 20, 0.0), (99, 20, 0.0) }, sink.Warps);
+		Assert.That(sink.Warps, Is.EqualTo(new[] { (98, 20, 0.0), (99, 20, 0.0) }).AsCollection);
 		Assert.IsTrue(stream.TryGetPosition(out var position));
 		Assert.AreEqual((99, 20), (position.X, position.Y));
 
@@ -698,7 +698,7 @@ public class MacInputTests
 		sink.Warps.Clear();
 		stream.Realign();
 		var hold = MacMouseEventStream.HoldSeconds;
-		CollectionAssert.AreEqual(new[] { (98, 20, hold), (99, 20, hold) }, sink.Warps);
+		Assert.That(sink.Warps, Is.EqualTo(new[] { (98, 20, hold), (99, 20, hold) }).AsCollection);
 	}
 
 	[Test, Category("Input")]
@@ -891,7 +891,7 @@ public class MacInputTests
 		var expectedWarps = operation == "Refresh"
 			? new[] { (expectedX, expectedY, hold) }
 			: new[] { (expectedX + 1, expectedY, hold), (expectedX, expectedY, hold) };
-		CollectionAssert.AreEqual(expectedWarps, sink.Warps);
+		Assert.That(sink.Warps, Is.EqualTo(expectedWarps).AsCollection);
 		Assert.IsTrue(stream.TryGetPosition(out var position));
 		Assert.AreEqual((expectedX, expectedY), (position.X, position.Y));
 	}

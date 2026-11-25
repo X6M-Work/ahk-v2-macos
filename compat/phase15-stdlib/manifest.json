@@ -102,6 +102,24 @@
       "category": "stdlib",
       "script": "object-closure-contracts.ahk",
       "expected_stdout": "golden/object-closure-contracts.txt"
+    },
+    {
+      "id": "env-cli-contracts",
+      "category": "stdlib",
+      "script": "env-cli-contracts.ahk",
+      "expected_stdout": "golden/env-cli-contracts.txt"
+    },
+    {
+      "id": "buffer-struct-contracts",
+      "category": "stdlib",
+      "script": "buffer-struct-contracts.ahk",
+      "expected_stdout": "golden/buffer-struct-contracts.txt"
+    },
+    {
+      "id": "error-flow-contracts",
+      "category": "stdlib",
+      "script": "error-flow-contracts.ahk",
+      "expected_stdout": "golden/error-flow-contracts.txt"
     }
   ]
 }

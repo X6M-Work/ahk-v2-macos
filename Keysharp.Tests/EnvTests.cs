@@ -104,9 +104,9 @@ public class EnvTests : TestRunner
 #elif OSX
 		Assert.AreEqual(2, commands.Count);
 		Assert.AreEqual("/bin/launchctl", commands[0].FileName);
-		CollectionAssert.AreEqual(new[] { "unsetenv", "KEYSHARP_ENV_DELETE" }, commands[0].Arguments);
+		Assert.That(commands[0].Arguments, Is.EqualTo(new[] { "unsetenv", "KEYSHARP_ENV_DELETE" }).AsCollection);
 		Assert.AreEqual("/bin/launchctl", commands[1].FileName);
-		CollectionAssert.AreEqual(new[] { "setenv", "KEYSHARP_ENV_SET", "value with spaces" }, commands[1].Arguments);
+		Assert.That(commands[1].Arguments, Is.EqualTo(new[] { "setenv", "KEYSHARP_ENV_SET", "value with spaces" }).AsCollection);
 #endif
 	}
 #endif

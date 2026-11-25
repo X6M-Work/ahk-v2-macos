@@ -9,7 +9,7 @@ namespace Keysharp.Internals
 		/// </summary>
 		internal static class Desktop
 		{
-#if WINDOWS
+#if WINDOWS || OSX
 			internal static bool IsWaylandSession => false;
 			internal static bool IsX11Available => false;
 			internal static bool IsGnome => false;
@@ -31,11 +31,7 @@ namespace Keysharp.Internals
 			internal static bool IsLxde => isLxde;
 
 			internal static bool IsX11Available =>
-#if OSX
-				false;
-#else
 				!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"));
-#endif
 
 			// XDG_SESSION_TYPE is authoritative: an X11 session can inherit a stray WAYLAND_DISPLAY (a nested
 			// XWayland/leaked env var), and OR-ing WAYLAND_DISPLAY unconditionally would then wrongly route that

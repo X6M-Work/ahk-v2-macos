@@ -1,0 +1,13 @@
+env1=alpha=beta
+env2=updated value
+env3=empty
+sort_num=1,2,10,30
+sort_rev=c|b|a
+sort_fn=ki,fig,pear,apple
+split=3:a|b|c , d
+trim=hi|ab|ab
+substr=def|bcd
+instr=4|5
+strrep=X-two-X-three-one|2
+re_match=1|42|Keysharp|12|8
+re_rep=25/11/2026
