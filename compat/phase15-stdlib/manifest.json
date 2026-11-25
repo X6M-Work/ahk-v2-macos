@@ -120,6 +120,36 @@
       "category": "stdlib",
       "script": "error-flow-contracts.ahk",
       "expected_stdout": "golden/error-flow-contracts.txt"
+    },
+    {
+      "id": "array-map-contracts",
+      "category": "stdlib",
+      "script": "array-map-contracts.ahk",
+      "expected_stdout": "golden/array-map-contracts.txt"
+    },
+    {
+      "id": "func-variadic-contracts",
+      "category": "stdlib",
+      "script": "func-variadic-contracts.ahk",
+      "expected_stdout": "golden/func-variadic-contracts.txt"
+    },
+    {
+      "id": "class-meta-contracts",
+      "category": "stdlib",
+      "script": "class-meta-contracts.ahk",
+      "expected_stdout": "golden/class-meta-contracts.txt"
+    },
+    {
+      "id": "loop-parse-read-contracts",
+      "category": "stdlib",
+      "script": "loop-parse-read-contracts.ahk",
+      "expected_stdout": "golden/loop-parse-read-contracts.txt"
+    },
+    {
+      "id": "prototype-reflect-contracts",
+      "category": "stdlib",
+      "script": "prototype-reflect-contracts.ahk",
+      "expected_stdout": "golden/prototype-reflect-contracts.txt"
     }
   ]
 }

@@ -1,0 +1,13 @@
+arr_ops=50|30|4|10,15,20,40|40
+arr_del=0|miss|10
+arr_sparse=1:10,2:_,3:20,4:40,
+arr_clone=10|999
+arr_shrink=2|0|10
+arr_grow=4|0
+map_ci=Off|1|1|2
+map_def=fallback|override
+map_keys=int1|str1|5
+map_del=2|0|4
+map_clone=1|100
+map_clear=0
+map_cs=On|upper|lower|2

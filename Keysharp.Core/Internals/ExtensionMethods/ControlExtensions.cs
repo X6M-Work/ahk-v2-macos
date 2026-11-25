@@ -308,6 +308,32 @@ namespace System.Windows.Forms
 			return parents;
 		}
 
+		internal static void AdjustSize(this KeysharpTabControl control, double dpiscale, Size requestedSize)
+		{
+			if (requestedSize.Width != int.MinValue && requestedSize.Height != int.MinValue)
+			{
+				control.SetSize(requestedSize);
+				return;
+			}
+
+			var width = 0.0;
+			var height = 0.0;
+			foreach (TabPage page in control.TabPages)
+			{
+				var (right, bottom) = page.RightBottomMost();
+				if (right != null)
+					width = Math.Max(width, control.TabWidth() + right.Right + page.Margin.Right + control.Margin.Right);
+				if (bottom != null)
+					height = Math.Max(height, control.TabHeight() + bottom.Bottom + page.Margin.Bottom + control.Margin.Bottom * dpiscale);
+			}
+
+			//Empty pages retain the tab's existing size.
+			var size = control.GetSize();
+			control.SetSize(new Size(
+				requestedSize.Width != int.MinValue ? requestedSize.Width : width > 0 ? Convert.ToInt32(width) : size.Width,
+				requestedSize.Height != int.MinValue ? requestedSize.Height : height > 0 ? Convert.ToInt32(height) : size.Height));
+		}
+
 		/// <summary>
 		/// Finds the first tab within a <see cref="TabControl"/> whose text matches text.<br/>
 		/// The search is case insensitive.
@@ -478,18 +504,13 @@ namespace System.Windows.Forms
 					var controlScreen = control.PointToScreen(Point.Empty);
 					var formScreen = form.PointToScreen(Point.Empty);
 
-					//Measured from the CONTENT, not the toplevel widget: the menu bar and toolbars pack above it
-					//and client-side decorations sit outside it, so measuring from the window reports every
-					//control short by that inset. Client coordinates exclude the menu, as Win32's do.
-					//Equal origins carry no correction to make: the toolkit answers with the toplevel's own for
-					//a control it has not placed yet, and a form without content has nothing to anchor on.
-					if (controlScreen != formScreen && form.Content is Control content)
+					//Client coordinates exclude menus and decorations. Unplaced widgets may report the
+					//form's origin; fall back to their stored positions in that case.
+					if (controlScreen != formScreen)
 					{
-						var contentScreen = content.PointToScreen(Point.Empty);
-						return new Point(Convert.ToInt32(controlScreen.X - contentScreen.X), Convert.ToInt32(controlScreen.Y - contentScreen.Y));
+						var origin = form.Content is Control content ? content.PointToScreen(Point.Empty) : formScreen;
+						return new Point(Convert.ToInt32(controlScreen.X - origin.X), Convert.ToInt32(controlScreen.Y - origin.Y));
 					}
-
-					return new Point(Convert.ToInt32(controlScreen.X - formScreen.X), Convert.ToInt32(controlScreen.Y - formScreen.Y));
 				}
 				catch
 				{
@@ -499,11 +520,6 @@ namespace System.Windows.Forms
 
 			Point p = control.GetLocation();
 			Control parent = control.Parent;
-
-#if !WINDOWS
-			if (form != null)
-				p.Offset(form.Margin.Left, form.Margin.Top);
-#endif
 
 			// This is done like this because Control.PointToScreen and similar functions
 			// apparently don't always work correctly if the Form is hidden.

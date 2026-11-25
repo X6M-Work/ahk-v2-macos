@@ -1,0 +1,7 @@
+parse_std=1:one|2:two|3:three|
+parse_csv=1:a|2:b,c|3:d"e|4:f|
+parse_chr=1=X,2=Y,3=Z,
+loop_read=1:first|2:second|3:third|
+case=abc|ABC|Hello World
+strcmp=1|1
+ver=1|1|-1

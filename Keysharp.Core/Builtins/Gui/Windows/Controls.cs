@@ -1102,33 +1102,6 @@ namespace Keysharp.Builtins
 			//SetStyle(ControlStyles.SupportsTransparentBackColor, true);
 		}
 
-		internal void AdjustSize(double dpiscale, Size requestedSize)
-		{
-			if (requestedSize.Width != int.MinValue && requestedSize.Height != int.MinValue)
-			{
-				Width = requestedSize.Width;
-				Height = requestedSize.Height;
-				return;
-			}
-
-			var tempw = 0.0;
-			var temph = 0.0;
-
-			foreach (TabPage tp in TabPages)
-			{
-				(Control right, Control bottom) rb = tp.RightBottomMost();
-
-				if (rb.right != null)
-					tempw = Math.Max(tempw, this.TabWidth() + rb.right.Right + (tp.Margin.Right + Margin.Right));
-
-				if (rb.bottom != null)
-					temph = Math.Max(temph, this.TabHeight() + rb.bottom.Bottom + (tp.Margin.Bottom + (Margin.Bottom * dpiscale)));
-			}
-
-			Width  = requestedSize.Width == int.MinValue ? Convert.ToInt32(tempw) : requestedSize.Width;
-			Height = requestedSize.Height == int.MinValue ? Convert.ToInt32(temph) : requestedSize.Height;
-		}
-
 		internal void SetColor(Color color)
 		{
 			bgcolor = color;

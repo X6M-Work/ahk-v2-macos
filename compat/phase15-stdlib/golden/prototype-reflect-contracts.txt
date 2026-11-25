@@ -1,0 +1,5 @@
+defprop=42|84|50|42|1|1
+owncnt=3
+reflect=1|1|hi mac
+conv=31|150.00|Integer|Float|123
+is_t=1|1|0|1|1|1|1

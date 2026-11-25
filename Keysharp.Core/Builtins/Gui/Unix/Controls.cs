@@ -1755,36 +1755,6 @@ namespace Keysharp.Builtins
 #endif
 		}
 
-		internal void AdjustSize(double dpiscale, Size requestedSize)
-		{
-			if (requestedSize.Width != int.MinValue && requestedSize.Height != int.MinValue)
-			{
-				Width = requestedSize.Width;
-				Height = requestedSize.Height;
-				return;
-			}
-
-			var tempw = 0.0;
-			var temph = 0.0;
-
-			foreach (TabPage tp in Pages)
-			{
-				(Control right, Control bottom) rb = tp.RightBottomMost();
-
-				if (rb.right != null)
-					tempw = Math.Max(tempw, this.TabWidth() + rb.right.Right + (tp.Margin.Right + this.Margin.Right));
-
-				if (rb.bottom != null)
-					temph = Math.Max(temph, this.TabHeight() + rb.bottom.Bottom + (tp.Margin.Bottom + (this.Margin.Bottom * dpiscale)));
-			}
-
-			var newSize = new Size(
-				requestedSize.Width == int.MinValue ? Convert.ToInt32(tempw) : requestedSize.Width,
-				requestedSize.Height == int.MinValue ? Convert.ToInt32(temph) : requestedSize.Height);
-
-			this.SetSize(newSize);
-		}
-
 		internal void SetColor(Color color)
 		{
 			bgcolor = color;

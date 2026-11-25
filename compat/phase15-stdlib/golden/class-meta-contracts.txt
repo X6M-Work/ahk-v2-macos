@@ -1,0 +1,7 @@
+box_init=1|5|8
+box_set=20|21
+box_idx=26
+dyn=bar|none:missing|call:ping:3
+props=1|1|1|1
+own=0|b=2,
+types=Integer|Float|String|Box|1|1|1|1|1|1
