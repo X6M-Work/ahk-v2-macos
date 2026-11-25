@@ -11,7 +11,7 @@ public class ImageTests : TestRunner
 		Assert.IsTrue(TestScript("image", false));
 	}
 
-	[Test, Category("Image"), Category("Desktop")]
+	[Test, Category("Image"), Category("Desktop"), Category("Curated")]
 	public void VectorDrawing()
 	{
 		if (Script.IsHeadless)
@@ -20,7 +20,7 @@ public class ImageTests : TestRunner
 		Assert.IsTrue(TestScript("image-vector", false));
 	}
 
-	[Test, Category("Image"), Category("Internal"), Category("Desktop")]
+	[Test, Category("Image"), Category("Internal"), Category("Desktop"), Category("Curated")]
 	public void DrawImageResources()
 	{
 		if (Script.IsHeadless)
@@ -36,7 +36,7 @@ public class ImageTests : TestRunner
 		Assert.That(canvas.PendingResourcesCount, Is.Zero);
 	}
 
-	[Test, Category("Image"), Category("Internal"), Category("Desktop")]
+	[Test, Category("Image"), Category("Internal"), Category("Desktop"), Category("Curated")]
 	public void OverlaySurfaceReadBoundary()
 	{
 		if (Script.IsHeadless)

@@ -1,0 +1,8 @@
+sc_and=second|0|0
+sc_or=fallback|kept|0
+eq=1|0|0|1
+idiv=3|-3|-3|3
+pow=512|-8|-4
+shift=32|-4|15
+comp=29|hi!
+bvars=1|1|1|ThisName|8

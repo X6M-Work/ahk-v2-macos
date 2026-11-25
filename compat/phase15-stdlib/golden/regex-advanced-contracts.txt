@@ -1,0 +1,8 @@
+ungreedy=1|one|1
+multiline=7|Alpha
+look=4|123
+negstart=10|456
+mark=1|c
+rep_lim=1-a 2-b c3|2
+rep_dollar=price=$5
+re_op=6|0

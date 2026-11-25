@@ -150,6 +150,24 @@
       "category": "stdlib",
       "script": "prototype-reflect-contracts.ahk",
       "expected_stdout": "golden/prototype-reflect-contracts.txt"
+    },
+    {
+      "id": "date-math-round-contracts",
+      "category": "stdlib",
+      "script": "date-math-round-contracts.ahk",
+      "expected_stdout": "golden/date-math-round-contracts.txt"
+    },
+    {
+      "id": "regex-advanced-contracts",
+      "category": "stdlib",
+      "script": "regex-advanced-contracts.ahk",
+      "expected_stdout": "golden/regex-advanced-contracts.txt"
+    },
+    {
+      "id": "operators-expr-contracts",
+      "category": "stdlib",
+      "script": "operators-expr-contracts.ahk",
+      "expected_stdout": "golden/operators-expr-contracts.txt"
     }
   ]
 }
