@@ -1,0 +1,14 @@
+sp_win|archive.tar.gz|C:\Folder\Sub|gz|archive.tar|C:
+sp_url|index.html|https://example.com/a/b|html|index|https://example.com
+sp_bare|plainfile|||plainfile|
+dir_exist|1
+file_exist|1
+file_size|11
+copy_read|hello world
+move_old|1
+move_new|hello world
+dircopy_ok|1
+dirmove_old|1
+dirmove_new|1
+filedel_ok|1
+cleanup_ok|1

@@ -338,13 +338,44 @@ namespace Keysharp.Builtins
 			}
 			else
 			{
-				var input = p == "" ? "" : Path.GetFullPath(p);
+				if (p.Length == 0)
+				{
+					fileName?.Set("");
+					extension?.Set("");
+					nameNoExt?.Set("");
+					dir?.Set("");
+					drive?.Set("");
+				}
+				else if (p.Length >= 2 && char.IsAsciiLetter(p[0]) && p[1] == ':')
+				{
+					// Windows drive-qualified path (portable across Windows, macOS, and Linux).
+					var normalized = OperatingSystem.IsWindows() ? p.Replace('/', '\\') : p;
+					var sep = normalized.LastIndexOfAny(['\\', '/']);
+					var file = sep >= 0 ? normalized[(sep + 1)..] : normalized[2..];
+					var dirPart = sep >= 0 ? normalized[..sep].TrimEnd('\\', '/') : normalized[..2];
+					var dot = file.LastIndexOf('.');
 
-				fileName?.Set(Path.GetFileName(input));
-				extension?.Set(Path.GetExtension(input).Trim('.'));
-				nameNoExt?.Set(Path.GetFileNameWithoutExtension(input));
-				dir?.Set(Path.GetDirectoryName(input)?.TrimEnd('\\') ?? "");
-				drive?.Set(Path.GetPathRoot(input)?.TrimEnd('\\') ?? "");
+					fileName?.Set(file);
+					extension?.Set(dot >= 0 ? file[(dot + 1)..] : "");
+					nameNoExt?.Set(dot >= 0 ? file[..dot] : file);
+					dir?.Set(dirPart);
+					drive?.Set(normalized[..2]);
+				}
+				else
+				{
+					// Pure string split without resolving relative paths against the working directory.
+					var normalized = OperatingSystem.IsWindows() ? p.Replace('/', '\\') : p;
+					var sep = normalized.LastIndexOfAny(['\\', '/']);
+					var file = sep >= 0 ? normalized[(sep + 1)..] : normalized;
+					var dirPart = sep > 0 ? normalized[..sep].TrimEnd('\\', '/') : sep == 0 ? normalized[..1] : "";
+					var dot = file.LastIndexOf('.');
+
+					fileName?.Set(file);
+					extension?.Set(dot >= 0 ? file[(dot + 1)..] : "");
+					nameNoExt?.Set(dot >= 0 ? file[..dot] : file);
+					dir?.Set(dirPart);
+					drive?.Set(sep >= 0 && normalized[0] is '\\' or '/' ? normalized[..1] : "");
+				}
 			}
 
 			return (object)result ?? DefaultObject;

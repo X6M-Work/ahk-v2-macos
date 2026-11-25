@@ -84,6 +84,12 @@
       "category": "stdlib",
       "script": "math-bit-format-contracts.ahk",
       "expected_stdout": "golden/math-bit-format-contracts.txt"
+    },
+    {
+      "id": "path-fileops-contracts",
+      "category": "stdlib",
+      "script": "path-fileops-contracts.ahk",
+      "expected_stdout": "golden/path-fileops-contracts.txt"
     }
   ]
 }

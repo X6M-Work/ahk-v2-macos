@@ -1,3 +1,4 @@
+using System.Globalization;
 using static Keysharp.Internals.Scripting.CompileDaemonProtocol;
 
 namespace Keysharp.Main;
@@ -13,8 +14,14 @@ namespace Keysharp.Main;
 /// </summary>
 internal static class CompileServer
 {
-	// Idle shutdown so an abandoned daemon does not linger forever (mirrors VBCSCompiler behavior).
-	private static readonly TimeSpan IdleTimeout = TimeSpan.FromHours(4);
+	// Idle shutdown so an abandoned daemon does not linger forever. A day keeps the compiler warm from one
+	// working session to the next; a daemon unused for longer is unlikely to be needed soon.
+	private static readonly TimeSpan DefaultIdleTimeout = TimeSpan.FromHours(24);
+
+	// How long the daemon waits for another request before it hands back the memory the last compiles left
+	// committed. Short enough not to hold it through a pause in work, long enough that an edit-and-rerun loop
+	// never pays for committing it again.
+	private static readonly TimeSpan DefaultReleaseMemoryDelay = TimeSpan.FromSeconds(60);
 
 	/// <summary>
 	/// Pipe name keyed on build fingerprint + user, so a client only connects to its own user's daemon of the
@@ -199,12 +206,18 @@ internal static class CompileServer
 		ShutdownWindow.StartShutdownListener();
 #endif
 
+		var idleTimeout = ReadTimeout("KEYSHARP_DAEMON_IDLE_TIMEOUT", DefaultIdleTimeout);
+		var releaseMemoryDelay = ReadTimeout("KEYSHARP_DAEMON_GC_DELAY", DefaultReleaseMemoryDelay);
+
 		// Deliberately no priority tuning here. Lowering the process to BelowNormal for the duration of
 		// the warmup - on the theory that it should yield to the client compiling the same script in the
 		// foreground - measured consistently SLOWER (4.4 s cold against 3.5 s), so it was removed.
 		Warmup(ch, exeDir);
 
-		Log($"listening on pipe '{PipeName}' (idle timeout {IdleTimeout.TotalHours:0} h).");
+		Log($"listening on pipe '{PipeName}' (idle timeout {idleTimeout.TotalSeconds:0} s, memory release delay {releaseMemoryDelay.TotalSeconds:0} s).");
+
+		// The warm-up compile leaves its share behind as a request does.
+		var releaseMemory = true;
 
 		while (true)
 		{
@@ -233,7 +246,7 @@ internal static class CompileServer
 			{
 				try
 				{
-					if (!WaitForConnection(server, IdleTimeout))
+					if (!WaitForConnection(server, idleTimeout, releaseMemoryDelay, ref releaseMemory))
 					{
 						Log("idle timeout reached, exiting.");
 						return 0;
@@ -254,8 +267,20 @@ internal static class CompileServer
 					// A single bad request must not take down the daemon.
 					Log($"request failed: {ex.Message}");
 				}
+				finally
+				{
+					releaseMemory = true;
+				}
 			}
 		}
+	}
+
+	// A compile allocates hundreds of megabytes, and server GC keeps that committed while nothing allocates, so
+	// an idle daemon would hold it until it exits.
+	private static void ReleaseMemory()
+	{
+		System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+		GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
 	}
 
 	private static void SetDaemonWorkingDirectory(string exeDir)
@@ -271,11 +296,39 @@ internal static class CompileServer
 		}
 	}
 
-	private static bool WaitForConnection(NamedPipeServerStream server, TimeSpan timeout)
+	private static TimeSpan ReadTimeout(string name, TimeSpan defaultValue)
 	{
+		var value = Environment.GetEnvironmentVariable(name);
+
+		if (string.IsNullOrWhiteSpace(value))
+			return defaultValue;
+
+		// Task.Wait accepts at most Int32.MaxValue milliseconds.
+		if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seconds)
+			&& seconds > 0 && seconds <= int.MaxValue / 1000)
+			return TimeSpan.FromSeconds(seconds);
+
+		Log($"invalid {name} value '{value}'; expected whole seconds from 1 to {int.MaxValue / 1000}, using {defaultValue.TotalSeconds:0} s.");
+		return defaultValue;
+	}
+
+	private static bool WaitForConnection(NamedPipeServerStream server, TimeSpan timeout, TimeSpan releaseMemoryDelay, ref bool releaseMemory)
+	{
+		var watch = Stopwatch.StartNew();
 		var task = server.WaitForConnectionAsync();
 
-		if (task.Wait(timeout))
+		if (releaseMemory && releaseMemoryDelay < timeout)
+		{
+			if (task.Wait(releaseMemoryDelay))
+				return true;
+
+			releaseMemory = false;
+			ReleaseMemory();
+		}
+
+		var remaining = timeout - watch.Elapsed;
+
+		if (task.Wait(remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero))
 			return true;
 
 		// Unblock the pending async accept so the stream can be disposed cleanly.
