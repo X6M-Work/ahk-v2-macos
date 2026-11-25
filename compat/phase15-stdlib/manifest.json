@@ -90,6 +90,18 @@
       "category": "stdlib",
       "script": "path-fileops-contracts.ahk",
       "expected_stdout": "golden/path-fileops-contracts.txt"
+    },
+    {
+      "id": "file-object-contracts",
+      "category": "stdlib",
+      "script": "file-object-contracts.ahk",
+      "expected_stdout": "golden/file-object-contracts.txt"
+    },
+    {
+      "id": "object-closure-contracts",
+      "category": "stdlib",
+      "script": "object-closure-contracts.ahk",
+      "expected_stdout": "golden/object-closure-contracts.txt"
     }
   ]
 }

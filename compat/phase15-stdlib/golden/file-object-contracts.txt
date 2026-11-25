@@ -1,0 +1,8 @@
+txt_len|16
+txt_lines|alpha|beta|gamma|eof=1
+txt_read5|alpha|pos=5
+txt_appended|alpha/beta/gamma|end
+bin_len|31
+bin_vals|200|-12345|305419896|-9876543210123|1.50|3.25
+bin_raw|4|11,22,33,44|eof=1
+bin_seek_end|27|11
