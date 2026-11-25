@@ -12,6 +12,8 @@
     {"id":"macos-gui-font-lv","category":"native-capability","script":"gui-font-lv.ahk","expected_stdout":"golden/gui-font-lv.txt","platforms":["Darwin"]},
     {"id":"macos-sysctl-mach","category":"native-capability","script":"sysctl-mach.ahk","expected_stdout":"golden/sysctl-mach.txt","platforms":["Darwin"]},
     {"id":"macos-richedit-overlay","category":"native-capability","script":"richedit-overlay.ahk","expected_stdout":"golden/richedit-overlay.txt","platforms":["Darwin"]},
-    {"id":"macos-gui-controls-coords","category":"native-capability","script":"gui-controls-coords.ahk","expected_stdout":"golden/gui-controls-coords.txt","platforms":["Darwin"]}
+    {"id":"macos-gui-controls-coords","category":"native-capability","script":"gui-controls-coords.ahk","expected_stdout":"golden/gui-controls-coords.txt","platforms":["Darwin"]},
+    {"id":"macos-gui-onmessage","category":"native-capability","script":"gui-onmessage.ahk","expected_stdout":"golden/gui-onmessage.txt","platforms":["Darwin"]},
+    {"id":"macos-menu-bar","category":"native-capability","script":"menu-bar.ahk","expected_stdout":"golden/menu-bar.txt","platforms":["Darwin"]}
   ]
 }

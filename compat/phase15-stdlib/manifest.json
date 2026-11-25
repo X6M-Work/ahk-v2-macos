@@ -168,6 +168,18 @@
       "category": "stdlib",
       "script": "operators-expr-contracts.ahk",
       "expected_stdout": "golden/operators-expr-contracts.txt"
+    },
+    {
+      "id": "closures-recursion-contracts",
+      "category": "stdlib",
+      "script": "closures-recursion-contracts.ahk",
+      "expected_stdout": "golden/closures-recursion-contracts.txt"
+    },
+    {
+      "id": "number-format-base-contracts",
+      "category": "stdlib",
+      "script": "number-format-base-contracts.ahk",
+      "expected_stdout": "golden/number-format-base-contracts.txt"
     }
   ]
 }
