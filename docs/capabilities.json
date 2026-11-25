@@ -4128,7 +4128,7 @@
                      "windows":  "full",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "The ComValue class wraps a typed value. Off Windows, the type is a D-Bus signature on Linux or a four-character descriptor on macOS; supported VT_ constants are also accepted. VarType preserves the supplied notation and is assignable.",
                      "tested-by":  "external-com.ahk; DBusTests.ComValueVarTypeReadsBackAsGiven"
                  },
@@ -5722,7 +5722,7 @@
                      "windows":  "partial",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
+                     "macos":  "partial",
                      "notes":  "Optional font attributes and system font selections. Linux resolves unavailable GTK theme fonts through Pango substitution. GUI/image weights map to normal or bold; Windows RichEdit preserves numeric weights. Windows applies quality to GUI fonts and image text; other platforms reject non-default quality, as does per-range RichEdit formatting. Unspecified attributes follow reference.md\u0027s compatibility-mode rule; Options remains a valid empty string.",
                      "tested-by":  "ks-font.ahk; MiscTests.OptionalMetadata"
                  },
@@ -6297,7 +6297,7 @@
                      "windows":  "partial",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
+                     "macos":  "partial",
                      "notes":  "Detached Font snapshot; assignments apply only specified attributes. Weights map to normal or bold; non-default quality raises Error.",
                      "tested-by":  "ks-font.ahk"
                  },
@@ -6308,7 +6308,7 @@
                      "windows":  "full",
                      "linux_x11":  "full",
                      "linux_wayland":  "full",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Read-only borrowed native handle for the GUI\u0027s current default font: an HFONT on Windows, a PangoFontDescription* on Linux and an NSFont* on macOS, where it is unverified.",
                      "tested-by":  "ks-font.ahk"
                  },
@@ -6843,7 +6843,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Builds reusable paths from lines, cubic curves, arcs and basic shapes; supports linear and radial gradient brushes, affine drawing transforms, intersecting path clips, and saved drawing state. Windows rendering is verified; Linux and macOS build but remain unverified at runtime.",
                      "tested-by":  "image-vector.ahk"
                  },
@@ -7559,7 +7559,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Clears row and cell overrides and returns the control. Successful row/column insertion or deletion and sorting also clear all colors; unsorted Add and Modify retain them. Windows native properties verified without a visible window; Linux and macOS unverified."
                  },
                  {
@@ -7666,7 +7666,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Sets a cell foreground and background using GUI color names, hexadecimal strings or RGB integers. Omitted, empty or Default components inherit the row then control. Requires existing 1-based indices; returns the control. Windows native properties verified; Linux and macOS unverified."
                  },
                  {
@@ -7687,7 +7687,7 @@
                      "windows":  "full",
                      "linux_x11":  "unknown",
                      "linux_wayland":  "unknown",
-                     "macos":  "unknown",
+                     "macos":  "full",
                      "notes":  "Sets a row foreground and background using GUI colors. Omitted, empty or Default components inherit the control; cell overrides take precedence. Requires an existing 1-based row; returns the control. Structural edits and sorting clear assignments. Windows native properties verified; Linux and macOS unverified."
                  },
                  {

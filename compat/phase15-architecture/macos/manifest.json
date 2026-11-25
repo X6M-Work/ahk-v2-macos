@@ -10,6 +10,8 @@
     {"id":"macos-stack-abi-spilled","category":"native-abi","script":"stack-abi-spilled.ahk","expected_stdout":"golden/stack-abi-spilled.txt","assets":["stack-abi.c"],"platforms":["Darwin"]},
     {"id":"macos-image-vector","category":"native-capability","script":"image-vector.ahk","expected_stdout":"golden/image-vector.txt","platforms":["Darwin"]},
     {"id":"macos-gui-font-lv","category":"native-capability","script":"gui-font-lv.ahk","expected_stdout":"golden/gui-font-lv.txt","platforms":["Darwin"]},
-    {"id":"macos-sysctl-mach","category":"native-capability","script":"sysctl-mach.ahk","expected_stdout":"golden/sysctl-mach.txt","platforms":["Darwin"]}
+    {"id":"macos-sysctl-mach","category":"native-capability","script":"sysctl-mach.ahk","expected_stdout":"golden/sysctl-mach.txt","platforms":["Darwin"]},
+    {"id":"macos-richedit-overlay","category":"native-capability","script":"richedit-overlay.ahk","expected_stdout":"golden/richedit-overlay.txt","platforms":["Darwin"]},
+    {"id":"macos-gui-controls-coords","category":"native-capability","script":"gui-controls-coords.ahk","expected_stdout":"golden/gui-controls-coords.txt","platforms":["Darwin"]}
   ]
 }
