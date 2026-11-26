@@ -242,10 +242,10 @@
       "expected_stdout": "golden/file-encoding-seek-contracts.txt"
     },
     {
-      "id": "objptr-refcount-contracts",
+      "id": "obj-clone-base-contracts",
       "category": "stdlib",
-      "script": "objptr-refcount-contracts.ahk",
-      "expected_stdout": "golden/objptr-refcount-contracts.txt"
+      "script": "obj-clone-base-contracts.ahk",
+      "expected_stdout": "golden/obj-clone-base-contracts.txt"
     },
     {
       "id": "critical-thread-contracts",
