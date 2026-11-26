@@ -431,9 +431,9 @@ namespace Keysharp.Builtins
 
 				default:
 #if OSX
-					throw new NotImplementedException($"SysGet({sm}) has no macOS/Eto equivalent.");
+					return Errors.UnsupportedErrorOccurred($"SysGet({sm}) has no macOS/Eto equivalent.", 0L);
 #else
-					throw new NotImplementedException($"SysGet({sm}) has no Linux/Eto equivalent.");
+					return Errors.UnsupportedErrorOccurred($"SysGet({sm}) has no Linux/Eto equivalent.", 0L);
 #endif
 			}
 #elif WINDOWS

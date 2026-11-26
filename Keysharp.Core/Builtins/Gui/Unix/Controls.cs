@@ -785,7 +785,10 @@ namespace Keysharp.Builtins
 			set
 			{
 				if (value != View.Details)
-					throw new NotImplementedException("ListView view modes other than Report are not implemented on Linux.");
+				{
+					_ = Errors.UnsupportedErrorOccurred("ListView view modes other than Report are not supported on this platform.");
+					return;
+				}
 
 				ApplyHeaderStyle();
 			}
