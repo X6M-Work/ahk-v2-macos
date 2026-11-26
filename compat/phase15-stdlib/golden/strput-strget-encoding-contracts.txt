@@ -1,0 +1,4 @@
+sizes=10|14
+u8=10|1|caf
+u16=14|1|café
+lim=Error|3|abcA

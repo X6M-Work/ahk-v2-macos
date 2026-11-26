@@ -1,0 +1,3 @@
+instr=7|7|3|3
+sub=def|de|bcd|cde
+rep=xxaAa|2|xAxAx|3

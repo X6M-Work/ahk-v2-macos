@@ -540,6 +540,66 @@
       "category": "stdlib",
       "script": "closure-variadic-meta-contracts.ahk",
       "expected_stdout": "golden/closure-variadic-meta-contracts.txt"
+    },
+    {
+      "id": "format-flags-hexfloat-contracts",
+      "category": "stdlib",
+      "script": "format-flags-hexfloat-contracts.ahk",
+      "expected_stdout": "golden/format-flags-hexfloat-contracts.txt"
+    },
+    {
+      "id": "strput-strget-encoding-contracts",
+      "category": "stdlib",
+      "script": "strput-strget-encoding-contracts.ahk",
+      "expected_stdout": "golden/strput-strget-encoding-contracts.txt"
+    },
+    {
+      "id": "fileopen-modes-seek-contracts",
+      "category": "stdlib",
+      "script": "fileopen-modes-seek-contracts.ahk",
+      "expected_stdout": "golden/fileopen-modes-seek-contracts.txt"
+    },
+    {
+      "id": "error-hierarchy-props-contracts",
+      "category": "stdlib",
+      "script": "error-hierarchy-props-contracts.ahk",
+      "expected_stdout": "golden/error-hierarchy-props-contracts.txt"
+    },
+    {
+      "id": "array-map-props-edge-contracts",
+      "category": "stdlib",
+      "script": "array-map-props-edge-contracts.ahk",
+      "expected_stdout": "golden/array-map-props-edge-contracts.txt"
+    },
+    {
+      "id": "format-zero-pad-sign-contracts",
+      "category": "stdlib",
+      "script": "format-zero-pad-sign-contracts.ahk",
+      "expected_stdout": "golden/format-zero-pad-sign-contracts.txt"
+    },
+    {
+      "id": "math-round-min-max-contracts",
+      "category": "stdlib",
+      "script": "math-round-min-max-contracts.ahk",
+      "expected_stdout": "golden/math-round-min-max-contracts.txt"
+    },
+    {
+      "id": "string-in-sub-replace-contracts",
+      "category": "stdlib",
+      "script": "string-in-sub-replace-contracts.ahk",
+      "expected_stdout": "golden/string-in-sub-replace-contracts.txt"
+    },
+    {
+      "id": "regex-replace-backref-edge-contracts",
+      "category": "stdlib",
+      "script": "regex-replace-backref-edge-contracts.ahk",
+      "expected_stdout": "golden/regex-replace-backref-edge-contracts.txt"
+    },
+    {
+      "id": "func-bind-boundfunc-contracts",
+      "category": "stdlib",
+      "script": "func-bind-boundfunc-contracts.ahk",
+      "expected_stdout": "golden/func-bind-boundfunc-contracts.txt"
     }
   ]
 }

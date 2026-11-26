@@ -1,0 +1,5 @@
+sign=+00042|-00042|     7|hi    
+trunc=abc|ab   |   ab
+alt=0xff|0XFF|0|0100|5.
+gen=123.45|1.23457E+06|0.0001234|1.234E+04
+case=ABC|abc|Hello World

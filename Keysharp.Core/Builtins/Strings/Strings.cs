@@ -2176,7 +2176,12 @@ namespace Keysharp.Builtins
 						if (spec.LeftAlign)
 							hexStr += new string(' ', pad);
 						else if (spec.ZeroPad)
-							hexStr = new string('0', pad) + hexStr;
+						{
+							if (spec.Alternate && hexnum != 0 && hexStr.Length >= 2)
+								hexStr = string.Concat(hexStr.AsSpan(0, 2), new string('0', pad), hexStr.AsSpan(2));
+							else
+								hexStr = new string('0', pad) + hexStr;
+						}
 						else
 							hexStr = new string(' ', pad) + hexStr;
 					}
@@ -2236,6 +2241,8 @@ namespace Keysharp.Builtins
 
 					if (spec.Precision.HasValue)
 						formatSpec += spec.Precision.Value.ToString();
+					else if (spec.Type is 'g' or 'G')
+						formatSpec += "6"; // C99/UCRT & AutoHotkey v2 default precision for g/G is 6 significant digits.
 
 					string floatStr = d.ToString(formatSpec, CultureInfo.InvariantCulture);
 
@@ -2249,6 +2256,15 @@ namespace Keysharp.Builtins
 								&& floatStr[expIdx + 2] == '0'
 								&& floatStr.Length - (expIdx + 2) == 3)
 							floatStr = string.Concat(floatStr.AsSpan(0, expIdx + 2), floatStr.AsSpan(expIdx + 3));
+					}
+
+					// Alternate form (#) forces a decimal point even when no digits follow it.
+					if (spec.Alternate && double.IsFinite(d) && !floatStr.Contains('.'))
+					{
+						var expIdx = floatStr.IndexOfAny(['e', 'E']);
+						floatStr = expIdx >= 0
+							? string.Concat(floatStr.AsSpan(0, expIdx), ".", floatStr.AsSpan(expIdx))
+							: floatStr + ".";
 					}
 
 					if (d >= 0)
@@ -2265,8 +2281,13 @@ namespace Keysharp.Builtins
 
 						if (spec.LeftAlign)
 							floatStr += new string(' ', pad);
-						else if (spec.ZeroPad)
-							floatStr = new string('0', pad) + floatStr;
+						else if (spec.ZeroPad && double.IsFinite(d))
+						{
+							if (floatStr.StartsWith('-') || floatStr.StartsWith('+') || floatStr.StartsWith(' '))
+								floatStr = string.Concat(floatStr.AsSpan(0, 1), new string('0', pad), floatStr.AsSpan(1));
+							else
+								floatStr = new string('0', pad) + floatStr;
+						}
 						else
 							floatStr = new string(' ', pad) + floatStr;
 					}
