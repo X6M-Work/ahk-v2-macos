@@ -20,7 +20,7 @@ namespace Keysharp.Builtins
 		public object Count => match != null ? match.CaptureCount : Math.Max(0, netMatch.Groups.Count - 1);
 
 		/// <summary>The name set by the last encountered <c>(*MARK)</c>, or empty. The .NET engine has no marks.</summary>
-		public object Mark => match != null ? match.Mark : "";
+		public object Mark => match?.Mark ?? "";
 
 		/// <summary>Every group including the whole match at 0, which is the span enumeration walks.</summary>
 		private int GroupCount => match != null ? match.Groups.Count : netMatch.Groups.Count;

@@ -28,6 +28,9 @@ try m3.Name()
 catch Error
 	nErr := "Err"
 lines.Push("noarg=" m3.Pos() "|" m3.Len() "|" m3.Pos "|" m3.Len "|" nErr)
+RegExMatch("foo", "(*MARK:M1)foo|(*MARK:M2)bar", &mm1)
+RegExMatch("bar", "(*MARK:M1)foo|(*MARK:M2)bar", &mm2)
+lines.Push("mark=" mm1.Mark "|" mm2.Mark "|" m3.Mark)
 
 out := ""
 for _, line in lines
