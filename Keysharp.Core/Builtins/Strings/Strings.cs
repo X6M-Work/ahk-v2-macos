@@ -149,8 +149,8 @@ namespace Keysharp.Builtins
 					}
 				}
 
-				if (pos == indexStart) // no explicit index was provided
-					nextArg++;
+				// Per AutoHotkey v2, an omitted index always continues from the previous placeholder's index + 1.
+				nextArg = argIndex + 1;
 
 				// --- Parse an optional format specifier ---
 				SpecInfo spec;
