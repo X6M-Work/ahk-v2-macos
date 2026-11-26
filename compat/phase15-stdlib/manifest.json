@@ -450,6 +450,36 @@
       "category": "stdlib",
       "script": "regex-newline-modes-contracts.ahk",
       "expected_stdout": "golden/regex-newline-modes-contracts.txt"
+    },
+    {
+      "id": "func-curry-bind-builtin-contracts",
+      "category": "stdlib",
+      "script": "func-curry-bind-builtin-contracts.ahk",
+      "expected_stdout": "golden/func-curry-bind-builtin-contracts.txt"
+    },
+    {
+      "id": "object-shallow-clone-contracts",
+      "category": "stdlib",
+      "script": "object-shallow-clone-contracts.ahk",
+      "expected_stdout": "golden/object-shallow-clone-contracts.txt"
+    },
+    {
+      "id": "string-reverse-slice-contracts",
+      "category": "stdlib",
+      "script": "string-reverse-slice-contracts.ahk",
+      "expected_stdout": "golden/string-reverse-slice-contracts.txt"
+    },
+    {
+      "id": "operator-precedence-contracts",
+      "category": "stdlib",
+      "script": "operator-precedence-contracts.ahk",
+      "expected_stdout": "golden/operator-precedence-contracts.txt"
+    },
+    {
+      "id": "file-read-mlimit-contracts",
+      "category": "stdlib",
+      "script": "file-read-mlimit-contracts.ahk",
+      "expected_stdout": "golden/file-read-mlimit-contracts.txt"
     }
   ]
 }
