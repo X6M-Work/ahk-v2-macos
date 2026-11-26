@@ -30,7 +30,7 @@ internal static class CompileDaemonClient
 	// Wait for a recorded owner's pipe between requests, without delaying local compilation when no daemon exists.
 	internal static DaemonReply TryCompile(ScriptCompileRequest request, int connectTimeoutMs = 50) =>
 		CompileDaemonOwner.Read() is { } owner && installedEndpoint.Value is { } endpoint && owner.Pipe == endpoint.PipeName
-			? TryCompile(request, endpoint, owner.IsAlive() ? Math.Max(connectTimeoutMs, 2000) : connectTimeoutMs) : DaemonReply.Unavailable;
+			? TryCompile(request, endpoint, owner.IsAlive() ? Math.Max(connectTimeoutMs, 5000) : connectTimeoutMs) : DaemonReply.Unavailable;
 
 	internal static DaemonReply TryCompile(ScriptCompileRequest request, CompileDaemonEndpoint endpoint,
 		int connectTimeoutMs = 0, string workingDirectory = null)
