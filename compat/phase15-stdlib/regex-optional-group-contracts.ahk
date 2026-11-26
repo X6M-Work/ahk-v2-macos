@@ -23,6 +23,11 @@ for fn in [() => m3[99], () => m3[-1], () => m3["nope"], () => m3.Pos[99], () =>
 		errs .= "V|"
 }
 lines.Push("opt_name=" m3.Name[2] "|" errs)
+nErr := ""
+try m3.Name()
+catch Error
+	nErr := "Err"
+lines.Push("noarg=" m3.Pos() "|" m3.Len() "|" m3.Pos "|" m3.Len "|" nErr)
 
 out := ""
 for _, line in lines

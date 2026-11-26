@@ -53,11 +53,11 @@ namespace Keysharp.Builtins
 
 		public long get_Len(object obj = null) => Len(obj);
 
-		public long Len(object obj) => GetGroup(obj).Length;
+		public long Len(object obj = null) => GetGroup(obj).Length;
 
-		public string get_Name(object obj = null) => Name(obj);
+		public string get_Name(object obj) => Name(obj);
 
-		public string Name(object obj = null) => GetGroup(obj).Name;
+		public string Name(object obj) => GetGroup(obj).Name;
 
 		public long get_Pos(object obj = null) => Pos(obj);
 
