@@ -25,6 +25,11 @@
     {"id":"macos-env-vars","category":"native-capability","script":"env-vars-mac.ahk","expected_stdout":"golden/env-vars-mac.txt","platforms":["Darwin"]},
     {"id":"macos-ks-json","category":"native-capability","script":"ks-json-mac.ahk","expected_stdout":"golden/ks-json-mac.txt","platforms":["Darwin"]},
     {"id":"macos-gui-list-controls","category":"native-capability","script":"gui-listbox-ddl-mac.ahk","expected_stdout":"golden/gui-listbox-ddl-mac.txt","platforms":["Darwin"]},
-    {"id":"macos-sound-audio","category":"native-capability","script":"sound-audio-mac.ahk","expected_stdout":"golden/sound-audio-mac.txt","platforms":["Darwin"]}
+    {"id":"macos-sound-audio","category":"native-capability","script":"sound-audio-mac.ahk","expected_stdout":"golden/sound-audio-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-gui-treeview","category":"native-capability","script":"gui-treeview-mac.ahk","expected_stdout":"golden/gui-treeview-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-gui-sb-radio","category":"native-capability","script":"gui-statusbar-radio-mac.ahk","expected_stdout":"golden/gui-statusbar-radio-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-libc-mem-strtol","category":"native-capability","script":"libc-mem-strtol-mac.ahk","expected_stdout":"golden/libc-mem-strtol-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-bsearch-callback","category":"native-capability","script":"bsearch-callback-mac.ahk","expected_stdout":"golden/bsearch-callback-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-apfs-fileops","category":"native-capability","script":"file-attrib-time-mac.ahk","expected_stdout":"golden/file-attrib-time-mac.txt","platforms":["Darwin"]}
   ]
 }
