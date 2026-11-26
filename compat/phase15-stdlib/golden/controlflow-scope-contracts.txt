@@ -1,0 +1,4 @@
+static=101|102|103
+shadow=inner|outer
+global=mutated
+exit_cb=Exit:0

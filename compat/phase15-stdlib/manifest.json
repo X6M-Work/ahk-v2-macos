@@ -210,6 +210,36 @@
       "category": "stdlib",
       "script": "bitwise-hex-coerce-contracts.ahk",
       "expected_stdout": "golden/bitwise-hex-coerce-contracts.txt"
+    },
+    {
+      "id": "string-search-split-contracts",
+      "category": "stdlib",
+      "script": "string-search-split-contracts.ahk",
+      "expected_stdout": "golden/string-search-split-contracts.txt"
+    },
+    {
+      "id": "map-array-edge-contracts",
+      "category": "stdlib",
+      "script": "map-array-edge-contracts.ahk",
+      "expected_stdout": "golden/map-array-edge-contracts.txt"
+    },
+    {
+      "id": "class-inherit-super-contracts",
+      "category": "stdlib",
+      "script": "class-inherit-super-contracts.ahk",
+      "expected_stdout": "golden/class-inherit-super-contracts.txt"
+    },
+    {
+      "id": "controlflow-scope-contracts",
+      "category": "stdlib",
+      "script": "controlflow-scope-contracts.ahk",
+      "expected_stdout": "golden/controlflow-scope-contracts.txt"
+    },
+    {
+      "id": "file-encoding-seek-contracts",
+      "category": "stdlib",
+      "script": "file-encoding-seek-contracts.ahk",
+      "expected_stdout": "golden/file-encoding-seek-contracts.txt"
     }
   ]
 }

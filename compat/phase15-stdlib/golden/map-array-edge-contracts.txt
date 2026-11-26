@@ -1,0 +1,4 @@
+ins=5:1,2,3,4,5
+rem=2:1,5
+pop_err=1
+map_cs_err=1|1

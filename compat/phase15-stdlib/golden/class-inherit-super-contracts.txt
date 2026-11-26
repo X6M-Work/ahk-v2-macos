@@ -1,0 +1,3 @@
+ctor=A:7>B>C
+meth=A-B-C|17|A
+hier=1|1|LeafC|Class|Prototype

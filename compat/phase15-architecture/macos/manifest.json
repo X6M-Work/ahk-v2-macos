@@ -18,6 +18,8 @@
     {"id":"macos-webview","category":"native-capability","script":"webview-probe.ahk","expected_stdout":"golden/webview-probe.txt","platforms":["Darwin"]},
     {"id":"macos-apple-events","category":"native-capability","script":"apple-events-probe.ahk","expected_stdout":"golden/apple-events-probe.txt","platforms":["Darwin"]},
     {"id":"macos-monitor-sysget","category":"native-capability","script":"monitor-sysget-mac.ahk","expected_stdout":"golden/monitor-sysget-mac.txt","platforms":["Darwin"]},
-    {"id":"macos-clipboard-all","category":"native-capability","script":"clipboard-all-mac.ahk","expected_stdout":"golden/clipboard-all-mac.txt","platforms":["Darwin"]}
+    {"id":"macos-clipboard-all","category":"native-capability","script":"clipboard-all-mac.ahk","expected_stdout":"golden/clipboard-all-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-gui-own-window","category":"native-capability","script":"gui-show-own-window.ahk","expected_stdout":"golden/gui-show-own-window.txt","platforms":["Darwin"]},
+    {"id":"macos-process-runwait","category":"native-capability","script":"process-runwait-mac.ahk","expected_stdout":"golden/process-runwait-mac.txt","platforms":["Darwin"]}
   ]
 }

@@ -1,0 +1,3 @@
+bom_sizes=11|8|239|187|191
+read_txt=ABCD1234|ABCD1234
+seek=1234|CD

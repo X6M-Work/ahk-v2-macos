@@ -1,0 +1,3 @@
+instr_cs=1|3|0|4
+rep_cs=AXAX:2|XXAa:2
+split_arr=3|one|two|three - four
