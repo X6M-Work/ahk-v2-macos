@@ -4,8 +4,8 @@
 #NoTrayIcon
 OnError((err, mode) => (FileAppend("ERROR:" err.Message "`n", "**", "UTF-8-RAW"), ExitApp(1)))
 
-rc0 := RunWait("/bin/sh -c 'exit 0'")
-rc7 := RunWait("/bin/sh -c 'exit 7'")
+rc0 := RunWait('/bin/sh -c "exit 0"')
+rc7 := RunWait('/bin/sh -c "exit 7"')
 myPid := ProcessExist()
 myName := ProcessGetName(myPid)
 myPath := ProcessGetPath(myPid)
