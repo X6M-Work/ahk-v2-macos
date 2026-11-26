@@ -54,6 +54,15 @@ lines.Push("u16=" u16Bytes "|" written16 "|" StrGet(u16Buf, "UTF-16"))
 s := "abc"
 cap := VarSetStrCapacity(&s, 64)
 lines.Push("cap=" (cap >= 64 ? 1 : 0) "|" (VarSetStrCapacity(&s) >= 64 ? 1 : 0))
+vsscErr := ""
+try VarSetStrCapacity(&s, 0x7FFFFFFF0)
+catch Any as e
+	vsscErr := Type(e)
+cbaErr := ""
+try ClipboardAll(Buffer(4), -1)
+catch Any as e
+	cbaErr := Type(e)
+lines.Push("mem_err=" vsscErr "|" cbaErr)
 
 out := ""
 for _, line in lines

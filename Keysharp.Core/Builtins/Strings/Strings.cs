@@ -1605,8 +1605,11 @@ namespace Keysharp.Builtins
 				return (long)written.Length;
 			}
 
-			if (capacity is < 0 or >= int.MaxValue)
+			if (capacity < 0)
 				return Errors.ValueErrorOccurred($"Invalid capacity {capacity}.", requestedCapacity, 0L);
+
+			if (capacity >= int.MaxValue)
+				return Errors.ErrorOccurred(new MemoryError("Out of memory."), 0L);
 
 			//As in AutoHotkey, only a variable has memory to size; a property would report room it never keeps.
 			if (capacity != 0 && (memory ??= StringMemory.Of(targetVar)) == null)

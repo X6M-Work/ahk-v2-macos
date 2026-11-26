@@ -3029,7 +3029,7 @@ namespace Keysharp.Builtins
 		{
 			get
 			{
-				if (form.IsDisposed) return Errors.ErrorOccurred("GUI window is no longer available.");
+				if (form == null || form.IsDestroyed) return Errors.ErrorOccurred("GUI window is no longer available.");
 				EnsureMainWindowControls();
 #if WINDOWS
 				return (long)HFontCache.Get(form);
@@ -3416,7 +3416,7 @@ namespace Keysharp.Builtins
 			if (!hide && !min && !max && !form.Visible && form.TopMost)
 				Keysharp.Internals.Window.Linux.Wayland.WaylandOwnToplevels.HoldFixedSizeUntilMapped(form, () =>
 				{
-					if (resizable && !form.IsDisposed)
+					if (resizable && form != null && !form.IsDestroyed)
 						form.Resizable = true;
 				});
 

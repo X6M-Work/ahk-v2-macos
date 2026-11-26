@@ -709,8 +709,14 @@ namespace Keysharp.Builtins
 
 			var sizeValue = long.MinValue;
 
-			if (data != null && size is not null && !size.CoerceLong(out sizeValue))
-				return DefaultObject;
+			if (data != null && size is not null)
+			{
+				if (!size.CoerceLong(out sizeValue))
+					return DefaultObject;
+
+				if (sizeValue < 0 || sizeValue > int.MaxValue)
+					return Errors.ErrorOccurred(new MemoryError("Out of memory."), DefaultObject);
+			}
 
 			var bytes = data == null
 						? Platform.Clipboard.CaptureAll()

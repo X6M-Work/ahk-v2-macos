@@ -7,3 +7,4 @@ numget_f=1.50|3.25
 u8=14|14|héllo 日本
 u16=18|18|héllo 日本
 cap=1|1
+mem_err=MemoryError|MemoryError
