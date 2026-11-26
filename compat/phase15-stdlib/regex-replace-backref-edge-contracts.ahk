@@ -14,6 +14,7 @@ r3 := RegExReplace("1234567", "(?=(\d{3})+$)(?<!^)", ",")
 lines.Push("r1=" r1 "|" c1)
 lines.Push("r2=" r2 "|" c2)
 lines.Push("r3=" r3)
+lines.Push("sp0=" RegExMatch("abc", "a", , 0) "|" RegExMatch("abc", "$", , 0) "|" RegExReplace("abc", ".", "X", , -1, 0) "|" RegExReplace("abc", "$", "!", , -1, 0))
 
 out := ""
 for _, line in lines

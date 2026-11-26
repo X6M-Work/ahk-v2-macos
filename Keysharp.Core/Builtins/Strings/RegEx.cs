@@ -187,7 +187,7 @@ namespace Keysharp.Builtins
 				}
 			}
 
-			if (index < 0)
+			if (index <= 0)
 			{
 				index = input.Length + index;
 
@@ -195,7 +195,7 @@ namespace Keysharp.Builtins
 					index = 0;
 			}
 			else
-				index = Math.Min(Math.Max(0, index - 1), input.Length);
+				index = Math.Min(index - 1, input.Length);
 
 			try
 			{
@@ -354,7 +354,7 @@ namespace Keysharp.Builtins
 			if (l < 0)
 				l = int.MaxValue;
 
-			if (index < 0)
+			if (index <= 0)
 			{
 				index = input.Length + index;
 
@@ -362,7 +362,7 @@ namespace Keysharp.Builtins
 					index = 0;
 			}
 			else
-				index = Math.Min(Math.Max(0, index - 1), input.Length);
+				index = Math.Min(index - 1, input.Length);
 
 			try
 			{
