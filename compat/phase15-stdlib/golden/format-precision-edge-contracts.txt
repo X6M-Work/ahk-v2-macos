@@ -7,3 +7,4 @@ ver=0|1|0
 mix=b c a b
 nonfin=inf|-inf|nan|INF|-INF|NAN|   inf|  -inf|+nan
 fdef=3.500000|-0.000000|-0.000000
+hexflt=0x2p+0|0x2.p+0|0x0.p+0|0x0001.80p+0|   0x1.80p+0|0x1.80p+0   |

@@ -19,6 +19,7 @@ NumPut("Int64", 0xFFF0000000000000, bInf), nInf := NumGet(bInf, 0, "Double")
 NumPut("Int64", 0x7FF8000000000000, bInf), qNan := NumGet(bInf, 0, "Double")
 lines.Push("nonfin=" Format("{:f}|{:f}|{:f}|{:G}|{:G}|{:G}|{:06f}|{:06f}|{:+f}", pInf, nInf, qNan, pInf, nInf, qNan, pInf, nInf, qNan))
 lines.Push("fdef=" Format("{:f}|{:f}|{:+f}", 3.5, -0.0, -0.0))
+lines.Push("hexflt=" Format("{:.0a}|{:#.0a}|{:#.0a}|{:012.2a}|{:12.2a}|{:-12.2a}|", 1.5, 1.5, 0.0, 1.5, 1.5, 1.5))
 
 out := ""
 for _, line in lines

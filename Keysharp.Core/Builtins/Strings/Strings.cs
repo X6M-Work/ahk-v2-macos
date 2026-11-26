@@ -2476,95 +2476,109 @@ namespace Keysharp.Builtins
 			else if (spec.Space)
 				signStr = " ";
 
+			string prefix = uppercase ? "0X" : "0x";
+			string result;
+
 			if (double.IsNaN(d))
-				return signStr + (uppercase ? "NAN" : "nan");
-
-			if (double.IsInfinity(d))
-				return signStr + (uppercase ? "INF" : "inf");
-
-			if (d == 0.0)
+				result = signStr + (uppercase ? "NAN" : "nan");
+			else if (double.IsInfinity(d))
+				result = signStr + (uppercase ? "INF" : "inf");
+			else if (d == 0.0)
 			{
 				int prec = spec.Precision.HasValue ? spec.Precision.Value : 13;
-				string frac = prec > 0 ? "." + new string('0', prec) : "";
-				return signStr + (uppercase ? "0X0" : "0x0") + frac + (uppercase ? "P+0" : "p+0");
-			}
-
-			// Obtain the raw bits of the double.
-			long bits = BitConverter.DoubleToInt64Bits(d);
-			int exponentBits = (int)((bits >> 52) & 0x7FF);
-			long fractionBits = bits & ((1L << 52) - 1);
-			int exponentUnbiased;
-			bool isSubnormal = false;
-
-			if (exponentBits == 0)
-			{
-				isSubnormal = true;
-				exponentUnbiased = 1 - 1023;
+				string frac = prec > 0 ? "." + new string('0', prec) : (spec.Alternate ? "." : "");
+				result = signStr + prefix + "0" + frac + (uppercase ? "P+0" : "p+0");
 			}
 			else
 			{
-				exponentUnbiased = exponentBits - 1023;
-				fractionBits |= (1L << 52); // add the implicit 1 for normalized values
-			}
+				// Obtain the raw bits of the double.
+				long bits = BitConverter.DoubleToInt64Bits(d);
+				int exponentBits = (int)((bits >> 52) & 0x7FF);
+				long fractionBits = bits & ((1L << 52) - 1);
+				int exponentUnbiased;
+				bool isSubnormal = false;
 
-			// Determine the desired number of hex digits after the point.
-			int totalHexDigits = spec.Precision.HasValue ? spec.Precision.Value : 13;
-			// For normalized numbers we show the value as “1.[fraction]”; for subnormals, as “0.[fraction]”
-			int intPart = isSubnormal ? 0 : 1;
-			// For a double, the fractional part is 52 bits = exactly 13 hex digits.
-			int fullFractionDigits = 13;
-			long fraction;
-
-			if (!isSubnormal)
-				fraction = fractionBits - (1L << 52);
-			else
-				fraction = fractionBits; // subnormals have no implicit bit
-
-			string fracStr;
-
-			if (totalHexDigits >= fullFractionDigits)
-			{
-				// Format the available 13 hex digits; if more were requested, pad with trailing zeros.
-				fracStr = fraction.ToString("x" + fullFractionDigits, CultureInfo.InvariantCulture);
-
-				if (totalHexDigits > fullFractionDigits)
-					fracStr += new string('0', totalHexDigits - fullFractionDigits);
-			}
-			else
-			{
-				// When fewer than 13 hex digits are requested, shift right and round.
-				int shift = (fullFractionDigits - totalHexDigits) * 4;
-				long truncated = fraction >> shift;
-				long remainder = fraction & ((1L << shift) - 1);
-
-				if (shift > 0 && remainder >= (1L << (shift - 1)))
+				if (exponentBits == 0)
 				{
-					truncated++;
-
-					if (truncated >= (1L << (totalHexDigits * 4)))
-					{
-						// Rounding causes carry into the integer part.
-						intPart++;
-						truncated = 0;
-					}
+					isSubnormal = true;
+					exponentUnbiased = 1 - 1023;
+				}
+				else
+				{
+					exponentUnbiased = exponentBits - 1023;
+					fractionBits |= (1L << 52); // add the implicit 1 for normalized values
 				}
 
-				fracStr = truncated.ToString("x").PadLeft(totalHexDigits, '0');
+				// Determine the desired number of hex digits after the point.
+				int totalHexDigits = spec.Precision.HasValue ? spec.Precision.Value : 13;
+				// For normalized numbers we show the value as “1.[fraction]”; for subnormals, as “0.[fraction]”
+				int intPart = isSubnormal ? 0 : 1;
+				// For a double, the fractional part is 52 bits = exactly 13 hex digits.
+				int fullFractionDigits = 13;
+				long fraction;
+
+				if (!isSubnormal)
+					fraction = fractionBits - (1L << 52);
+				else
+					fraction = fractionBits; // subnormals have no implicit bit
+
+				string fracStr;
+
+				if (totalHexDigits >= fullFractionDigits)
+				{
+					// Format the available 13 hex digits; if more were requested, pad with trailing zeros.
+					fracStr = fraction.ToString("x" + fullFractionDigits, CultureInfo.InvariantCulture);
+
+					if (totalHexDigits > fullFractionDigits)
+						fracStr += new string('0', totalHexDigits - fullFractionDigits);
+				}
+				else
+				{
+					// When fewer than 13 hex digits are requested, shift right and round.
+					int shift = (fullFractionDigits - totalHexDigits) * 4;
+					long truncated = fraction >> shift;
+					long remainder = fraction & ((1L << shift) - 1);
+
+					if (shift > 0 && remainder >= (1L << (shift - 1)))
+					{
+						truncated++;
+
+						if (truncated >= (1L << (totalHexDigits * 4)))
+						{
+							// Rounding causes carry into the integer part (UCRT/AHK keeps 0x2p+0 rather than re-normalizing to 0x1p+1).
+							intPart++;
+							truncated = 0;
+						}
+					}
+
+					fracStr = truncated.ToString("x").PadLeft(totalHexDigits, '0');
+				}
+
+				string intPartStr = intPart.ToString(uppercase ? "X" : "x");
+				string pChar = uppercase ? "P" : "p";
+				string fracPart = (totalHexDigits > 0)
+					? "." + (uppercase ? fracStr.ToUpperInvariant() : fracStr)
+					: (spec.Alternate ? "." : "");
+				string expStr = (exponentUnbiased >= 0 ? "+" : "") + exponentUnbiased.ToString();
+				result = signStr + prefix + intPartStr + fracPart + pChar + expStr;
 			}
 
-			// If rounding caused the integer part to be 2 or more, re–normalize.
-			if (intPart > 1)
+			if (spec.Width.HasValue && result.Length < spec.Width.Value)
 			{
-				intPart = 1;
-				exponentUnbiased++;
+				int pad = spec.Width.Value - result.Length;
+
+				if (spec.LeftAlign)
+					result += new string(' ', pad);
+				else if (spec.ZeroPad && double.IsFinite(d))
+				{
+					int prefixLen = signStr.Length + prefix.Length;
+					result = string.Concat(result.AsSpan(0, prefixLen), new string('0', pad), result.AsSpan(prefixLen));
+				}
+				else
+					result = new string(' ', pad) + result;
 			}
 
-			string intPartStr = intPart.ToString(uppercase ? "X" : "x");
-			string prefix = uppercase ? "0X" : "0x";
-			string pChar = uppercase ? "P" : "p";
-			string fracPart = (totalHexDigits > 0) ? "." + (uppercase ? fracStr.ToUpperInvariant() : fracStr) : "";
-			string expStr = (exponentUnbiased >= 0 ? "+" : "") + exponentUnbiased.ToString();
-			return signStr + prefix + intPartStr + fracPart + pChar + expStr;
+			return result;
 		}
 
 		/// <summary>
