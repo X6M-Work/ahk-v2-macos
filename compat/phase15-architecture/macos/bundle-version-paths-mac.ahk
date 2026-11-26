@@ -6,7 +6,7 @@ OnError((err, mode) => (FileAppend("ERROR:" err.Message "`n", "**", "UTF-8-RAW")
 
 ver := FileGetVersion("/System/Applications/Calculator.app")
 okVer := RegExMatch(ver, "^\d+\.\d+") > 0
-okApp := (SubStr(A_AppData, -27) == "/Library/Application Support") && (A_AppDataCommon == "/Library/Application Support")
+okApp := (SubStr(A_AppData, -28) == "/Library/Application Support") && (A_AppDataCommon == "/Library/Application Support")
 okSys := (A_PtrSize == 8) && (A_Is64bitOS == 1) && (A_OSVersion != "") && (A_UserName != "")
 
 ok := okVer && okApp && okSys
