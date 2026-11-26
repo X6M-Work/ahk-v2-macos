@@ -1673,7 +1673,7 @@ namespace Keysharp.Builtins
 				{
 					var semver1 = Semver.SemVersion.Parse(v1, Semver.SemVersionStyles.Any);
 					var semver2 = Semver.SemVersion.Parse(v2, Semver.SemVersionStyles.Any);
-					return semver1.CompareSortOrderTo(semver2) <= 0 ? 1L : 0L;
+					return semver1.ComparePrecedenceTo(semver2) <= 0 ? 1L : 0L;
 				}
 				catch (Exception e)
 				{
@@ -1698,7 +1698,7 @@ namespace Keysharp.Builtins
 				{
 					var semver1 = Semver.SemVersion.Parse(v1, Semver.SemVersionStyles.Any);
 					var semver2 = Semver.SemVersion.Parse(v2, Semver.SemVersionStyles.Any);
-					return semver1.CompareSortOrderTo(semver2) < 0 ? 1L : 0L;
+					return semver1.ComparePrecedenceTo(semver2) < 0 ? 1L : 0L;
 				}
 				catch (Exception e)
 				{
@@ -1724,7 +1724,7 @@ namespace Keysharp.Builtins
 				{
 					var semver1 = Semver.SemVersion.Parse(v1, Semver.SemVersionStyles.Any);
 					var semver2 = Semver.SemVersion.Parse(v2, Semver.SemVersionStyles.Any);
-					return semver1.CompareSortOrderTo(semver2) >= 0 ? 1L : 0L;
+					return semver1.ComparePrecedenceTo(semver2) >= 0 ? 1L : 0L;
 				}
 				catch (Exception e)
 				{
@@ -1750,7 +1750,7 @@ namespace Keysharp.Builtins
 				{
 					var semver1 = Semver.SemVersion.Parse(v1, Semver.SemVersionStyles.Any);
 					var semver2 = Semver.SemVersion.Parse(v2, Semver.SemVersionStyles.Any);
-					return semver1.CompareSortOrderTo(semver2) > 0 ? 1L : 0L;
+					return semver1.ComparePrecedenceTo(semver2) > 0 ? 1L : 0L;
 				}
 				catch (Exception e)
 				{
@@ -1776,7 +1776,7 @@ namespace Keysharp.Builtins
 				{
 					var semver1 = Semver.SemVersion.Parse(v1, Semver.SemVersionStyles.Any);
 					var semver2 = Semver.SemVersion.Parse(v2, Semver.SemVersionStyles.Any);
-					return semver1.CompareSortOrderTo(semver2) == 0 ? 1L : 0L;
+					return semver1.ComparePrecedenceTo(semver2) == 0 ? 1L : 0L;
 				}
 				catch (Exception e)
 				{
@@ -1802,7 +1802,7 @@ namespace Keysharp.Builtins
 				{
 					var semver1 = Semver.SemVersion.Parse(v1, Semver.SemVersionStyles.Any);
 					var semver2 = Semver.SemVersion.Parse(v2, Semver.SemVersionStyles.Any);
-					return semver1.CompareSortOrderTo(semver2);
+					return semver1.ComparePrecedenceTo(semver2);
 				}
 				catch (Exception e)
 				{
@@ -2094,9 +2094,12 @@ namespace Keysharp.Builtins
 					}
 
 					// Use the precision (if given) as the minimum number of digits.
+					ulong absNum = num < 0 ? unchecked((ulong)(-num)) : (ulong)num;
 					string numberStr = spec.Precision.HasValue
-									   ? Math.Abs(num).ToString("D" + spec.Precision.Value, CultureInfo.InvariantCulture)
-									   : Math.Abs(num).ToString(CultureInfo.InvariantCulture);
+									   ? (spec.Precision.Value == 0 && absNum == 0
+										   ? ""
+										   : absNum.ToString("D" + spec.Precision.Value, CultureInfo.InvariantCulture))
+									   : absNum.ToString(CultureInfo.InvariantCulture);
 
 					if (num < 0)
 						numberStr = "-" + numberStr;
@@ -2112,7 +2115,7 @@ namespace Keysharp.Builtins
 
 						if (spec.LeftAlign)
 							numberStr += new string(' ', pad);
-						else if (spec.ZeroPad)
+						else if (spec.ZeroPad && !spec.Precision.HasValue)
 						{
 							// If there’s a sign character, insert zeros after it.
 							if (numberStr.StartsWith("-") || numberStr.StartsWith("+") || numberStr.StartsWith(" "))
@@ -2136,7 +2139,9 @@ namespace Keysharp.Builtins
 					var unum = ToUnsignedBits(arg);
 
 					string unumStr = spec.Precision.HasValue
-									 ? unum.ToString("D" + spec.Precision.Value, CultureInfo.InvariantCulture)
+									 ? (spec.Precision.Value == 0 && unum == 0
+										 ? ""
+										 : unum.ToString("D" + spec.Precision.Value, CultureInfo.InvariantCulture))
 									 : unum.ToString(CultureInfo.InvariantCulture);
 
 					if (spec.Width.HasValue && unumStr.Length < spec.Width.Value)
@@ -2145,7 +2150,7 @@ namespace Keysharp.Builtins
 
 						if (spec.LeftAlign)
 							unumStr += new string(' ', pad);
-						else if (spec.ZeroPad)
+						else if (spec.ZeroPad && !spec.Precision.HasValue)
 							unumStr = new string('0', pad) + unumStr;
 						else
 							unumStr = new string(' ', pad) + unumStr;
@@ -2160,7 +2165,9 @@ namespace Keysharp.Builtins
 				{
 					var hexnum = ToUnsignedBits(arg);
 
-					string hexStr = hexnum.ToString(spec.Type == 'x' ? "x" : "X", CultureInfo.InvariantCulture);
+					string hexStr = spec.Precision.HasValue && spec.Precision.Value == 0 && hexnum == 0
+									? ""
+									: hexnum.ToString(spec.Type == 'x' ? "x" : "X", CultureInfo.InvariantCulture);
 
 					if (spec.Precision.HasValue && hexStr.Length < spec.Precision.Value)
 						hexStr = new string('0', spec.Precision.Value - hexStr.Length) + hexStr;
@@ -2175,7 +2182,7 @@ namespace Keysharp.Builtins
 
 						if (spec.LeftAlign)
 							hexStr += new string(' ', pad);
-						else if (spec.ZeroPad)
+						else if (spec.ZeroPad && !spec.Precision.HasValue)
 						{
 							if (spec.Alternate && hexnum != 0 && hexStr.Length >= 2)
 								hexStr = string.Concat(hexStr.AsSpan(0, 2), new string('0', pad), hexStr.AsSpan(2));
@@ -2194,7 +2201,9 @@ namespace Keysharp.Builtins
 				{
 					var onum = ToUnsignedBits(arg);
 
-					string octStr = ConvertToOctal(onum);
+					string octStr = spec.Precision.HasValue && spec.Precision.Value == 0 && onum == 0
+									? ""
+									: ConvertToOctal(onum);
 
 					if (spec.Precision.HasValue && octStr.Length < spec.Precision.Value)
 						octStr = new string('0', spec.Precision.Value - octStr.Length) + octStr;
@@ -2208,7 +2217,7 @@ namespace Keysharp.Builtins
 
 						if (spec.LeftAlign)
 							octStr += new string(' ', pad);
-						else if (spec.ZeroPad)
+						else if (spec.ZeroPad && !spec.Precision.HasValue)
 							octStr = new string('0', pad) + octStr;
 						else
 							octStr = new string(' ', pad) + octStr;
@@ -2258,13 +2267,51 @@ namespace Keysharp.Builtins
 							floatStr = string.Concat(floatStr.AsSpan(0, expIdx + 2), floatStr.AsSpan(expIdx + 3));
 					}
 
-					// Alternate form (#) forces a decimal point even when no digits follow it.
-					if (spec.Alternate && double.IsFinite(d) && !floatStr.Contains('.'))
+					// Alternate form (#) forces a decimal point even when no digits follow it,
+					// and for g/G retains trailing zeros up to the requested significant digits.
+					if (spec.Alternate && double.IsFinite(d))
 					{
-						var expIdx = floatStr.IndexOfAny(['e', 'E']);
-						floatStr = expIdx >= 0
-							? string.Concat(floatStr.AsSpan(0, expIdx), ".", floatStr.AsSpan(expIdx))
-							: floatStr + ".";
+						if (!floatStr.Contains('.'))
+						{
+							var expIdx = floatStr.IndexOfAny(['e', 'E']);
+							floatStr = expIdx >= 0
+								? string.Concat(floatStr.AsSpan(0, expIdx), ".", floatStr.AsSpan(expIdx))
+								: floatStr + ".";
+						}
+
+						if (spec.Type is 'g' or 'G')
+						{
+							int targetSig = Math.Max(1, spec.Precision ?? 6);
+							int expIdx = floatStr.IndexOfAny(['e', 'E']);
+							var mantissa = expIdx >= 0 ? floatStr.AsSpan(0, expIdx) : floatStr.AsSpan();
+							int sigCount = 0;
+							bool seenNonZero = false;
+
+							foreach (var ch in mantissa)
+							{
+								if (!char.IsAsciiDigit(ch))
+									continue;
+
+								if (seenNonZero)
+									sigCount++;
+								else if (ch != '0')
+								{
+									seenNonZero = true;
+									sigCount = 1;
+								}
+							}
+
+							if (!seenNonZero)
+								sigCount = Math.Max(1, mantissa.Count('0'));
+
+							if (sigCount < targetSig)
+							{
+								var zeros = new string('0', targetSig - sigCount);
+								floatStr = expIdx >= 0
+									? string.Concat(mantissa, zeros, floatStr.AsSpan(expIdx))
+									: floatStr + zeros;
+							}
+						}
 					}
 
 					if (d >= 0)

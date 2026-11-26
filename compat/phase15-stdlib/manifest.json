@@ -630,6 +630,12 @@
       "category": "stdlib",
       "script": "loop-nested-index-contracts.ahk",
       "expected_stdout": "golden/loop-nested-index-contracts.txt"
+    },
+    {
+      "id": "format-precision-edge-contracts",
+      "category": "stdlib",
+      "script": "format-precision-edge-contracts.ahk",
+      "expected_stdout": "golden/format-precision-edge-contracts.txt"
     }
   ]
 }
