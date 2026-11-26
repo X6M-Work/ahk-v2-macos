@@ -18,7 +18,24 @@ ud.Value := 33
 tab.UseTab()
 tab.Choose(2)
 
-ok := (sl.Value == 60) && (pr.Value == 75) && (ud.Value == 33) && (tab.Value == 2)
+sl.Value := 999
+slHi := sl.Value
+sl.Value := -50
+slLo := sl.Value
+pr.Value := 999
+prHi := pr.Value
+pr.Value := -50
+prLo := pr.Value
+ud.Value := 999
+udHi := ud.Value
+ud.Value := -50
+udLo := ud.Value
+udBad := ""
+try ud.Value := "abc"
+catch TypeError
+	udBad := "TypeError"
+
+ok := (slHi == 100) && (slLo == 0) && (prHi == 100) && (prLo == 0) && (udHi == 50) && (udLo == 1) && (udBad == "TypeError") && (tab.Value == 2)
 g.Destroy()
-FileAppend("gui-tab-slider:" (ok ? "ok" : sl.Value "|" pr.Value "|" ud.Value "|" tab.Value) "`n", "*", "UTF-8-RAW")
+FileAppend("gui-tab-slider:" (ok ? "ok" : slHi "|" slLo "|" prHi "|" prLo "|" udHi "|" udLo "|" udBad "|" tab.Value) "`n", "*", "UTF-8-RAW")
 ExitApp()

@@ -164,7 +164,12 @@ namespace Keysharp.Builtins
 						return;
 
 					if (_control is KeysharpNumericUpDown nud)
-						nud.Value = (decimal)value.ParseDouble().Value;
+					{
+						if (!value.CoerceDouble(out var dval))
+							return;
+
+						nud.Value = Math.Clamp((decimal)dval, nud.Minimum, nud.Maximum);
+					}
 					else if (_control is KeysharpCheckBox cb)
 					{
 						if (!value.CoerceInt(out var cbstate))
@@ -208,7 +213,7 @@ namespace Keysharp.Builtins
 						if (!value.CoerceInt(out var ival))
 							return;
 
-						tb.Value = ival;
+						tb.Value = Math.Clamp(ival, tb.Minimum, tb.Maximum);
 					}
 					else if (_control is KeysharpProgressBar pb)
 					{
