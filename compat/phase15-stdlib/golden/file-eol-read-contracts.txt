@@ -1,0 +1,2 @@
+eol_len=6|L1/L2/
+trunc=2|L1

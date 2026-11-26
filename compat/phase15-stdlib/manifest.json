@@ -330,6 +330,36 @@
       "category": "stdlib",
       "script": "ini-section-edge-contracts.ahk",
       "expected_stdout": "golden/ini-section-edge-contracts.txt"
+    },
+    {
+      "id": "number-edge-div-mod-contracts",
+      "category": "stdlib",
+      "script": "number-edge-div-mod-contracts.ahk",
+      "expected_stdout": "golden/number-edge-div-mod-contracts.txt"
+    },
+    {
+      "id": "string-replace-split-edge-contracts",
+      "category": "stdlib",
+      "script": "string-replace-split-edge-contracts.ahk",
+      "expected_stdout": "golden/string-replace-split-edge-contracts.txt"
+    },
+    {
+      "id": "array-map-clone-edge-contracts",
+      "category": "stdlib",
+      "script": "array-map-clone-edge-contracts.ahk",
+      "expected_stdout": "golden/array-map-clone-edge-contracts.txt"
+    },
+    {
+      "id": "file-eol-read-contracts",
+      "category": "stdlib",
+      "script": "file-eol-read-contracts.ahk",
+      "expected_stdout": "golden/file-eol-read-contracts.txt"
+    },
+    {
+      "id": "class-static-prop-edge-contracts",
+      "category": "stdlib",
+      "script": "class-static-prop-edge-contracts.ahk",
+      "expected_stdout": "golden/class-static-prop-edge-contracts.txt"
     }
   ]
 }

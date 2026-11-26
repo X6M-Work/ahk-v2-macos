@@ -1,0 +1,4 @@
+mod_neg=1|-1|0
+zdiv=1|1|1
+pad_num=42|-3.50|16
+div_t=Float|Float|Integer|0.5

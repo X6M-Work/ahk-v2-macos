@@ -1,0 +1,4 @@
+arr_neg=x|z
+arr_clr=1|0
+map_types=int|flt|str|3
+map_miss=1

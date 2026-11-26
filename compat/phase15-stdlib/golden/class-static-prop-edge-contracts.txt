@@ -1,0 +1,3 @@
+sinit=10
+sset=20
+bindm=32|1|1

@@ -1,0 +1,4 @@
+rep0=aaa|0
+rep_cs1=AbAb|0
+rep_empty=abc
+split_edge=3:hi!|1:a,b,c
