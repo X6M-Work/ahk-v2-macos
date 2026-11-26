@@ -38,6 +38,8 @@
     {"id":"macos-cf-string","category":"native-capability","script":"corefoundation-str-mac.ahk","expected_stdout":"golden/corefoundation-str-mac.txt","platforms":["Darwin"]},
     {"id":"macos-bundle-paths","category":"native-capability","script":"bundle-version-paths-mac.ahk","expected_stdout":"golden/bundle-version-paths-mac.txt","platforms":["Darwin"]},
     {"id":"macos-objc-nsstring","category":"native-capability","script":"objc-runtime-nsstring-mac.ahk","expected_stdout":"golden/objc-runtime-nsstring-mac.txt","platforms":["Darwin"]},
-    {"id":"macos-gui-misc-ctls","category":"native-capability","script":"gui-hotkey-link-groupbox-mac.ahk","expected_stdout":"golden/gui-hotkey-link-groupbox-mac.txt","platforms":["Darwin"]}
+    {"id":"macos-gui-misc-ctls","category":"native-capability","script":"gui-hotkey-link-groupbox-mac.ahk","expected_stdout":"golden/gui-hotkey-link-groupbox-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-gui-style","category":"native-capability","script":"gui-font-color-title-mac.ahk","expected_stdout":"golden/gui-font-color-title-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-dlopen-zlib","category":"native-capability","script":"dlopen-dlsym-zlib-mac.ahk","expected_stdout":"golden/dlopen-dlsym-zlib-mac.txt","platforms":["Darwin"]}
   ]
 }
