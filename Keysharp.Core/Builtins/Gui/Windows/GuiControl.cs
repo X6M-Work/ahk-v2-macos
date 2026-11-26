@@ -194,17 +194,61 @@ namespace Keysharp.Builtins
 						if (val?.Length == 0)
 							dtp.Checked = false;
 						else
-							dtp.Value = Conversions.ToDateTime(val);
+						{
+							var dt = Conversions.ToDateTime(val);
+
+							if (dt == System.DateTime.MinValue || dt < dtp.MinDate || dt > dtp.MaxDate)
+							{
+								_ = Errors.ValueErrorOccurred($"Invalid date/time value: {val}.", value);
+								return;
+							}
+
+							dtp.Value = dt;
+						}
 					}
 					else if (_control is KeysharpMonthCalendar mc)
 					{
-						Conversions.ParseRange(val, out var dtlow, out var dthigh);
+						if (string.IsNullOrEmpty(val))
+						{
+							_ = Errors.ValueErrorOccurred("Invalid date value.", value);
+							return;
+						}
 
-						if (dtlow == System.DateTime.MinValue)
-							dtlow = dthigh;
+						System.DateTime dtlow, dthigh;
+						var dash = val.IndexOf('-');
 
-						if (dthigh == System.DateTime.MaxValue)
-							dthigh = dtlow;
+						if (dash >= 0)
+						{
+							if (val.IndexOf('-', dash + 1) >= 0)
+							{
+								_ = Errors.ValueErrorOccurred($"Invalid date range: {val}.", value);
+								return;
+							}
+
+							var s1 = val.Substring(0, dash);
+							var s2 = val.Substring(dash + 1);
+
+							if (s1.Length == 0 && s2.Length == 0)
+							{
+								_ = Errors.ValueErrorOccurred($"Invalid date range: {val}.", value);
+								return;
+							}
+
+							dtlow = s1.Length == 0 ? mc.SelectionStart : Conversions.ToDateTime(s1);
+							dthigh = s2.Length == 0 ? dtlow : Conversions.ToDateTime(s2);
+						}
+						else
+						{
+							dtlow = dthigh = Conversions.ToDateTime(val);
+						}
+
+						if (dtlow == System.DateTime.MinValue || dthigh == System.DateTime.MinValue
+							|| dtlow < mc.MinDate || dtlow > mc.MaxDate
+							|| dthigh < mc.MinDate || dthigh > mc.MaxDate)
+						{
+							_ = Errors.ValueErrorOccurred($"Invalid date value: {val}.", value);
+							return;
+						}
 
 						mc.SelectionRange = new SelectionRange(dtlow, dthigh);
 					}
@@ -226,6 +270,12 @@ namespace Keysharp.Builtins
 					{
 						if (!value.CoerceInt(out var ival))
 							return;
+
+						if (ival < 0 || ival > tc.TabCount)
+						{
+							_ = Errors.ValueErrorOccurred($"Tab index {ival} is out of range.", value);
+							return;
+						}
 
 						tc.SelectedIndex = ival - 1;
 					}

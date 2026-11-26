@@ -386,11 +386,21 @@ namespace Keysharp.Builtins
 		{
 			if (obj is KeysharpObject kso)
 			{
-				if (!maxProps.CoerceInt(out var capacity))
+				if (!maxProps.CoerceLong(out var requested))
 					return DefaultObject;
 
-				capacity = kso.EnsureOwnProps().EnsureCapacity(capacity);
-				return (long)capacity;
+				if (requested < 0 || requested > int.MaxValue)
+					return Errors.ErrorOccurred(new MemoryError("Out of memory."), DefaultObject);
+
+				try
+				{
+					var capacity = kso.EnsureOwnProps().EnsureCapacity((int)requested);
+					return (long)capacity;
+				}
+				catch (OutOfMemoryException)
+				{
+					return Errors.ErrorOccurred(new MemoryError("Out of memory."), DefaultObject);
+				}
 			}
 
 			return Errors.TypeErrorOccurred(obj, typeof(KeysharpObject));

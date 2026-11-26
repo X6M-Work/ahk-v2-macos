@@ -34,8 +34,15 @@ udBad := ""
 try ud.Value := "abc"
 catch TypeError
 	udBad := "TypeError"
+tabErrs := ""
+try tab.Value := 99
+catch ValueError
+	tabErrs .= "H|"
+try tab.Value := -1
+catch ValueError
+	tabErrs .= "N|"
 
-ok := (slHi == 100) && (slLo == 0) && (prHi == 100) && (prLo == 0) && (udHi == 50) && (udLo == 1) && (udBad == "TypeError") && (tab.Value == 2)
+ok := (slHi == 100) && (slLo == 0) && (prHi == 100) && (prLo == 0) && (udHi == 50) && (udLo == 1) && (udBad == "TypeError") && (tabErrs == "H|N|") && (tab.Value == 2)
 g.Destroy()
-FileAppend("gui-tab-slider:" (ok ? "ok" : slHi "|" slLo "|" prHi "|" prLo "|" udHi "|" udLo "|" udBad "|" tab.Value) "`n", "*", "UTF-8-RAW")
+FileAppend("gui-tab-slider:" (ok ? "ok" : slHi "|" slLo "|" prHi "|" prLo "|" udHi "|" udLo "|" udBad "|" tabErrs "|" tab.Value) "`n", "*", "UTF-8-RAW")
 ExitApp()
