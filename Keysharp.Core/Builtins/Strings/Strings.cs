@@ -2194,6 +2194,9 @@ namespace Keysharp.Builtins
 					if (spec.Precision.HasValue && octStr.Length < spec.Precision.Value)
 						octStr = new string('0', spec.Precision.Value - octStr.Length) + octStr;
 
+					if (spec.Alternate && (octStr.Length == 0 || octStr[0] != '0'))
+						octStr = "0" + octStr;
+
 					if (spec.Width.HasValue && octStr.Length < spec.Width.Value)
 					{
 						int pad = spec.Width.Value - octStr.Length;
@@ -2235,6 +2238,18 @@ namespace Keysharp.Builtins
 						formatSpec += spec.Precision.Value.ToString();
 
 					string floatStr = d.ToString(formatSpec, CultureInfo.InvariantCulture);
+
+					// C99/UCRT & AutoHotkey v2 use at least 2 exponent digits (e+03), whereas .NET uses 3 (e+003).
+					if (spec.Type is 'e' or 'E')
+					{
+						var expIdx = floatStr.IndexOf(spec.Type);
+
+						if (expIdx >= 0 && expIdx + 4 < floatStr.Length
+								&& (floatStr[expIdx + 1] == '+' || floatStr[expIdx + 1] == '-')
+								&& floatStr[expIdx + 2] == '0'
+								&& floatStr.Length - (expIdx + 2) == 3)
+							floatStr = string.Concat(floatStr.AsSpan(0, expIdx + 2), floatStr.AsSpan(expIdx + 3));
+					}
 
 					if (d >= 0)
 					{

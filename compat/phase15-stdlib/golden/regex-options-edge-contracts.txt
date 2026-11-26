@@ -1,0 +1,6 @@
+opt_D=1|0
+opt_A=2|0|1
+opt_J=1|b
+opt_x=1|ab12
+rep_empty=-a-b-c-
+rep_case0=ABC|abc|Abc

@@ -1,0 +1,5 @@
+k1=a=b=c
+miss=DEF
+secs=Sec1,Sec2
+del_k=GONE
+del_s=Sec1

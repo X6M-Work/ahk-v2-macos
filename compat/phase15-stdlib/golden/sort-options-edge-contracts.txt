@@ -1,0 +1,4 @@
+sort_P=a1,m2,x3
+sort_Z=a,b,|,a,b
+sort_U=a,B
+sort_NR=10,3,2,0,-5

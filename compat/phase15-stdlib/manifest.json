@@ -300,6 +300,36 @@
       "category": "stdlib",
       "script": "error-stack-throw-contracts.ahk",
       "expected_stdout": "golden/error-stack-throw-contracts.txt"
+    },
+    {
+      "id": "regex-options-edge-contracts",
+      "category": "stdlib",
+      "script": "regex-options-edge-contracts.ahk",
+      "expected_stdout": "golden/regex-options-edge-contracts.txt"
+    },
+    {
+      "id": "sort-options-edge-contracts",
+      "category": "stdlib",
+      "script": "sort-options-edge-contracts.ahk",
+      "expected_stdout": "golden/sort-options-edge-contracts.txt"
+    },
+    {
+      "id": "format-specifiers-edge-contracts",
+      "category": "stdlib",
+      "script": "format-specifiers-edge-contracts.ahk",
+      "expected_stdout": "golden/format-specifiers-edge-contracts.txt"
+    },
+    {
+      "id": "datetime-format-edge-contracts",
+      "category": "stdlib",
+      "script": "datetime-format-edge-contracts.ahk",
+      "expected_stdout": "golden/datetime-format-edge-contracts.txt"
+    },
+    {
+      "id": "ini-section-edge-contracts",
+      "category": "stdlib",
+      "script": "ini-section-edge-contracts.ahk",
+      "expected_stdout": "golden/ini-section-edge-contracts.txt"
     }
   ]
 }
