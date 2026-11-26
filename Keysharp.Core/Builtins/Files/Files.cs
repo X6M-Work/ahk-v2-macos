@@ -777,7 +777,8 @@ namespace Keysharp.Builtins
 					if (outType != null) Refs.SetValue(outType, "");
 				}
 
-				Refs.SetValue(outRunState, "");
+				if (outRunState != null)
+					Refs.SetValue(outRunState, "");
 #elif WINDOWS
 
 				var shellLink = (WindowsAPI.IShellLinkW)new WindowsAPI.ShellLink();
