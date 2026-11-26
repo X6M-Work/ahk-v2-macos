@@ -1,0 +1,3 @@
+dotall=0|1
+nl_a=>x/>y/>z/>w
+nl_n=>x/>y

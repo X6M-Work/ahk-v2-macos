@@ -420,6 +420,36 @@
       "category": "stdlib",
       "script": "file-encoding-utf16-contracts.ahk",
       "expected_stdout": "golden/file-encoding-utf16-contracts.txt"
+    },
+    {
+      "id": "dynamic-coalesce-edge-contracts",
+      "category": "stdlib",
+      "script": "dynamic-coalesce-edge-contracts.ahk",
+      "expected_stdout": "golden/dynamic-coalesce-edge-contracts.txt"
+    },
+    {
+      "id": "array-map-mutate-edge-contracts",
+      "category": "stdlib",
+      "script": "array-map-mutate-edge-contracts.ahk",
+      "expected_stdout": "golden/array-map-mutate-edge-contracts.txt"
+    },
+    {
+      "id": "string-number-compare-contracts",
+      "category": "stdlib",
+      "script": "string-number-compare-contracts.ahk",
+      "expected_stdout": "golden/string-number-compare-contracts.txt"
+    },
+    {
+      "id": "buffer-unaligned-io-contracts",
+      "category": "stdlib",
+      "script": "buffer-unaligned-io-contracts.ahk",
+      "expected_stdout": "golden/buffer-unaligned-io-contracts.txt"
+    },
+    {
+      "id": "regex-newline-modes-contracts",
+      "category": "stdlib",
+      "script": "regex-newline-modes-contracts.ahk",
+      "expected_stdout": "golden/regex-newline-modes-contracts.txt"
     }
   ]
 }

@@ -1,0 +1,4 @@
+dyn_fn=42
+dyn_prop=20
+coal=99|55|11
+isset=0|1|ok

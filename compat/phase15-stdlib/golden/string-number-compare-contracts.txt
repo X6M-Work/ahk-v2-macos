@@ -1,0 +1,2 @@
+cmp_str=0|0|1|1
+cmp_num=1|1|1|Integer|Float
