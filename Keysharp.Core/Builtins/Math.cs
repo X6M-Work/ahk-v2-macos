@@ -171,8 +171,10 @@ namespace Keysharp.Builtins
 					d1 = d1.AddHours(t);
 				else if (wasMs |= units.StartsWith("l", StringComparison.OrdinalIgnoreCase))
 					d1 = d1.AddMilliseconds(t);
-				else
+				else if (units.StartsWith("d", StringComparison.OrdinalIgnoreCase))
 					d1 = d1.AddDays(t);
+				else
+					return (string)Errors.ValueErrorOccurred("Parameter #3 of DateAdd is invalid.", timeUnits, "");
 			}
 			catch (ArgumentException)
 			{
@@ -226,8 +228,10 @@ namespace Keysharp.Builtins
 				return (long)diff.TotalHours;
 			else if (units.StartsWith("l", StringComparison.OrdinalIgnoreCase))
 				return (long)diff.TotalMilliseconds;
-			else
+			else if (units.StartsWith("d", StringComparison.OrdinalIgnoreCase))
 				return (long)diff.TotalDays;
+			else
+				return Errors.ValueErrorOccurred("Parameter #3 of DateDiff is invalid.", timeUnits);
 		}
 
 		/// <summary>

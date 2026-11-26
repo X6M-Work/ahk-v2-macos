@@ -25,6 +25,15 @@ lines.Push("rebased=" o.a "|" o.b "|" o.c "|" HasBase(o, p2) "|" HasBase(o, p1))
 ObjSetBase(o, Object.Prototype)
 lines.Push("restored=" HasBase(o, Object.Prototype) "|" HasBase(o, p1))
 
+valErrs := ""
+try ObjSetBase({}, [])
+catch ValueError
+	valErrs .= "D|"
+try ObjSetBase(p1, p3)
+catch ValueError
+	valErrs .= "C|"
+lines.Push("verr=" valErrs)
+
 out := ""
 for _, line in lines
 	out .= line "`n"

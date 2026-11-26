@@ -157,11 +157,11 @@ namespace Keysharp.Builtins
 				nativeBase = baseObjVal.type;
 
 			if (nativeObj != nativeBase)
-				return Errors.ErrorOccurred(
+				return Errors.ValueErrorOccurred(
 					$"Cannot rebase: native types differ ({nativeObj.Name} vs {nativeBase.Name}).");
 
 			if (Types.HasBase(baseObjVal, objVal) != 0)
-				return Errors.ErrorOccurred("Cannot rebase: base chain would contain a cycle.");
+				return Errors.ValueErrorOccurred("Cannot rebase: base chain would contain a cycle.");
 
 			objVal.SetBaseInternal(baseObjVal);
 

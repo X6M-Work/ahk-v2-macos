@@ -23,6 +23,15 @@ catch Error
 	popErr := "Error"
 lines.Push("pop=" a.Length "|" popErr)
 
+negErr := ""
+try a.Length := -1
+catch ValueError
+	negErr .= "L|"
+try a.Capacity := -1
+catch ValueError
+	negErr .= "C|"
+lines.Push("neg=" negErr)
+
 m := Map()
 m.CaseSense := "Off"
 m.Default := "fallback"

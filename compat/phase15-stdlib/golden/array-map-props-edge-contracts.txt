@@ -2,4 +2,5 @@ grow=5|1|0|0|1
 del=20|0|5
 shrink=1|10|0
 pop=0|Error
+neg=L|C|
 map=1|2|fallback|0|2|0

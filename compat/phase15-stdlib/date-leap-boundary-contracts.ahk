@@ -11,6 +11,15 @@ lines.Push("leap=" DateAdd("19000228000000", 1, "Days") "|" DateAdd("20000228000
 lines.Push("ybound=" DateAdd("20250101000000", -1, "Seconds"))
 lines.Push("diff_yr=" DateDiff("20250101000000", "20240101000000", "Days") "|" DateDiff("20240101000000", "20230101000000", "Days"))
 
+uErr := ""
+try DateAdd("20260704", 1, "Centuries")
+catch ValueError
+	uErr .= "A|"
+try DateDiff("20260704", "20260703", "Centuries")
+catch ValueError
+	uErr .= "D|"
+lines.Push("uerr=" uErr)
+
 out := ""
 for _, line in lines
 	out .= line "`n"

@@ -29,6 +29,12 @@ public partial class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnum
 			if (!value.CoerceInt(out var val))
 				return;
 
+			if (val < 0)
+			{
+				_ = Errors.ValueErrorOccurred($"Capacity of {val} cannot be negative.", value);
+				return;
+			}
+
 			if (val < array.Count)
 				Length = val;
 
@@ -57,6 +63,12 @@ public partial class Array : KeysharpObject, I__Enum, IEnumerable<object>, IEnum
 		{
 			if (!value.CoerceInt(out var i))
 				return;
+
+			if (i < 0)
+			{
+				_ = Errors.ValueErrorOccurred($"Length of {i} cannot be negative.", value);
+				return;
+			}
 
 			if (i == 0)
 				RemoveItems(0, array.Count);

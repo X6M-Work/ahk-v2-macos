@@ -2,3 +2,4 @@ chain=1|2|3|1
 badbase=TypeError
 rebased=1|1|1|0|1
 restored=1|0
+verr=D|C|
