@@ -39,6 +39,12 @@ m["Alpha"] := 1
 m["alpha"] := 2
 lines.Push("map=" m.Count "|" m["ALPHA"] "|" m["missing"] "|" m.Has("missing") "|" m.Delete("ALPHA") "|" m.Count)
 
+mCapErr := ""
+try m.Capacity := -1
+catch MemoryError
+	mCapErr := "MemoryError"
+lines.Push("mcap=" mCapErr)
+
 out := ""
 for _, line in lines
 	out .= line "`n"

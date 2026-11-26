@@ -123,10 +123,13 @@ namespace Keysharp.Builtins
 			get => map.Capacity;
 			set
 			{
-				if (!value.CoerceInt(out var capacity))
+				if (value < 0 || value > int.MaxValue)
+				{
+					_ = Errors.ErrorOccurred(new MemoryError("Out of memory."), DefaultObject);
 					return;
+				}
 
-				map.EnsureCapacity(capacity);
+				map.EnsureCapacity((int)value);
 			}
 		}
 
