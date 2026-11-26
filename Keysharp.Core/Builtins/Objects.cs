@@ -142,10 +142,10 @@ namespace Keysharp.Builtins
 				return Errors.ValueErrorOccurred("Invalid base.");
 
 			if (objVal == null || Types.HasBase(objVal, objectProto) == 0)
-				return Errors.ErrorOccurred($"Object of type {obj?.GetType().ToString() ?? "null"} was not of type Object.");
+				return Errors.TypeErrorOccurred(obj, typeof(KeysharpObject));
 
 			if (baseObjVal == null || Types.HasBase(baseObjVal, objectProto) == 0)
-				return Errors.ErrorOccurred($"Object of type {baseObj?.GetType().ToString() ?? "null"} was not of type Object.");
+				return Errors.TypeErrorOccurred(baseObj, typeof(KeysharpObject));
 
 			// find each object's "native" (built‐in) prototype type
 			var nativeObj = script.GetNativeType(objVal.Base);

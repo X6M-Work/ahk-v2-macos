@@ -1,0 +1,3 @@
+empty=0|only
+rc=b,a,B,A
+nspace= -3, 2, 10

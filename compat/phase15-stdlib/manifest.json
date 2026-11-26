@@ -510,6 +510,36 @@
       "category": "stdlib",
       "script": "error-custom-subclass-contracts.ahk",
       "expected_stdout": "golden/error-custom-subclass-contracts.txt"
+    },
+    {
+      "id": "date-leap-boundary-contracts",
+      "category": "stdlib",
+      "script": "date-leap-boundary-contracts.ahk",
+      "expected_stdout": "golden/date-leap-boundary-contracts.txt"
+    },
+    {
+      "id": "regex-optional-group-contracts",
+      "category": "stdlib",
+      "script": "regex-optional-group-contracts.ahk",
+      "expected_stdout": "golden/regex-optional-group-contracts.txt"
+    },
+    {
+      "id": "object-base-chain-contracts",
+      "category": "stdlib",
+      "script": "object-base-chain-contracts.ahk",
+      "expected_stdout": "golden/object-base-chain-contracts.txt"
+    },
+    {
+      "id": "sort-edge-cases-contracts",
+      "category": "stdlib",
+      "script": "sort-edge-cases-contracts.ahk",
+      "expected_stdout": "golden/sort-edge-cases-contracts.txt"
+    },
+    {
+      "id": "closure-variadic-meta-contracts",
+      "category": "stdlib",
+      "script": "closure-variadic-meta-contracts.ahk",
+      "expected_stdout": "golden/closure-variadic-meta-contracts.txt"
     }
   ]
 }
