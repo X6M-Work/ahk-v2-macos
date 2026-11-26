@@ -480,6 +480,36 @@
       "category": "stdlib",
       "script": "file-read-mlimit-contracts.ahk",
       "expected_stdout": "golden/file-read-mlimit-contracts.txt"
+    },
+    {
+      "id": "array-default-negidx-contracts",
+      "category": "stdlib",
+      "script": "array-default-negidx-contracts.ahk",
+      "expected_stdout": "golden/array-default-negidx-contracts.txt"
+    },
+    {
+      "id": "map-chaining-errors-contracts",
+      "category": "stdlib",
+      "script": "map-chaining-errors-contracts.ahk",
+      "expected_stdout": "golden/map-chaining-errors-contracts.txt"
+    },
+    {
+      "id": "class-nested-static-contracts",
+      "category": "stdlib",
+      "script": "class-nested-static-contracts.ahk",
+      "expected_stdout": "golden/class-nested-static-contracts.txt"
+    },
+    {
+      "id": "string-istype-time-contracts",
+      "category": "stdlib",
+      "script": "string-istype-time-contracts.ahk",
+      "expected_stdout": "golden/string-istype-time-contracts.txt"
+    },
+    {
+      "id": "error-custom-subclass-contracts",
+      "category": "stdlib",
+      "script": "error-custom-subclass-contracts.ahk",
+      "expected_stdout": "golden/error-custom-subclass-contracts.txt"
     }
   ]
 }

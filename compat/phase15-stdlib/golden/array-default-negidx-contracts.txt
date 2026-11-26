@@ -1,0 +1,4 @@
+neg=1|30|10
+del_neg=0|fallback|ov
+ins_neg=4|25|30
+cap=1
