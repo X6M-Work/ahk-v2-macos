@@ -173,7 +173,7 @@ namespace Keysharp.Builtins
 						if (cbstate == -1)
 							cb.CheckState = CheckState.Indeterminate;
 						else
-							cb.Checked = Options.OnOff(value) ?? false;
+							cb.CheckState = (Options.OnOff(value) ?? false) ? CheckState.Checked : CheckState.Unchecked;
 					}
 					else if (_control is KeysharpRadioButton rb)
 						rb.Checked = Options.OnOff(value) ?? false;

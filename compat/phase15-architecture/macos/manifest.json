@@ -35,6 +35,9 @@
     {"id":"macos-gui-datetime-mc","category":"native-capability","script":"gui-datetime-monthcal-mac.ahk","expected_stdout":"golden/gui-datetime-monthcal-mac.txt","platforms":["Darwin"]},
     {"id":"macos-gui-picture","category":"native-capability","script":"gui-picture-bitmap-mac.ahk","expected_stdout":"golden/gui-picture-bitmap-mac.txt","platforms":["Darwin"]},
     {"id":"macos-posix-uname","category":"native-capability","script":"posix-uname-access-mac.ahk","expected_stdout":"golden/posix-uname-access-mac.txt","platforms":["Darwin"]},
-    {"id":"macos-cf-string","category":"native-capability","script":"corefoundation-str-mac.ahk","expected_stdout":"golden/corefoundation-str-mac.txt","platforms":["Darwin"]}
+    {"id":"macos-cf-string","category":"native-capability","script":"corefoundation-str-mac.ahk","expected_stdout":"golden/corefoundation-str-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-bundle-paths","category":"native-capability","script":"bundle-version-paths-mac.ahk","expected_stdout":"golden/bundle-version-paths-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-objc-nsstring","category":"native-capability","script":"objc-runtime-nsstring-mac.ahk","expected_stdout":"golden/objc-runtime-nsstring-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-gui-misc-ctls","category":"native-capability","script":"gui-hotkey-link-groupbox-mac.ahk","expected_stdout":"golden/gui-hotkey-link-groupbox-mac.txt","platforms":["Darwin"]}
   ]
 }

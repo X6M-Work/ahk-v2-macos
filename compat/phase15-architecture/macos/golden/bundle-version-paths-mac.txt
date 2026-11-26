@@ -1,0 +1,1 @@
+bundle-paths:ok
