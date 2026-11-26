@@ -1340,7 +1340,7 @@ public class MacInputTests
 		var driver = new FakeEventTapDriver { Enabled = false };
 		using var tap = new MacNativeEventTap(script, 1, (_, _) => false, () => { }, (_, _) => { }, driver);
 		Assert.IsFalse(tap.Start(1000));
-		StringAssert.Contains("not enabled", tap.StartupFailure);
+		Assert.That(tap.StartupFailure, Does.Contain("not enabled"));
 		Assert.IsTrue(tap.Stop());
 		Assert.AreEqual(2, driver.ReleaseCount);
 	}

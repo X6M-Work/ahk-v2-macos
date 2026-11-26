@@ -473,6 +473,10 @@ namespace Keysharp.Builtins
 				return default;
 			}
 
+#if OSX
+			var bitmap = icon.ToBitmap();
+			return bitmap != null ? [(icon, bitmap)] : default;
+#else
 			//Get an .ico file in memory, then split it into separate icons and bitmaps.
 			byte[] src = null;
 #if WINDOWS
@@ -481,13 +485,8 @@ namespace Keysharp.Builtins
 				icon.Save(stream);
 				src = stream.ToArray();
 			}
-#elif LINUX
-			src = icon.ToGdk().PixelBytes.Data;
 #else
-			var bitmap = icon.ToBitmap();
-			if (bitmap != null)
-				return [(icon, bitmap)];
-			return default;
+			src = icon.ToGdk().PixelBytes.Data;
 #endif
 
 			int count = BitConverter.ToInt16(src, 4);
@@ -536,6 +535,7 @@ namespace Keysharp.Builtins
 			}
 
 			return splitIcons;
+#endif
 		}
 
         private static Control GuiControlGetFocused(Control parent)
