@@ -16,6 +16,7 @@ lines.Push("r2=" r2 "|" c2)
 lines.Push("r3=" r3)
 lines.Push("sp0=" RegExMatch("abc", "a", , 0) "|" RegExMatch("abc", "$", , 0) "|" RegExReplace("abc", ".", "X", , -1, 0) "|" RegExReplace("abc", "$", "!", , -1, 0))
 lines.Push("bref=" RegExReplace("abc", "(b)", "[$0|${0}|$1|${1}|$9|$10|$$|$]"))
+lines.Push("rx10=" RegExReplace("abcdefghij", "(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)", "$10|${10}|$U10|$U{10}"))
 
 out := ""
 for _, line in lines

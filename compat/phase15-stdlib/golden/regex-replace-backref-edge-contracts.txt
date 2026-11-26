@@ -3,3 +3,4 @@ r2=hello World Test|2
 r3=1,234,567
 sp0=0|4|abc|abc!
 bref=a[b|b|b|b||b0|$|$]c
+rx10=a0|j|A0|J

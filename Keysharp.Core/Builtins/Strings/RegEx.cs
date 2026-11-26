@@ -100,22 +100,8 @@ namespace Keysharp.Builtins
 					FlushLiteral();
 					var d1 = pattern[refPos] - '0';
 					var localMode = mode;
-
-					if (refPos + 1 < pattern.Length && char.IsAsciiDigit(pattern[refPos + 1]))
-					{
-						var d2Char = pattern[refPos + 1];
-						var twoDigit = d1 * 10 + (d2Char - '0');
-						parts.Add(m => twoDigit <= m.CaptureCount
-							? ApplyCase(GroupValue(m, twoDigit), localMode)
-							: ApplyCase(GroupValue(m, d1), localMode) + d2Char);
-						i = refPos + 2;
-					}
-					else
-					{
-						parts.Add(m => ApplyCase(GroupValue(m, d1), localMode));
-						i = refPos + 1;
-					}
-
+					parts.Add(m => ApplyCase(GroupValue(m, d1), localMode));
+					i = refPos + 1;
 					continue;
 				}
 
