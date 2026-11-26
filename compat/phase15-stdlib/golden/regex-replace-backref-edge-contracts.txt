@@ -2,3 +2,4 @@ r1=[FOO:foo:$] [BAR:bar:$] baz|2
 r2=hello World Test|2
 r3=1,234,567
 sp0=0|4|abc|abc!
+bref=a[b|b|b|b||b0|$|$]c

@@ -8,102 +8,128 @@ namespace Keysharp.Builtins
 		internal ConcurrentLfu<string, Func<PcreMatch, string>> ReplacementCache = new (Caching.DefaultCacheCapacity);
 		internal Func<string, Func<PcreMatch, string>> parseReplace = null;
 
-		internal Func<string, Func<PcreMatch, string>> ParseReplace
+		internal Func<string, Func<PcreMatch, string>> ParseReplace => parseReplace ??= ParseAhkReplace;
+
+		private static string ApplyCase(string value, char mode) => mode switch
 		{
-			get
-			{
-				if (parseReplace == null)
-				{
-					var asm = typeof(PcreRegex).Assembly;
-					// 2) find the internal class by its full name
-					var rpType = asm.GetType("PCRE.Internal.ReplacementPattern", throwOnError: true);
-					var mi = rpType.GetMethod("Parse", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-					var baseParse = (Func<string, Func<PcreMatch, string>>)Delegate.CreateDelegate(
-										typeof(Func<string, Func<PcreMatch, string>>),
-										mi);
-					parseReplace = pattern => ParseAhkReplace(pattern, baseParse);
-				}
+			'U' => Strings.StrUpper(value),
+			'L' => Strings.StrLower(value),
+			'T' => Strings.StrTitle(value),
+			_ => value
+		};
 
-				return parseReplace;
-			}
-		}
+		private static string GroupValue(PcreMatch m, int index) =>
+			index >= 0 && index <= m.CaptureCount && m.Groups[index].Success ? m.Groups[index].Value : "";
 
-		private static Func<PcreMatch, string> ParseAhkReplace(string pattern, Func<string, Func<PcreMatch, string>> baseParse)
+		private static Func<PcreMatch, string> ParseAhkReplace(string pattern)
 		{
 			if (string.IsNullOrEmpty(pattern) || !pattern.Contains('$'))
-				return baseParse(pattern);
+				return _ => pattern ?? "";
 
-			List<Func<PcreMatch, string>> parts = null;
-			var chunkStart = 0;
+			var parts = new List<Func<PcreMatch, string>>();
+			var lit = new StringBuilder();
 			var i = 0;
+
+			void FlushLiteral()
+			{
+				if (lit.Length > 0)
+				{
+					var text = lit.ToString();
+					parts.Add(_ => text);
+					_ = lit.Clear();
+				}
+			}
 
 			while (i < pattern.Length)
 			{
 				if (pattern[i] != '$')
 				{
-					i++;
+					_ = lit.Append(pattern[i++]);
 					continue;
 				}
 
-				if (i + 1 < pattern.Length && pattern[i + 1] == '$')
+				if (i + 1 >= pattern.Length)
 				{
+					_ = lit.Append('$');
+					break;
+				}
+
+				if (pattern[i + 1] == '$')
+				{
+					_ = lit.Append('$');
 					i += 2;
 					continue;
 				}
 
-				if (i + 2 < pattern.Length)
+				var mode = '\0';
+				var refPos = i + 1;
+				var upperNext = char.ToUpperInvariant(pattern[refPos]);
+
+				if (upperNext is 'U' or 'L' or 'T' && refPos + 1 < pattern.Length
+						&& (pattern[refPos + 1] == '{' || char.IsAsciiDigit(pattern[refPos + 1])))
 				{
-					var mode = char.ToUpperInvariant(pattern[i + 1]);
-
-					if (mode is 'U' or 'L' or 'T')
-					{
-						var refStart = i + 2;
-						var refEnd = refStart;
-
-						if (pattern[refStart] == '{')
-						{
-							var close = pattern.IndexOf('}', refStart + 1);
-
-							if (close > refStart + 1)
-								refEnd = close + 1;
-						}
-						else if (char.IsAsciiDigit(pattern[refStart]))
-						{
-							refEnd = refStart + 1;
-
-							while (refEnd < pattern.Length && char.IsAsciiDigit(pattern[refEnd]))
-								refEnd++;
-						}
-
-						if (refEnd > refStart)
-						{
-							parts ??= [];
-
-							if (i > chunkStart)
-								parts.Add(baseParse(pattern[chunkStart..i]));
-
-							var sub = baseParse("$" + pattern[refStart..refEnd]);
-							parts.Add(mode switch
-							{
-								'U' => m => Strings.StrUpper(sub(m)),
-								'L' => m => Strings.StrLower(sub(m)),
-								_ => m => Strings.StrTitle(sub(m))
-							});
-							chunkStart = refEnd;
-							i = refEnd;
-							continue;
-						}
-					}
+					mode = upperNext;
+					refPos++;
 				}
 
+				if (pattern[refPos] == '{')
+				{
+					var close = pattern.IndexOf('}', refPos + 1);
+
+					if (close > refPos + 1)
+					{
+						FlushLiteral();
+						var token = pattern[(refPos + 1)..close];
+						var localMode = mode;
+
+						if (int.TryParse(token, NumberStyles.None, CultureInfo.InvariantCulture, out var idx))
+							parts.Add(m => ApplyCase(GroupValue(m, idx), localMode));
+						else
+							parts.Add(m =>
+							{
+								var g = m.Groups[token];
+								return ApplyCase(g.Success ? g.Value : "", localMode);
+							});
+
+						i = close + 1;
+						continue;
+					}
+				}
+				else if (char.IsAsciiDigit(pattern[refPos]))
+				{
+					FlushLiteral();
+					var d1 = pattern[refPos] - '0';
+					var localMode = mode;
+
+					if (refPos + 1 < pattern.Length && char.IsAsciiDigit(pattern[refPos + 1]))
+					{
+						var d2Char = pattern[refPos + 1];
+						var twoDigit = d1 * 10 + (d2Char - '0');
+						parts.Add(m => twoDigit <= m.CaptureCount
+							? ApplyCase(GroupValue(m, twoDigit), localMode)
+							: ApplyCase(GroupValue(m, d1), localMode) + d2Char);
+						i = refPos + 2;
+					}
+					else
+					{
+						parts.Add(m => ApplyCase(GroupValue(m, d1), localMode));
+						i = refPos + 1;
+					}
+
+					continue;
+				}
+
+				_ = lit.Append('$');
 				i++;
 			}
 
-			if (parts == null)
-				return baseParse(pattern);
+			FlushLiteral();
 
-			if (chunkStart < pattern.Length)
-				parts.Add(baseParse(pattern[chunkStart..]));
+			if (parts.Count == 0)
+				return _ => "";
+
+			if (parts.Count == 1)
+				return parts[0];
 
 			var compiled = parts.ToArray();
 			return m =>
