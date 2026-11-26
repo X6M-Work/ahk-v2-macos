@@ -12,8 +12,17 @@ txt := g.Add("Text", "w140", "StyledText")
 txt.GetPos(&tx, &ty, &tw, &th)
 tTitle := g.Title
 tText := txt.Text
+missErr := ""
+try _ := g["NoSuchCtrl"]
+catch Any as e
+    missErr := Type(e)
 g.Destroy()
+deadErr := ""
+try g.Add("Text", , "after")
+catch Any as e
+    deadErr := Type(e)
 
 ok := (tTitle == "MacStyledTitle") && (tText == "StyledText") && (tw >= 140) && (th > 0)
-FileAppend("gui-style:" (ok ? "ok" : tTitle "|" tText "|" tw "|" th) "`n", "*", "UTF-8-RAW")
+    && (missErr == "UnsetItemError") && (deadErr == "Error")
+FileAppend("gui-style:" (ok ? "ok" : tTitle "|" tText "|" tw "|" th "|" missErr "|" deadErr) "`n", "*", "UTF-8-RAW")
 ExitApp()

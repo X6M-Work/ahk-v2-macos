@@ -80,7 +80,7 @@ namespace Keysharp.Builtins
 					else
 						_control.Text = s;
 
-					if (ParentForm.Visible == true)
+					if (ParentForm?.Visible == true)
 						_control.Refresh();
 				}
 			}
@@ -349,7 +349,7 @@ namespace Keysharp.Builtins
 					else if (_control is Forms.Control ctrl)
 						ctrl.Text = Conversions.ReplaceLineEndings(val, Environment.NewLine);
 
-					if (ParentForm.Visible == true)
+					if (ParentForm?.Visible == true)
 						_control.Refresh();
 				}
 			}

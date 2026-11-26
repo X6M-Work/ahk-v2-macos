@@ -398,7 +398,7 @@ namespace Keysharp.Builtins
 					else if (value.CoerceLong(out var l))
 						_control.BackColor = Color.FromArgb((int)(l | 0xFF000000));
 
-					if (ParentForm.Visible == true)
+					if (ParentForm?.Visible == true)
 						_control.Refresh();
 				}
 			}

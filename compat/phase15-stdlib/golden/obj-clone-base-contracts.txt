@@ -1,5 +1,6 @@
 own=1|0|2
 cap=1|1
+cap_err=MemoryError|MemoryError
 sum=30
 base=1|1|custom|20
 clone=10|99|custom|198

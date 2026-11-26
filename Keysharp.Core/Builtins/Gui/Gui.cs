@@ -509,6 +509,9 @@ namespace Keysharp.Builtins
 
 		public object Add(object controlType, object options = null, object text = null)
 		{
+			if (form == null || form.IsDisposed)
+				return Errors.ErrorOccurred("GUI window is no longer available.");
+
 			if (!controlType.CoerceString(out var typeo) || !options.CoerceString(out var optionsStr))
 				return DefaultObject;
 
@@ -4281,7 +4284,7 @@ namespace Keysharp.Builtins
 				}
 
 				return Script.CompatReturnsUnsetForMissing ? null
-					: Errors.ErrorOccurred($"No controls matched the handle, name, text, ClassNN or NetClassNN {controlName}.");
+					: Errors.UnsetItemErrorOccurred(controlName);
 			}
 		}
 
