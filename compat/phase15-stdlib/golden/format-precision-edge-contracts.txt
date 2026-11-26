@@ -6,3 +6,4 @@ galt=5.00000|5.000|12.00|0.001200|0.000
 ver=0|1|0
 mix=b c a b
 nonfin=inf|-inf|nan|INF|-INF|NAN|   inf|  -inf|+nan
+fdef=3.500000|-0.000000|-0.000000

@@ -2253,8 +2253,8 @@ namespace Keysharp.Builtins
 
 					if (spec.Precision.HasValue)
 						formatSpec += spec.Precision.Value.ToString();
-					else if (spec.Type is 'g' or 'G')
-						formatSpec += "6"; // C99/UCRT & AutoHotkey v2 default precision for g/G is 6 significant digits.
+					else if (spec.Type is 'f' or 'g' or 'G')
+						formatSpec += "6"; // C99/UCRT & AutoHotkey v2 default precision for f/g/G is 6.
 
 					string floatStr;
 
