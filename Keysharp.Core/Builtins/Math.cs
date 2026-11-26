@@ -87,7 +87,7 @@ namespace Keysharp.Builtins
 				return DefaultObject;
 
 			if (n < -1 || n > 1)
-				return Errors.ErrorOccurred($"ACos() argument of {n} was not between -1 and 1.");
+				return Errors.ValueErrorOccurred($"ACos() argument of {n} was not between -1 and 1.");
 
 			return Math.Acos(n);
 		}
@@ -97,14 +97,14 @@ namespace Keysharp.Builtins
 		/// </summary>
 		/// <param name="number">A number representing a sine, where -1 ≤ <paramref name="n"/> ≤ 1.</param>
 		/// <returns>An angle, θ, measured in radians, such that -π/2 ≤ θ ≤ π/2.</returns>
-		/// <exception cref="Error">An <see cref="Error"/> exception is thrown if the argument was not between -1 and 1.</exception>
+		/// <exception cref="ValueError">A <see cref="ValueError"/> exception is thrown if the argument was not between -1 and 1.</exception>
 		public static object ASin(object number)
 		{
 			if (!number.CoerceDouble(out var n))
 				return DefaultObject;
 
 			if (n < -1 || n > 1)
-				return Errors.ErrorOccurred($"ASin() argument of {n} was not between -1 and 1.");
+				return Errors.ValueErrorOccurred($"ASin() argument of {n} was not between -1 and 1.");
 
 			return Math.Asin(n);
 		}
@@ -256,7 +256,7 @@ namespace Keysharp.Builtins
 				return DefaultObject;
 
 			if (n < 0)
-				return Errors.ErrorOccurred($"Ln() argument {n} was negative.");
+				return Errors.ValueErrorOccurred($"Ln() argument {n} was negative.");
 
 			return Math.Log(n);
 		}
@@ -267,14 +267,14 @@ namespace Keysharp.Builtins
 		/// <param name="number">A number whose logarithm is to be found.</param>
 		/// <param name="base">The base of the logarithm. If unspecified this is <c>10</c>.</param>
 		/// <returns>The logarithm of <paramref name="n"/> to base <paramref name="b"/> if n is positive, else an exception is thrown.</returns>
-		/// <exception cref="Error">An <see cref="Error"/> exception is thrown if the argument was negative.</exception>
+		/// <exception cref="ValueError">A <see cref="ValueError"/> exception is thrown if the argument was negative.</exception>
 		public static object Log(object number, object @base = null)
 		{
 			if (!number.CoerceDouble(out var n))
 				return DefaultObject;
 
 			if (n < 0)
-				return Errors.ErrorOccurred($"Log() argument {n} was negative.");
+				return Errors.ValueErrorOccurred($"Log() argument {n} was negative.");
 
 			if (@base == null)
 				return Math.Log10(n);
@@ -480,7 +480,7 @@ namespace Keysharp.Builtins
 				return DefaultObject;
 
 			if (n < 0)
-				return Errors.ErrorOccurred($"Sqrt() argument of {n} was negative.");
+				return Errors.ValueErrorOccurred($"Sqrt() argument of {n} was negative.");
 
 			return Math.Sqrt(n);
 		}
