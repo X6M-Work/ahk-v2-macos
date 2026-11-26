@@ -1,0 +1,3 @@
+files_top=a.txt:txt:5
+dirs_top=1:sub
+files_rec=a.txt,b.log

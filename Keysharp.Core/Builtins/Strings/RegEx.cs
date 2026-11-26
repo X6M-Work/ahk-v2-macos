@@ -18,13 +18,103 @@ namespace Keysharp.Builtins
 					// 2) find the internal class by its full name
 					var rpType = asm.GetType("PCRE.Internal.ReplacementPattern", throwOnError: true);
 					var mi = rpType.GetMethod("Parse", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-					parseReplace = (Func<string, Func<PcreMatch, string>>)Delegate.CreateDelegate(
-									   typeof(Func<string, Func<PcreMatch, string>>),
-									   mi);
+					var baseParse = (Func<string, Func<PcreMatch, string>>)Delegate.CreateDelegate(
+										typeof(Func<string, Func<PcreMatch, string>>),
+										mi);
+					parseReplace = pattern => ParseAhkReplace(pattern, baseParse);
 				}
 
 				return parseReplace;
 			}
+		}
+
+		private static Func<PcreMatch, string> ParseAhkReplace(string pattern, Func<string, Func<PcreMatch, string>> baseParse)
+		{
+			if (string.IsNullOrEmpty(pattern) || !pattern.Contains('$'))
+				return baseParse(pattern);
+
+			List<Func<PcreMatch, string>> parts = null;
+			var chunkStart = 0;
+			var i = 0;
+
+			while (i < pattern.Length)
+			{
+				if (pattern[i] != '$')
+				{
+					i++;
+					continue;
+				}
+
+				if (i + 1 < pattern.Length && pattern[i + 1] == '$')
+				{
+					i += 2;
+					continue;
+				}
+
+				if (i + 2 < pattern.Length)
+				{
+					var mode = char.ToUpperInvariant(pattern[i + 1]);
+
+					if (mode is 'U' or 'L' or 'T')
+					{
+						var refStart = i + 2;
+						var refEnd = refStart;
+
+						if (pattern[refStart] == '{')
+						{
+							var close = pattern.IndexOf('}', refStart + 1);
+
+							if (close > refStart + 1)
+								refEnd = close + 1;
+						}
+						else if (char.IsAsciiDigit(pattern[refStart]))
+						{
+							refEnd = refStart + 1;
+
+							while (refEnd < pattern.Length && char.IsAsciiDigit(pattern[refEnd]))
+								refEnd++;
+						}
+
+						if (refEnd > refStart)
+						{
+							parts ??= [];
+
+							if (i > chunkStart)
+								parts.Add(baseParse(pattern[chunkStart..i]));
+
+							var sub = baseParse("$" + pattern[refStart..refEnd]);
+							parts.Add(mode switch
+							{
+								'U' => m => Strings.StrUpper(sub(m)),
+								'L' => m => Strings.StrLower(sub(m)),
+								_ => m => Strings.StrTitle(sub(m))
+							});
+							chunkStart = refEnd;
+							i = refEnd;
+							continue;
+						}
+					}
+				}
+
+				i++;
+			}
+
+			if (parts == null)
+				return baseParse(pattern);
+
+			if (chunkStart < pattern.Length)
+				parts.Add(baseParse(pattern[chunkStart..]));
+
+			var compiled = parts.ToArray();
+			return m =>
+			{
+				var sb = new StringBuilder();
+
+				foreach (var part in compiled)
+					_ = sb.Append(part(m));
+
+				return sb.ToString();
+			};
 		}
 	}
 

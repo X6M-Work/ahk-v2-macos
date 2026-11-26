@@ -1,0 +1,3 @@
+multi=vt:v-err|vt:t-err|os:2
+any=boom|404
+rethrow=c1:inner|c2:inner

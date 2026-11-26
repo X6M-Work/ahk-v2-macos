@@ -1,0 +1,4 @@
+pos=B-A-B
+case=HELLO|world|Auto Hotkey
+trim_def=hi|hi|hi
+sub=2345|67|789

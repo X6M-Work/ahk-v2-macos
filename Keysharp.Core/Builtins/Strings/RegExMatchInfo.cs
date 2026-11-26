@@ -55,7 +55,9 @@ namespace Keysharp.Builtins
 
 		public long Len(object obj) => GetGroup(obj).Length;
 
-		public string Name(object obj)
+		public string get_Name(object obj = null) => Name(obj);
+
+		public string Name(object obj = null)
 		{
 			var g = GetGroup(obj);
 			return g.Success ? g.Name : "";

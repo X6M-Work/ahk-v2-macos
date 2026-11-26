@@ -258,6 +258,48 @@
       "category": "stdlib",
       "script": "expr-switch-edge-contracts.ahk",
       "expected_stdout": "golden/expr-switch-edge-contracts.txt"
+    },
+    {
+      "id": "dir-loop-files-contracts",
+      "category": "stdlib",
+      "script": "dir-loop-files-contracts.ahk",
+      "expected_stdout": "golden/dir-loop-files-contracts.txt"
+    },
+    {
+      "id": "math-trig-edge-contracts",
+      "category": "stdlib",
+      "script": "math-trig-edge-contracts.ahk",
+      "expected_stdout": "golden/math-trig-edge-contracts.txt"
+    },
+    {
+      "id": "string-pad-case-contracts",
+      "category": "stdlib",
+      "script": "string-pad-case-contracts.ahk",
+      "expected_stdout": "golden/string-pad-case-contracts.txt"
+    },
+    {
+      "id": "regex-callout-backref-contracts",
+      "category": "stdlib",
+      "script": "regex-callout-backref-contracts.ahk",
+      "expected_stdout": "golden/regex-callout-backref-contracts.txt"
+    },
+    {
+      "id": "object-defineprop-inherit-contracts",
+      "category": "stdlib",
+      "script": "object-defineprop-inherit-contracts.ahk",
+      "expected_stdout": "golden/object-defineprop-inherit-contracts.txt"
+    },
+    {
+      "id": "func-closure-dynamic-contracts",
+      "category": "stdlib",
+      "script": "func-closure-dynamic-contracts.ahk",
+      "expected_stdout": "golden/func-closure-dynamic-contracts.txt"
+    },
+    {
+      "id": "error-stack-throw-contracts",
+      "category": "stdlib",
+      "script": "error-stack-throw-contracts.ahk",
+      "expected_stdout": "golden/error-stack-throw-contracts.txt"
     }
   ]
 }

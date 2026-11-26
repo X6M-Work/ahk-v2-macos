@@ -1,0 +1,2 @@
+bref=1|bar|word|5|3
+rcase=HELLO world|Hello|$U1
