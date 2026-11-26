@@ -6145,7 +6145,7 @@
                      "windows":  "full",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
+                     "macos":  "partial",
                      "notes":  "Registers Callback(GuiCtrlObj, wParam, lParam, Msg) for a window message the control receives, ahead of WM_COMMAND/WM_NOTIFY reflection and default processing; a non-empty return, 0 included, is the reply and ends the message\u0027s processing. Off Windows only the script\u0027s own synthesized GUI input messages are delivered, after the global monitors. WM_MOUSELEAVE reports toolkit pointer exit with zero wParam/lParam; native leave delivery is verified on X11 under Xvfb; Wayland and macOS delivery remain unverified.",
                      "tested-by":  "GuiTests.MessageHandlers; MessageFilterTests.EtoMouseLeave"
                  },
@@ -6456,7 +6456,7 @@
                      "windows":  "full",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
+                     "macos":  "partial",
                      "notes":  "Registers Callback(GuiObj, wParam, lParam, Msg) for a window message the GUI receives, ahead of the default window procedure; a non-empty return, 0 included, is the reply and ends the message\u0027s processing. Off Windows only the script\u0027s own synthesized GUI input messages are delivered, after the global monitors. WM_MOUSELEAVE reports toolkit pointer exit with zero wParam/lParam; native leave delivery is verified on X11 under Xvfb; Wayland and macOS delivery remain unverified.",
                      "tested-by":  "GuiTests.MessageHandlers; MessageFilterTests.EtoMouseLeave"
                  },

@@ -180,6 +180,18 @@
       "category": "stdlib",
       "script": "number-format-base-contracts.ahk",
       "expected_stdout": "golden/number-format-base-contracts.txt"
+    },
+    {
+      "id": "timer-tick-contracts",
+      "category": "stdlib",
+      "script": "timer-tick-contracts.ahk",
+      "expected_stdout": "golden/timer-tick-contracts.txt"
+    },
+    {
+      "id": "string-unicode-sort-contracts",
+      "category": "stdlib",
+      "script": "string-unicode-sort-contracts.ahk",
+      "expected_stdout": "golden/string-unicode-sort-contracts.txt"
     }
   ]
 }

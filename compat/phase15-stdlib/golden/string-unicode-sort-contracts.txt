@@ -1,0 +1,7 @@
+ulen=9|café|Ω|日本
+uinstr=6|8
+urep=café-Δ-日本
+usplit=3|café|Ω|日本
+ordchr=937|Ω|128512|😀
+sort_cs=A,B,a,b
+sort_ci=a,b,c

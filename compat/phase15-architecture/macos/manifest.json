@@ -14,6 +14,8 @@
     {"id":"macos-richedit-overlay","category":"native-capability","script":"richedit-overlay.ahk","expected_stdout":"golden/richedit-overlay.txt","platforms":["Darwin"]},
     {"id":"macos-gui-controls-coords","category":"native-capability","script":"gui-controls-coords.ahk","expected_stdout":"golden/gui-controls-coords.txt","platforms":["Darwin"]},
     {"id":"macos-gui-onmessage","category":"native-capability","script":"gui-onmessage.ahk","expected_stdout":"golden/gui-onmessage.txt","platforms":["Darwin"]},
-    {"id":"macos-menu-bar","category":"native-capability","script":"menu-bar.ahk","expected_stdout":"golden/menu-bar.txt","platforms":["Darwin"]}
+    {"id":"macos-menu-bar","category":"native-capability","script":"menu-bar.ahk","expected_stdout":"golden/menu-bar.txt","platforms":["Darwin"]},
+    {"id":"macos-webview","category":"native-capability","script":"webview-probe.ahk","expected_stdout":"golden/webview-probe.txt","platforms":["Darwin"]},
+    {"id":"macos-apple-events","category":"native-capability","script":"apple-events-probe.ahk","expected_stdout":"golden/apple-events-probe.txt","platforms":["Darwin"]}
   ]
 }
