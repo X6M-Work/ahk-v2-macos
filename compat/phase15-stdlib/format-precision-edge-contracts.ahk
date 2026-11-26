@@ -13,6 +13,11 @@ lines.Push("min=" Format("{:d}|{:i}", -9223372036854775808, -9223372036854775808
 lines.Push("galt=" Format("{:#g}|{:#.4g}|{:#.4G}|{:#.4g}|{:#.4g}", 5.0, 5.0, 12.0, 0.0012, 0.0))
 lines.Push("ver=" VerCompare("1.0+build1", "1.0+build2") "|" VerCompare("1.0+b1", "=1.0+b2") "|" VerCompare("1.0-alpha+1", "1.0-alpha+2"))
 lines.Push("mix=" Format("{2} {} {1} {}", "a", "b", "c"))
+bInf := Buffer(8, 0)
+NumPut("Int64", 0x7FF0000000000000, bInf), pInf := NumGet(bInf, 0, "Double")
+NumPut("Int64", 0xFFF0000000000000, bInf), nInf := NumGet(bInf, 0, "Double")
+NumPut("Int64", 0x7FF8000000000000, bInf), qNan := NumGet(bInf, 0, "Double")
+lines.Push("nonfin=" Format("{:f}|{:f}|{:f}|{:G}|{:G}|{:G}|{:06f}|{:06f}|{:+f}", pInf, nInf, qNan, pInf, nInf, qNan, pInf, nInf, qNan))
 
 out := ""
 for _, line in lines
