@@ -57,11 +57,7 @@ namespace Keysharp.Builtins
 
 		public string get_Name(object obj = null) => Name(obj);
 
-		public string Name(object obj = null)
-		{
-			var g = GetGroup(obj);
-			return g.Success ? g.Name : "";
-		}
+		public string Name(object obj = null) => GetGroup(obj).Name;
 
 		public long get_Pos(object obj = null) => Pos(obj);
 
@@ -76,30 +72,31 @@ namespace Keysharp.Builtins
 
 		public string this[params object[] obj] => GetGroup(obj.Length == 0 ? null : obj[0]).Value;
 
-		/// <summary>The group named by null (the whole match), a name, or a number; a miss is an unset Subpattern.</summary>
+		/// <summary>The group named by null (the whole match), a name, or a number; throws ValueError for an invalid subpattern.</summary>
 		private Subpattern GetGroup(object key)
 		{
 			if (match != null)
 			{
-				try
-				{
-					if (key == null)
-						return At(0);
+				if (key == null)
+					return At(0);
 
-					// A name looked up by name is its own answer; only an ordinal consults the name table.
-					if (key is string s)
+				// A name looked up by name is its own answer; only an ordinal consults the name table.
+				if (key is string s)
+				{
+					if (holder != null && System.Array.IndexOf(holder.groupNames, s) >= 0)
 						return new Subpattern(match.Groups[s], s);
 
-					var index = Convert.ToInt32(key);
+					if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedIdx) && parsedIdx >= 0 && parsedIdx < match.Groups.Count)
+						return At(parsedIdx);
 
-					if (index >= 0 && index <= match.Groups.Count)
-						return At(index);
-				}
-				catch (ArgumentOutOfRangeException)
-				{
+					_ = Errors.ValueErrorOccurred($"Invalid subpattern '{s}'.", key);
 					return default;
 				}
 
+				if (key.TryCoerceInt(out var index) && index >= 0 && index < match.Groups.Count)
+					return At(index);
+
+				_ = Errors.ValueErrorOccurred($"Invalid subpattern '{Errors.Describe(key)}'.", key);
 				return default;
 			}
 
@@ -107,14 +104,22 @@ namespace Keysharp.Builtins
 				return new Subpattern(netMatch);
 
 			if (key is string ns)
-				return new Subpattern(netMatch.Groups[ns]);
+			{
+				if (netMatch.Groups.ContainsKey(ns))
+					return new Subpattern(netMatch.Groups[ns]);
 
-			var i = Convert.ToInt32(key);
+				if (int.TryParse(ns, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedIdx) && parsedIdx >= 0 && parsedIdx < netMatch.Groups.Count)
+					return parsedIdx == 0 ? new Subpattern(netMatch) : new Subpattern(netMatch.Groups[parsedIdx]);
 
-			if (i == 0)
-				return new Subpattern(netMatch);
+				_ = Errors.ValueErrorOccurred($"Invalid subpattern '{ns}'.", key);
+				return default;
+			}
 
-			return i > 0 && i < netMatch.Groups.Count ? new Subpattern(netMatch.Groups[i]) : default;
+			if (key.TryCoerceInt(out var i) && i >= 0 && i < netMatch.Groups.Count)
+				return i == 0 ? new Subpattern(netMatch) : new Subpattern(netMatch.Groups[i]);
+
+			_ = Errors.ValueErrorOccurred($"Invalid subpattern '{Errors.Describe(key)}'.", key);
+			return default;
 		}
 
 		private Subpattern At(int ordinal) =>

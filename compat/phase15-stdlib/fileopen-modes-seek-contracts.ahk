@@ -35,6 +35,11 @@ try {
 
 	lines.Push("read=" head "|" posAfterHead "|" lenNow "|" tail "|" eofNow)
 	lines.Push("raw=" nw "|" nr "|" StrGet(rb, 4, "UTF-8"))
+	uErr := ""
+	try FileGetSize(tmp, "Z")
+	catch ValueError
+		uErr := "ValueError"
+	lines.Push("fsize=" FileGetSize(tmp) "|" uErr)
 } finally {
 	try FileDelete(tmp)
 }

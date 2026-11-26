@@ -874,6 +874,9 @@ namespace Keysharp.Builtins
 			if (file?.Length == 0)
 				file = A_LoopFileFullPath;
 
+			if (!string.IsNullOrEmpty(u) && u[0] is not ('b' or 'B' or 'k' or 'K' or 'm' or 'M' or 'g' or 'G' or 't' or 'T'))
+				return (long)Errors.ValueErrorOccurred($"Invalid Units parameter '{u}' for FileGetSize.", units, DefaultErrorLong);
+
 			try
 			{
 				var scale = 1024L;
