@@ -1,0 +1,5 @@
+sp1=file.tar.gz|C:\dir\sub|gz|file.tar|C:
+sp2=page.html|https://example.com/a/b|html|page|https://example.com
+sp3=plain.txt||txt|plain|
+sp4=|C:\dir\sub|||C:
+dir=1|1

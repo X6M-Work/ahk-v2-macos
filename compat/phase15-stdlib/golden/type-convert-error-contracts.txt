@@ -1,0 +1,5 @@
+int=42|-7|26|3|-3
+flt=3.5|-0.25|100.0|7.0
+num=Integer|Float|Integer|-5
+str=42|-3.5|
+errs=T|T|T|

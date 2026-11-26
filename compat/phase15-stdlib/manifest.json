@@ -600,6 +600,36 @@
       "category": "stdlib",
       "script": "func-bind-boundfunc-contracts.ahk",
       "expected_stdout": "golden/func-bind-boundfunc-contracts.txt"
+    },
+    {
+      "id": "type-convert-error-contracts",
+      "category": "stdlib",
+      "script": "type-convert-error-contracts.ahk",
+      "expected_stdout": "golden/type-convert-error-contracts.txt"
+    },
+    {
+      "id": "splitpath-fileexist-contracts",
+      "category": "stdlib",
+      "script": "splitpath-fileexist-contracts.ahk",
+      "expected_stdout": "golden/splitpath-fileexist-contracts.txt"
+    },
+    {
+      "id": "strcompare-logical-contracts",
+      "category": "stdlib",
+      "script": "strcompare-logical-contracts.ahk",
+      "expected_stdout": "golden/strcompare-logical-contracts.txt"
+    },
+    {
+      "id": "reflect-hasprop-getmethod-contracts",
+      "category": "stdlib",
+      "script": "reflect-hasprop-getmethod-contracts.ahk",
+      "expected_stdout": "golden/reflect-hasprop-getmethod-contracts.txt"
+    },
+    {
+      "id": "loop-nested-index-contracts",
+      "category": "stdlib",
+      "script": "loop-nested-index-contracts.ahk",
+      "expected_stdout": "golden/loop-nested-index-contracts.txt"
     }
   ]
 }
