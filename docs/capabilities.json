@@ -6605,7 +6605,7 @@
                      "windows":  "partial",
                      "linux_x11":  "partial",
                      "linux_wayland":  "partial",
-                     "macos":  "unknown",
+                     "macos":  "partial",
                      "notes":  "A browser control with Url, DocumentTitle, CanGoBack/CanGoForward, BrowserContextMenuEnabled and Engine; GoBack, GoForward, Stop, Reload, ExecuteScript, ExecuteScriptAsync, LoadHtml and ShowPrintDialog; and the Navigated, DocumentLoading, DocumentLoaded, DocumentTitleChanged, OpenNewWindow and MessageReceived events. No engine is shipped. Windows prefers Edge through WebView2 when a script asks for it with #Package \"Microsoft.Web.WebView2\" and falls back to Internet Explorer, where modern pages may not render, the OpenNewWindow URL is recovered from the focused element, and a page cannot post a message before its document has loaded. Linux uses WebKitGTK and needs libwebkit2gtk-4.1 or 4.0 installed or the control cannot be created.",
                      "tested-by":  "GuiTests/gui-webview.ahk"
                  },

@@ -192,6 +192,24 @@
       "category": "stdlib",
       "script": "string-unicode-sort-contracts.ahk",
       "expected_stdout": "golden/string-unicode-sort-contracts.txt"
+    },
+    {
+      "id": "for-enumerator-contracts",
+      "category": "stdlib",
+      "script": "for-enumerator-contracts.ahk",
+      "expected_stdout": "golden/for-enumerator-contracts.txt"
+    },
+    {
+      "id": "varref-byref-contracts",
+      "category": "stdlib",
+      "script": "varref-byref-contracts.ahk",
+      "expected_stdout": "golden/varref-byref-contracts.txt"
+    },
+    {
+      "id": "bitwise-hex-coerce-contracts",
+      "category": "stdlib",
+      "script": "bitwise-hex-coerce-contracts.ahk",
+      "expected_stdout": "golden/bitwise-hex-coerce-contracts.txt"
     }
   ]
 }

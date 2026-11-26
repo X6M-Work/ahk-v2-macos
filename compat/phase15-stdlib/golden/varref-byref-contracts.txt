@@ -1,0 +1,4 @@
+vref_type=1|VarRef|1|10
+vref_mut=25|25
+vref_byref=42
+vref_init=0|1|ready
