@@ -509,7 +509,7 @@ namespace Keysharp.Builtins
 
 		public object Add(object controlType, object options = null, object text = null)
 		{
-			if (form == null || form.IsDisposed)
+			if (form == null || form.IsDestroyed)
 				return Errors.ErrorOccurred("GUI window is no longer available.");
 
 			if (!controlType.CoerceString(out var typeo) || !options.CoerceString(out var optionsStr))

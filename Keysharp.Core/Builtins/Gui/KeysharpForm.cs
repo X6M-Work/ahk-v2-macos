@@ -25,6 +25,7 @@ namespace Keysharp.Builtins
 		internal bool roundedCorners;
 		private bool toolWindow;
 		private bool closingFromDestroy;
+		internal bool IsDestroyed => IsDisposed || closingFromDestroy;
 		private nint ownerHwnd;
 #if WINDOWS
 		private bool sizingBorder;
