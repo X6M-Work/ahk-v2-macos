@@ -89,8 +89,9 @@ namespace Keysharp.Builtins
 			/// wins.</summary>
 			public virtual object Stop()
 			{
-				// A concurrent Restart may have replaced the run this read, so stop whatever runs once the swap settles.
-				while (Volatile.Read(ref sub) is { IsRunning: true } s)
+				// A concurrent Restart may have replaced the run this read and ended the old one before we check it,
+				// so keep looping whenever sub changed out from under us.
+				while (Volatile.Read(ref sub) is { } s)
 				{
 					if (s.End(EventSubscriptionBase.EndReasonStopped))
 						s.Unregister();
