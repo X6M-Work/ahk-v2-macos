@@ -360,6 +360,36 @@
       "category": "stdlib",
       "script": "class-static-prop-edge-contracts.ahk",
       "expected_stdout": "golden/class-static-prop-edge-contracts.txt"
+    },
+    {
+      "id": "str-validation-edge-contracts",
+      "category": "stdlib",
+      "script": "str-validation-edge-contracts.ahk",
+      "expected_stdout": "golden/str-validation-edge-contracts.txt"
+    },
+    {
+      "id": "numget-ptr-offset-contracts",
+      "category": "stdlib",
+      "script": "numget-ptr-offset-contracts.ahk",
+      "expected_stdout": "golden/numget-ptr-offset-contracts.txt"
+    },
+    {
+      "id": "object-meta-chain-contracts",
+      "category": "stdlib",
+      "script": "object-meta-chain-contracts.ahk",
+      "expected_stdout": "golden/object-meta-chain-contracts.txt"
+    },
+    {
+      "id": "loop-while-else-contracts",
+      "category": "stdlib",
+      "script": "loop-while-else-contracts.ahk",
+      "expected_stdout": "golden/loop-while-else-contracts.txt"
+    },
+    {
+      "id": "math-bit64-limits-contracts",
+      "category": "stdlib",
+      "script": "math-bit64-limits-contracts.ahk",
+      "expected_stdout": "golden/math-bit64-limits-contracts.txt"
     }
   ]
 }

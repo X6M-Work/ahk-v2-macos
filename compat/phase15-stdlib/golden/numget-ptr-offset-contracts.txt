@@ -1,0 +1,2 @@
+neg_off=1234567890123|-77
+str_len=ABCD|CDE
