@@ -1,0 +1,3 @@
+esc=10|13|9|8|96
+q=say "hi"|it's ok
+cont=alpha|beta|gamma

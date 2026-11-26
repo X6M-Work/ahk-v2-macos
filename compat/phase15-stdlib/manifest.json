@@ -390,6 +390,36 @@
       "category": "stdlib",
       "script": "math-bit64-limits-contracts.ahk",
       "expected_stdout": "golden/math-bit64-limits-contracts.txt"
+    },
+    {
+      "id": "assignment-compound-edge-contracts",
+      "category": "stdlib",
+      "script": "assignment-compound-edge-contracts.ahk",
+      "expected_stdout": "golden/assignment-compound-edge-contracts.txt"
+    },
+    {
+      "id": "string-escape-continuation-contracts",
+      "category": "stdlib",
+      "script": "string-escape-continuation-contracts.ahk",
+      "expected_stdout": "golden/string-escape-continuation-contracts.txt"
+    },
+    {
+      "id": "object-delete-proto-contracts",
+      "category": "stdlib",
+      "script": "object-delete-proto-contracts.ahk",
+      "expected_stdout": "golden/object-delete-proto-contracts.txt"
+    },
+    {
+      "id": "sort-float-offset-contracts",
+      "category": "stdlib",
+      "script": "sort-float-offset-contracts.ahk",
+      "expected_stdout": "golden/sort-float-offset-contracts.txt"
+    },
+    {
+      "id": "file-encoding-utf16-contracts",
+      "category": "stdlib",
+      "script": "file-encoding-utf16-contracts.ahk",
+      "expected_stdout": "golden/file-encoding-utf16-contracts.txt"
     }
   ]
 }
