@@ -20,6 +20,8 @@
     {"id":"macos-monitor-sysget","category":"native-capability","script":"monitor-sysget-mac.ahk","expected_stdout":"golden/monitor-sysget-mac.txt","platforms":["Darwin"]},
     {"id":"macos-clipboard-all","category":"native-capability","script":"clipboard-all-mac.ahk","expected_stdout":"golden/clipboard-all-mac.txt","platforms":["Darwin"]},
     {"id":"macos-gui-own-window","category":"native-capability","script":"gui-show-own-window.ahk","expected_stdout":"golden/gui-show-own-window.txt","platforms":["Darwin"]},
-    {"id":"macos-process-runwait","category":"native-capability","script":"process-runwait-mac.ahk","expected_stdout":"golden/process-runwait-mac.txt","platforms":["Darwin"]}
+    {"id":"macos-process-runwait","category":"native-capability","script":"process-runwait-mac.ahk","expected_stdout":"golden/process-runwait-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-drive-apfs","category":"native-capability","script":"drive-apfs-mac.ahk","expected_stdout":"golden/drive-apfs-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-env-vars","category":"native-capability","script":"env-vars-mac.ahk","expected_stdout":"golden/env-vars-mac.txt","platforms":["Darwin"]}
   ]
 }

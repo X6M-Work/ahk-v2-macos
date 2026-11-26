@@ -240,6 +240,24 @@
       "category": "stdlib",
       "script": "file-encoding-seek-contracts.ahk",
       "expected_stdout": "golden/file-encoding-seek-contracts.txt"
+    },
+    {
+      "id": "objptr-refcount-contracts",
+      "category": "stdlib",
+      "script": "objptr-refcount-contracts.ahk",
+      "expected_stdout": "golden/objptr-refcount-contracts.txt"
+    },
+    {
+      "id": "critical-thread-contracts",
+      "category": "stdlib",
+      "script": "critical-thread-contracts.ahk",
+      "expected_stdout": "golden/critical-thread-contracts.txt"
+    },
+    {
+      "id": "expr-switch-edge-contracts",
+      "category": "stdlib",
+      "script": "expr-switch-edge-contracts.ahk",
+      "expected_stdout": "golden/expr-switch-edge-contracts.txt"
     }
   ]
 }

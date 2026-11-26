@@ -1,0 +1,4 @@
+tern=A|B|C|F
+sw_expr=neg|zero|small|big
+conv_err=1|1
+str_edge=|0|0
