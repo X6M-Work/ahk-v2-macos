@@ -647,27 +647,25 @@ namespace Keysharp.Builtins
 		/// L: REPARSE_POINT(typically a symbolic link)<br/>
 		/// </returns>
 		/// <exception cref="OSError">An <see cref="OSError"/> exception is thrown if any errors occur.</exception>
-		public static string FileGetAttrib(object filename)
+		public static string FileGetAttrib(object filename = null)
 		{
 			if (!filename.CoerceString(out var s))
 				return "";
 
 			ThreadAccessors.A_LastError = 0;
 
+			if (s.Length == 0)
+				s = A_LoopFileFullPath;
+
 			try
 			{
-				if (Directory.Exists(s) || File.Exists(s))
-					return Conversions.FromFileAttribs(File.GetAttributes(s));
-				else if (s?.Length == 0)
-					return Conversions.FromFileAttribs(File.GetAttributes(A_LoopFileFullPath));
+				return Conversions.FromFileAttribs(File.GetAttributes(s));
 			}
 			catch (Exception ex)
 			{
 				ThreadAccessors.A_LastError = Marshal.GetLastSystemError();
 				return (string)Errors.OSErrorOccurred(ex, $"Error getting file attributes for file {s}");
 			}
-
-			return DefaultErrorString;
 		}
 
 #if WINDOWS

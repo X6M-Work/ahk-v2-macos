@@ -39,7 +39,11 @@ try {
 	try FileGetSize(tmp, "Z")
 	catch ValueError
 		uErr := "ValueError"
-	lines.Push("fsize=" FileGetSize(tmp) "|" uErr)
+	aErr := ""
+	try FileGetAttrib(tmp "_missing_9999")
+	catch OSError
+		aErr := "OSError"
+	lines.Push("fsize=" FileGetSize(tmp) "|" uErr "|" aErr)
 } finally {
 	try FileDelete(tmp)
 }
