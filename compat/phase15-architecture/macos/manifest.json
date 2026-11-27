@@ -48,6 +48,8 @@
     {"id":"macos-gui-submit","category":"native-capability","script":"gui-submit-mac.ahk","expected_stdout":"golden/gui-submit-mac.txt","platforms":["Darwin"]},
     {"id":"macos-gui-lv-tv-sort","category":"native-capability","script":"gui-lv-tv-sort-mac.ahk","expected_stdout":"golden/gui-lv-tv-sort-mac.txt","platforms":["Darwin"]},
     {"id":"macos-gui-lv-tv-bulk","category":"native-capability","script":"gui-lv-tv-bulk-mac.ahk","expected_stdout":"golden/gui-lv-tv-bulk-mac.txt","platforms":["Darwin"]},
-    {"id":"macos-sec-random","category":"native-capability","script":"security-random-mac.ahk","expected_stdout":"golden/security-random-mac.txt","platforms":["Darwin"]}
+    {"id":"macos-sec-random","category":"native-capability","script":"security-random-mac.ahk","expected_stdout":"golden/security-random-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-gui-imagelist","category":"native-capability","script":"gui-imagelist-mac.ahk","expected_stdout":"golden/gui-imagelist-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-posix-fs","category":"native-capability","script":"posix-fs-stat-mac.ahk","expected_stdout":"golden/posix-fs-stat-mac.txt","platforms":["Darwin"]}
   ]
 }
