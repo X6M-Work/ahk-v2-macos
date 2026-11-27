@@ -1,6 +1,8 @@
-#ErrorStdOut
 #Requires AutoHotkey v2.0
+#ErrorStdOut
+#Warn All, StdOut
 #NoTrayIcon
+OnError((err, mode) => (FileAppend("ERROR:" err.Message "`n", "**", "UTF-8-RAW"), ExitApp(1)))
 
 ; Live macOS AppKit / Eto check: GuiControl.Visible before Show (default, Hidden, Opt, setter)
 ; and TreeView Bold item state (Modify Bold / -Bold, Get Bold).
