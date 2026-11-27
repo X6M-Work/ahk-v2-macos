@@ -265,7 +265,7 @@ namespace Keysharp.Builtins
 				if (value is string s)
 				{
 					if (s.Length > 0 && (page = tc.FindTab(s, exactMatch.Ab())) == null)
-						return Errors.ErrorOccurred($"No tab matching the name \"{s}\" found");
+						return Errors.ValueErrorOccurred($"No tab matching the name \"{s}\" found.", value);
 				}
 				else if (value is not null)
 				{

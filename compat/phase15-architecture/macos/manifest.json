@@ -45,6 +45,7 @@
     {"id":"macos-posix-recycle","category":"native-capability","script":"posix-realpath-recycle-mac.ahk","expected_stdout":"golden/posix-realpath-recycle-mac.txt","platforms":["Darwin"]},
     {"id":"macos-gui-lv-edit-cb","category":"native-capability","script":"gui-lv-edit-cb-mac.ahk","expected_stdout":"golden/gui-lv-edit-cb-mac.txt","platforms":["Darwin"]},
     {"id":"macos-cg-cfnum","category":"native-capability","script":"coregraphics-cfnum-mac.ahk","expected_stdout":"golden/coregraphics-cfnum-mac.txt","platforms":["Darwin"]},
-    {"id":"macos-gui-submit","category":"native-capability","script":"gui-submit-mac.ahk","expected_stdout":"golden/gui-submit-mac.txt","platforms":["Darwin"]}
+    {"id":"macos-gui-submit","category":"native-capability","script":"gui-submit-mac.ahk","expected_stdout":"golden/gui-submit-mac.txt","platforms":["Darwin"]},
+    {"id":"macos-gui-lv-tv-sort","category":"native-capability","script":"gui-lv-tv-sort-mac.ahk","expected_stdout":"golden/gui-lv-tv-sort-mac.txt","platforms":["Darwin"]}
   ]
 }
