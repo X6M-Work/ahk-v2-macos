@@ -152,10 +152,6 @@ namespace Keysharp.Builtins
 				return "";
 
 			var wasMs = s1.Contains('.');
-
-			if (s1.Length == 0)
-				s1 = Conversions.ToYYYYMMDDHH24MISSFFF(DateTime.Now);
-
 			var d1 = Conversions.ToDateTime(s1);
 
 			if (d1 == DateTime.MinValue)

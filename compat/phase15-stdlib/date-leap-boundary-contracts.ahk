@@ -18,6 +18,9 @@ catch ValueError
 try DateDiff("20260704", "20260703", "Centuries")
 catch ValueError
 	uErr .= "D|"
+try DateAdd("", 1, "Days")
+catch ValueError
+	uErr .= "E|"
 lines.Push("uerr=" uErr)
 
 out := ""
