@@ -2317,19 +2317,6 @@ namespace Keysharp.Builtins
 				node.EnsureVisible();
 		}
 
-		private void ClearMacOutlineColumnBeforeColumnMutation()
-		{
-#if OSX
-			// Eto.Mac's GridHandler.UpdateColumns() removes all NSTableColumns before TreeGridViewHandler
-			// updates OutlineTableColumn; AppKit rejects removing the active outlineTableColumn via
-			// removeTableColumn:. Clearing it first lets UpdateColumns() re-assign Columns[0] cleanly.
-			if (ControlObject is MonoMac.AppKit.NSOutlineView directOutline)
-				directOutline.OutlineTableColumn = null;
-			else if (ControlObject is MonoMac.AppKit.NSScrollView scroll && scroll.DocumentView is MonoMac.AppKit.NSOutlineView docOutline)
-				docOutline.OutlineTableColumn = null;
-#endif
-		}
-
 		private void UpdateCheckColumn()
 		{
 			if (checkBoxes)
@@ -2345,16 +2332,28 @@ namespace Keysharp.Builtins
 						DataCell = checkCell,
 						AutoSize = true
 					};
-					ClearMacOutlineColumnBeforeColumnMutation();
+#if OSX
+					// Eto.Mac's GridHandler.InsertItem(0, ...) removes and re-adds column 0 (the NSOutlineView
+					// outlineTableColumn), which AppKit rejects with a stderr diagnostic. Appending the column
+					// and toggling Visible avoids removeTableColumn: on the outlineTableColumn completely.
+					Columns.Add(checkColumn);
+#else
 					Columns.Insert(0, checkColumn);
+#endif
 				}
+#if OSX
+				checkColumn.Visible = true;
+#endif
 			}
 			else if (checkColumn != null)
 			{
-				ClearMacOutlineColumnBeforeColumnMutation();
+#if OSX
+				checkColumn.Visible = false;
+#else
 				_ = Columns.Remove(checkColumn);
 				checkColumn = null;
 				checkCell = null;
+#endif
 			}
 		}
 
@@ -2373,17 +2372,26 @@ namespace Keysharp.Builtins
 						DataCell = imageCell,
 						AutoSize = true
 					};
+#if OSX
+					Columns.Add(imageColumn);
+#else
 					var insertAt = checkColumn != null ? 1 : 0;
-					ClearMacOutlineColumnBeforeColumnMutation();
 					Columns.Insert(insertAt, imageColumn);
+#endif
 				}
+#if OSX
+				imageColumn.Visible = true;
+#endif
 			}
 			else if (imageColumn != null)
 			{
-				ClearMacOutlineColumnBeforeColumnMutation();
+#if OSX
+				imageColumn.Visible = false;
+#else
 				_ = Columns.Remove(imageColumn);
 				imageColumn = null;
 				imageCell = null;
+#endif
 			}
 		}
 	}
