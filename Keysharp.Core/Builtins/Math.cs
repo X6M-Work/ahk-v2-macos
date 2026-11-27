@@ -324,7 +324,7 @@ namespace Keysharp.Builtins
 			}
 
 			if (!haveInt && !haveFloat)
-				return DefaultObject;
+				return Errors.ErrorOccurred("Too few parameters passed to function.");
 
 			return !haveFloat || (haveInt && (isMin ? bestInt < bestFloat : bestInt > bestFloat)) ? (object)bestInt : bestFloat;
 		}

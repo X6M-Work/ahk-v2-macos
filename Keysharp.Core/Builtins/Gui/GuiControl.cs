@@ -380,7 +380,14 @@ namespace Keysharp.Builtins
 
 			public object Visible
 			{
-				get => _control.Visible;
+				get
+				{
+#if WINDOWS
+					if (_control.IsHandleCreated)
+						return (WindowsAPI.GetWindowLongPtr(_control.Handle, WindowsAPI.GWL_STYLE).ToInt64() & WindowsAPI.WS_VISIBLE) != 0;
+#endif
+					return _control.Visible;
+				}
 				set => _control.Visible = Options.OnOff(value) ?? false;
 			}
 

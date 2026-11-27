@@ -21,6 +21,14 @@ for fn in [() => Sqrt(-1), () => Log(-1), () => Ln(-1), () => ASin(2), () => ACo
 }
 lines.Push("dom=" domErrs)
 
+mmEmptyErrs := ""
+for fn in [() => Min([]*), () => Max([]*)] {
+	try fn()
+	catch Error as e
+		mmEmptyErrs .= Type(e) "|"
+}
+lines.Push("mm_empty=" mmEmptyErrs)
+
 out := ""
 for _, line in lines
 	out .= line "`n"

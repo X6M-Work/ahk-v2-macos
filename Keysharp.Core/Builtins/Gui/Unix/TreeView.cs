@@ -73,8 +73,17 @@ namespace Keysharp.Builtins
 
 			private partial bool IsBold(TreeNode node) => node.NodeFont?.Bold == true;
 
-			private partial void SetBold(TreeNode node, bool bold) =>
-				node.NodeFont = bold ? (boldFont ??= new Font(Tv.Font.FamilyName, Tv.Font.Size, FontStyle.Bold)) : null;
+			private partial void SetBold(TreeNode node, bool bold)
+			{
+				if (!bold)
+				{
+					node.NodeFont = null;
+					return;
+				}
+
+				var baseFont = Tv.Font ?? MainWindow.OurDefaultFont;
+				node.NodeFont = boldFont ??= new Font(baseFont.FamilyName, baseFont.Size, FontStyle.Bold);
+			}
 
 			private partial void SetExpanded(TreeNode node, bool expand, bool adding)
 			{

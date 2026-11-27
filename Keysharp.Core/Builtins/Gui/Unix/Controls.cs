@@ -2365,7 +2365,7 @@ namespace Keysharp.Builtins
 				{
 					imageCell = new ImageViewCell
 					{
-						Binding = (IIndirectBinding<Image>)Binding.Property<TreeNode, Bitmap>(node => node.Image)
+						Binding = Binding.Delegate<TreeNode, Image>(node => node?.Image)
 					};
 					imageColumn = new GridColumn
 					{
