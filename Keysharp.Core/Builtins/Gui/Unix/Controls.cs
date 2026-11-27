@@ -2317,6 +2317,19 @@ namespace Keysharp.Builtins
 				node.EnsureVisible();
 		}
 
+		private void ClearMacOutlineColumnBeforeColumnMutation()
+		{
+#if OSX
+			// Eto.Mac's GridHandler.UpdateColumns() removes all NSTableColumns before TreeGridViewHandler
+			// updates OutlineTableColumn; AppKit rejects removing the active outlineTableColumn via
+			// removeTableColumn:. Clearing it first lets UpdateColumns() re-assign Columns[0] cleanly.
+			if (ControlObject is MonoMac.AppKit.NSOutlineView directOutline)
+				directOutline.OutlineTableColumn = null;
+			else if (ControlObject is MonoMac.AppKit.NSScrollView scroll && scroll.DocumentView is MonoMac.AppKit.NSOutlineView docOutline)
+				docOutline.OutlineTableColumn = null;
+#endif
+		}
+
 		private void UpdateCheckColumn()
 		{
 			if (checkBoxes)
@@ -2332,11 +2345,13 @@ namespace Keysharp.Builtins
 						DataCell = checkCell,
 						AutoSize = true
 					};
+					ClearMacOutlineColumnBeforeColumnMutation();
 					Columns.Insert(0, checkColumn);
 				}
 			}
 			else if (checkColumn != null)
 			{
+				ClearMacOutlineColumnBeforeColumnMutation();
 				_ = Columns.Remove(checkColumn);
 				checkColumn = null;
 				checkCell = null;
@@ -2359,11 +2374,13 @@ namespace Keysharp.Builtins
 						AutoSize = true
 					};
 					var insertAt = checkColumn != null ? 1 : 0;
+					ClearMacOutlineColumnBeforeColumnMutation();
 					Columns.Insert(insertAt, imageColumn);
 				}
 			}
 			else if (imageColumn != null)
 			{
+				ClearMacOutlineColumnBeforeColumnMutation();
 				_ = Columns.Remove(imageColumn);
 				imageColumn = null;
 				imageCell = null;
