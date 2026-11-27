@@ -105,6 +105,11 @@ namespace Keysharp.Builtins
 						index = value is string cs ? (exact ? cb.FindStringExact(cs) : cb.FindString(cs)) : 0;
 						break;
 
+					case KeysharpTabControl tc:
+						count = tc.TabPages.Count;
+						index = value is string ts ? FindTab(tc, ts, exact) : 0;
+						break;
+
 					default:
 						return DefaultObject;
 				}
@@ -162,6 +167,10 @@ namespace Keysharp.Builtins
 								cb.Text = fieldText ?? "";
 
 							break;
+
+						case KeysharpTabControl tc:
+							tc.SelectedIndex = index;
+							break;
 					}
 				}
 				finally
@@ -170,6 +179,18 @@ namespace Keysharp.Builtins
 				}
 
 				return DefaultObject;
+
+				static int FindTab(KeysharpTabControl tc, string text, bool exact)
+				{
+					for (var i = 0; i < tc.TabPages.Count; i++)
+					{
+						var t = tc.TabPages[i].Text ?? "";
+						if (exact ? t.Equals(text, StringComparison.OrdinalIgnoreCase) : t.StartsWith(text, StringComparison.OrdinalIgnoreCase))
+							return i;
+					}
+
+					return -1;
+				}
 
 				object Invalid() => exact ? Errors.ValueErrorOccurred("Invalid value.", value)
 									: Errors.InvalidParameterErrorOccurred(1, "Gui.List.Prototype.Choose", value);

@@ -68,10 +68,8 @@ namespace Keysharp.Builtins
 					if (!value.CoerceString(out var s))
 						return;
 
-					if (this is List list && _control is KeysharpListBox or KeysharpComboBox)
+					if (this is List list && _control is KeysharpListBox or KeysharpComboBox or KeysharpTabControl)
 						_ = list.ChooseItem(s, true);
-					else if (_control is KeysharpTabControl tc)
-						tc.SelectTab(s);
 					else if (_control is KeysharpGroupBox gb)
 						gb.Text = s;
 					//A status bar's text is its first part's, as SetWindowText sets it in AutoHotkey.

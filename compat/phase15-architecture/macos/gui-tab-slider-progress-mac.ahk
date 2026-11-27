@@ -41,8 +41,14 @@ catch ValueError
 try tab.Value := -1
 catch ValueError
 	tabErrs .= "N|"
+tab.Text := "One"
+tabTxt1 := tab.Value
+tab.Text := "Two"
+try tab.Text := "NoSuch"
+catch ValueError
+	tabErrs .= "T|"
 
-ok := (slHi == 100) && (slLo == 0) && (prHi == 100) && (prLo == 0) && (udHi == 50) && (udLo == 1) && (udBad == "TypeError") && (tabErrs == "H|N|") && (tab.Value == 2)
+ok := (slHi == 100) && (slLo == 0) && (prHi == 100) && (prLo == 0) && (udHi == 50) && (udLo == 1) && (udBad == "TypeError") && (tabErrs == "H|N|T|") && (tabTxt1 == 1) && (tab.Value == 2)
 g.Destroy()
 FileAppend("gui-tab-slider:" (ok ? "ok" : slHi "|" slLo "|" prHi "|" prLo "|" udHi "|" udLo "|" udBad "|" tabErrs "|" tab.Value) "`n", "*", "UTF-8-RAW")
 ExitApp()
