@@ -3555,85 +3555,85 @@ namespace Keysharp.Builtins
 		{
 			EnsureMainWindowControls();
 			var hideVal = ForceBool(hide ?? true);
-			var panels = new HashSet<Panel>();
-			var ctrls = form.GetControls().Flatten(true);
+			var radioGroups = new HashSet<object>();
+			var allControls = controls.Values.OfType<Gui.Control>().ToList();
 			var result = new KeysharpObject();
 
-			foreach (Forms.Control control in ctrls)
+			foreach (var guictrl in allControls)
 			{
-				if (control.Name != "" && control.GetGuiControl() is Gui.Control guictrl)
+				var control = guictrl.Ctrl;
+
+				if (control == null)
+					continue;
+
+				if (control is KeysharpRadioButton rb)
 				{
-					if (control is KeysharpTextBox || control is KeysharpPasswordBox || control is KeysharpDateTimePicker || control is KeysharpMonthCalendar)//Just use value because it's the same and consolidates the formatting in one place, despite being slightly slower.
-						result.DefinePropInternal(control.Name, new OwnPropsDesc(guictrl.Value));
-					else if (control is KeysharpRichEdit)
-						result.DefinePropInternal(control.Name,  new OwnPropsDesc(!guictrl.AltSubmit || guictrl is not RichEdit re ? guictrl.Value : re.RichText));
-					else if (control is KeysharpNumericUpDown nud)
+					var groupKey = (object)rb.FindParent<Panel>() ?? rb.Parent ?? (object)rb;
+
+					if (radioGroups.Add(groupKey))
 					{
-#if WINDOWS
-						decimal v = decimal.Round(nud.Value, nud.DecimalPlaces);
-						if (v == decimal.Truncate(v) && v >= long.MinValue && v <= long.MaxValue)
-							result.DefinePropInternal(nud.Name, new OwnPropsDesc((long)v));
-						else
-							result.DefinePropInternal(nud.Name, new OwnPropsDesc((double)v));
-#else
-						double v = nud.Value;
-						if (v == double.Truncate(v) && v >= long.MinValue && v <= long.MaxValue)
-							result.DefinePropInternal(nud.Name, new OwnPropsDesc((long)v));
-						else
-							result.DefinePropInternal(nud.Name, new OwnPropsDesc(v));
-#endif
-					}
-					else if (control is KeysharpCheckBox cb)
-#if WINDOWS
-						result.DefinePropInternal(cb.Name, new OwnPropsDesc(cb.Checked ? 1L : 0L));
-#else
-						result.DefinePropInternal(cb.Name, new OwnPropsDesc((cb.Checked ?? false) ? 1L : 0L));
-#endif
-					else if (control is KeysharpTabControl tc)
-						result.DefinePropInternal(tc.Name, new OwnPropsDesc(!guictrl.AltSubmit ? tc.SelectedTab != null ? tc.SelectedTab.Text : "" : (long)(tc.SelectedIndex + 1)));
-					else if (control is KeysharpComboBox cmb)
-						result.DefinePropInternal(cmb.Name, new OwnPropsDesc(!guictrl.AltSubmit || cmb.Items.IndexOf(cmb.Text) == -1 ? cmb.Text : (long)(cmb.SelectedIndex + 1)));
-					else if (control is TrackBar tb)
-						result.DefinePropInternal(tb.Name, new OwnPropsDesc(tb.Value));
-					else if (control is KeysharpListBox lb)
-					{
-#if WINDOWS
-						result.DefinePropInternal(lb.Name, new OwnPropsDesc(!guictrl.AltSubmit
-									   ? guictrl.Value
-									   : lb.SelectionMode == SelectionMode.One
-									   ? lb.SelectedItem as string ?? ""
-									   : new Array(lb.SelectedItems.Cast<object>().Where(xx => xx is string).Select(x => x as string))));
-#else
-						result.DefinePropInternal(lb.Name, new OwnPropsDesc(!guictrl.AltSubmit ? guictrl.Value : guictrl.Text));
-#endif
-					}
-					else if (control is RadioButton rb)//This is supposed to do something special if it's part of a group, but unsure how to determine that.
-					{
-						if (rb.Parent is Panel pnl && !panels.Contains(pnl))
+						var groupRadios = allControls
+							.Where(gc => gc.Ctrl is KeysharpRadioButton grb && ReferenceEquals((object)grb.FindParent<Panel>() ?? grb.Parent ?? (object)grb, groupKey))
+							.ToList();
+						var named = groupRadios.Where(gc => !string.IsNullOrEmpty(gc.Ctrl.Name)).ToList();
+
+						if (named.Count == 1)
 						{
-							_ = panels.Add(pnl);
-							var rbs = pnl.Controls.Cast<Forms.Control>().Where(pc => pc is RadioButton pcrb).Cast<RadioButton>().ToList();
-							var named = rbs.Where(rr => rr.Name != "").ToList();
+							var checkedIdx = 0L;
 
-							if (named.Count == 1)
+							for (var i = 0; i < groupRadios.Count; i++)
 							{
-								for (var i = 0; i < rbs.Count; i++)
+								if (((KeysharpRadioButton)groupRadios[i].Ctrl).Checked)
 								{
-									if (rbs[i].Checked)
-									{
-										result.DefinePropInternal(named[0].Name, new OwnPropsDesc((long)(i + 1)));
-										goto DoneAssigning;
-									}
+									checkedIdx = i + 1L;
+									break;
 								}
-
-								result.DefinePropInternal(named[0].Name, new OwnPropsDesc(0L));
 							}
+
+							result.DefinePropInternal(named[0].Ctrl.Name, new OwnPropsDesc(checkedIdx));
+						}
+						else
+						{
+							foreach (var nr in named)
+								result.DefinePropInternal(nr.Ctrl.Name, new OwnPropsDesc(((KeysharpRadioButton)nr.Ctrl).Checked ? 1L : 0L));
 						}
 					}
-				}
-			}
 
-			DoneAssigning:
+					continue;
+				}
+
+				if (string.IsNullOrEmpty(control.Name))
+					continue;
+
+				if (guictrl is Edit || control is KeysharpDateTimePicker || control is KeysharpMonthCalendar || control is KeysharpCheckBox)
+					result.DefinePropInternal(control.Name, new OwnPropsDesc(guictrl.Value));
+				else if (control is KeysharpRichEdit)
+					result.DefinePropInternal(control.Name, new OwnPropsDesc(!guictrl.AltSubmit || guictrl is not RichEdit re ? guictrl.Value : re.RichText));
+				else if (control is KeysharpNumericUpDown nud)
+				{
+#if WINDOWS
+					decimal v = decimal.Round(nud.Value, nud.DecimalPlaces);
+					if (v == decimal.Truncate(v) && v >= long.MinValue && v <= long.MaxValue)
+						result.DefinePropInternal(nud.Name, new OwnPropsDesc((long)v));
+					else
+						result.DefinePropInternal(nud.Name, new OwnPropsDesc((double)v));
+#else
+					double v = nud.Value;
+					if (v == double.Truncate(v) && v >= long.MinValue && v <= long.MaxValue)
+						result.DefinePropInternal(nud.Name, new OwnPropsDesc((long)v));
+					else
+						result.DefinePropInternal(nud.Name, new OwnPropsDesc(v));
+#endif
+				}
+				else if (control is KeysharpTabControl tc)
+					result.DefinePropInternal(tc.Name, new OwnPropsDesc(!guictrl.AltSubmit ? tc.SelectedTab != null ? tc.SelectedTab.Text : "" : (long)(tc.SelectedIndex + 1)));
+				else if (control is KeysharpComboBox cmb)
+					result.DefinePropInternal(cmb.Name, new OwnPropsDesc(!guictrl.AltSubmit || cmb.Items.IndexOf(cmb.Text) == -1 ? cmb.Text : (long)(cmb.SelectedIndex + 1)));
+				else if (control is KeysharpTrackBar tb)
+					result.DefinePropInternal(tb.Name, new OwnPropsDesc((long)tb.Value));
+				else if (control is KeysharpListBox lb)
+					result.DefinePropInternal(lb.Name, new OwnPropsDesc(guictrl.AltSubmit ? guictrl.Value : guictrl.Text));
+			}
 
 			if (hideVal)
 				_ = Hide();
