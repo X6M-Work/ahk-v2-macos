@@ -3605,7 +3605,7 @@ namespace Keysharp.Builtins
 				if (string.IsNullOrEmpty(control.Name))
 					continue;
 
-				if (guictrl is Edit || control is KeysharpDateTimePicker || control is KeysharpMonthCalendar || control is KeysharpCheckBox)
+				if (guictrl is Edit or Hotkey || control is KeysharpDateTimePicker || control is KeysharpMonthCalendar || control is KeysharpCheckBox)
 					result.DefinePropInternal(control.Name, new OwnPropsDesc(guictrl.Value));
 				else if (control is KeysharpRichEdit)
 					result.DefinePropInternal(control.Name, new OwnPropsDesc(!guictrl.AltSubmit || guictrl is not RichEdit re ? guictrl.Value : re.RichText));
